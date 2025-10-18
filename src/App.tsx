@@ -404,7 +404,7 @@ const ThetanutsTradingDemo = () => {
                     {selectedOrder.expiry.toLocaleDateString()}
                   </div>
                   <div className="text-xs text-purple-600 mt-1">
-                    {Math.ceil((selectedOrder.expiry - new Date()) / (1000 * 60 * 60 * 24))} days
+                    {Math.ceil((selectedOrder.expiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
                   </div>
                 </div>
                 
