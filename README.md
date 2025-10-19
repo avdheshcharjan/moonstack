@@ -40,22 +40,42 @@ npm install
 
 ## Running the App
 
+### Development Mode
+
 You need to run **two servers** simultaneously:
 
-### 1. Start the CORS Proxy Server
-```bash
-npm run proxy
-```
-This starts the proxy server on `http://localhost:3001`
+1. **Start the CORS Proxy Server**
+   ```bash
+   npm run proxy
+   ```
+   This starts the proxy server on `http://localhost:3001`
 
-### 2. Start the Frontend Development Server
-```bash
-npm run dev
-```
-This starts the Vite dev server on `http://localhost:3000`
+2. **Start the Frontend Development Server**
+   ```bash
+   npm run dev
+   ```
+   This starts the Vite dev server on `http://localhost:3000`
 
-### 3. Open in Browser
-Navigate to `http://localhost:3000` in your web browser.
+3. **Open in Browser**
+   Navigate to `http://localhost:3000`
+
+### Production Mode
+
+Build and run the production server:
+
+```bash
+# Build and start in one command
+npm run serve
+
+# Or run separately
+npm run build
+npm start
+```
+
+This will:
+- Build the React app to `/dist`
+- Start the Express server on port 3001
+- Serve the frontend and API routes from the same server
 
 ## How It Works
 
@@ -93,9 +113,11 @@ thetanuts-demo/
 ## Available Scripts
 
 - `npm run dev` - Start the frontend development server
-- `npm run proxy` - Start the CORS proxy server
+- `npm run proxy` - Start the CORS proxy server (for development)
 - `npm run build` - Build for production
-- `npm run preview` - Preview production build
+- `npm start` - Start production server
+- `npm run serve` - Build and start production server
+- `npm run preview` - Preview production build with Vite
 
 ## Features Breakdown
 
@@ -183,14 +205,54 @@ The proxy server should handle this. If you still see CORS errors, restart the p
 ### Port already in use?
 Change the port in `vite.config.ts` (frontend) or `proxy-server.js` (backend).
 
+## Deployment
+
+### Deploy to Vercel
+
+1. Install Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
+
+2. Set environment variables in Vercel project settings:
+   - `THETANUTS_API_URL` - Your Thetanuts API endpoint
+   - `ARBITRUM_RPC_URL` - Arbitrum RPC endpoint (optional)
+
+3. Deploy:
+   ```bash
+   vercel deploy --prod
+   ```
+
+The `vercel.json` configuration will automatically:
+- Build the frontend to `/dist`
+- Route all `/api/*` requests to `server.js`
+- Serve the frontend from `server.js`
+
+## Environment Variables
+
+Create a `.env` file in the root directory (see `.env.example`):
+
+```env
+THETANUTS_API_URL=https://round-snowflake-9c31.avutheking.workers.dev/
+ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
+PORT=3001
+```
+
+## Completed Features
+
+- ✅ Wallet connection (MetaMask)
+- ✅ Buy/sell functionality with on-chain execution
+- ✅ Portfolio tracking with localStorage
+- ✅ Bet sizing options
+- ✅ Transaction history with BaseScan links
+
 ## Future Enhancements
 
-- [ ] Add wallet connection for trading
-- [ ] Implement buy/sell functionality
 - [ ] Add real-time price updates via WebSocket
 - [ ] Show Greeks (Delta, Gamma, Theta, Vega)
 - [ ] Add profit/loss calculator
 - [ ] Display historical order data
+- [ ] Exercise/settle positions UI
 
 ## License
 

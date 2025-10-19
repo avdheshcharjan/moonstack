@@ -1,18 +1,25 @@
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+
+// API endpoints configuration
+const THETANUTS_API_URL = process.env.THETANUTS_API_URL || 'https://round-snowflake-9c31.avutheking.workers.dev/';
 
 // Enable CORS for all origins
 app.use(cors());
+app.use(express.json());
 
 // Proxy endpoint
 app.get('/api/orders', async (req, res) => {
   try {
     console.log('Fetching data from Thetanuts API...');
-    const response = await fetch('https://round-snowflake-9c31.devops-118.workers.dev/');
+    const response = await fetch(THETANUTS_API_URL);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

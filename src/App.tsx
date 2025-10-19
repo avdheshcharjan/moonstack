@@ -91,14 +91,14 @@ const ThetanutsTradingDemo = () => {
     setLoading(true);
     setFetchStatus('Fetching live data...');
 
-    // Use local CORS proxy server
-    const localProxyUrl = 'http://localhost:3001/api/orders';
+    // Use Vercel serverless function endpoint
+    const ordersUrl = '/api/orders';
 
     try {
-      setFetchStatus('Connecting to local proxy...');
-      console.log('Fetching from local proxy:', localProxyUrl);
+      setFetchStatus('Fetching orders...');
+      console.log('Fetching from serverless API:', ordersUrl);
 
-      const response = await fetch(localProxyUrl, {
+      const response = await fetch(ordersUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -116,14 +116,15 @@ const ThetanutsTradingDemo = () => {
         setMarketData(data.data.market_data || {});
         setFetchStatus(`✅ Live data loaded! (${data.data.orders?.length || 0} orders)`);
         setLoading(false);
-        console.log('✅ Successfully fetched real data via local proxy!');
+        console.log('✅ Successfully fetched real data!');
         return; // Success!
       } else if (data.error) {
-        throw new Error(data.message || 'Proxy error');
+        throw new Error(data.message || 'API error');
       }
-    } catch (error) {
-      console.error('Failed to fetch via local proxy:', error.message);
-      setFetchStatus(`❌ Failed to load data: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to fetch orders:', errorMessage);
+      setFetchStatus(`❌ Failed to load data: ${errorMessage}`);
       setOrders([]);
       setMarketData(null);
       setLoading(false);
@@ -866,11 +867,11 @@ const ThetanutsTradingDemo = () => {
         <h3 className="font-bold text-blue-900 mb-3">📚 How to Use This Demo</h3>
         {orders.length > 0 ? (
           <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded text-sm text-green-800">
-            <strong>✅ Live Data:</strong> Successfully fetched real orders from Thetanuts API via local proxy! These are actual live orders you can trade on Base.
+            <strong>✅ Live Data:</strong> Successfully fetched real orders from Thetanuts API! These are actual live orders you can trade on Base.
           </div>
         ) : (
           <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-            <strong>⚠️ No Data:</strong> Make sure the proxy server is running with <code className="bg-yellow-200 px-1 rounded">npm run proxy</code>
+            <strong>⚠️ No Data:</strong> Unable to fetch orders from the API
           </div>
         )}
         <div className="space-y-2 text-sm text-blue-800">
