@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 const API_URL = process.env.API_URL || 'https://round-snowflake-9c31.devops-118.workers.dev/';
 
 export async function GET() {
