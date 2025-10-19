@@ -215,7 +215,7 @@ Change the port in `vite.config.ts` (frontend) or `proxy-server.js` (backend).
    ```
 
 2. Set environment variables in Vercel project settings:
-   - `THETANUTS_API_URL` - Your Thetanuts API endpoint
+   - `API_URL` - Your Thetanuts API endpoint
    - `ARBITRUM_RPC_URL` - Arbitrum RPC endpoint (optional)
 
 3. Deploy:
@@ -233,9 +233,8 @@ The `vercel.json` configuration will automatically:
 Create a `.env` file in the root directory (see `.env.example`):
 
 ```env
-THETANUTS_API_URL=https://round-snowflake-9c31.avutheking.workers.dev/
-ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
-PORT=3001
+API_URL=[TNUTS]
+PORT=3000
 ```
 
 ## Completed Features
