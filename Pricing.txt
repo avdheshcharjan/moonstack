@@ -1,0 +1,58 @@
+PRICING BREAKDOWN
+
+CALL SPREADS (98k/100k - pays if BTC > 100k)
+----------------------------------------------------------------------
+
+  [Monthly 100k Up]
+  Expiry: 2025-10-31 08:00 UTC (252.1h)
+  BTC spot: $110,847.67
+  Deribit marks: 0.1210 BTC - 0.1043 BTC = 0.0167 BTC
+  Strikes: $98,000 / $100,000
+  Price: $1906.13 (max payout: $2,000)
+  Implied probability: 95.3% chance BTC > $100,000
+  Type: binaries
+  Max collateral: $5,000.00
+
+  [Quarterly 100k Up]
+  Expiry: 2025-12-26 08:00 UTC (1596.1h)
+  BTC spot: $110,847.67
+  Deribit marks: 0.1575 BTC - 0.1444 BTC = 0.0131 BTC
+  Strikes: $98,000 / $100,000
+  Price: $1497.23 (max payout: $2,000)
+  Implied probability: 74.9% chance BTC > $100,000
+  Type: binaries
+  Max collateral: $5,000.00
+
+======================================================================
+PUT SPREADS (100k/102k - pays if BTC < 100k)
+----------------------------------------------------------------------
+
+  [Weekly 100k Down]
+  Expiry: 2025-10-24 08:00 UTC (84.1h)
+  BTC spot: $110,847.67
+  Deribit marks: 0.0019 BTC - 0.0014 BTC = 0.0005 BTC
+  Strikes: $100,000 / $102,000
+  Price: $60.02 (max payout: $2,000)
+  Implied probability: 3.0% chance BTC < $100,000
+  Type: binaries
+  Max collateral: $5,000.00
+
+  [Monthly 100k Down]
+  Expiry: 2025-10-31 08:00 UTC (252.1h)
+  BTC spot: $110,847.67
+  Deribit marks: 0.0070 BTC - 0.0053 BTC = 0.0017 BTC
+  Strikes: $100,000 / $102,000
+  Price: $191.16 (max payout: $2,000)
+  Implied probability: 9.6% chance BTC < $100,000
+  Type: binaries
+  Max collateral: $5,000.00
+
+  [Quarterly 100k Down]
+  Expiry: 2025-12-26 08:00 UTC (1596.1h)
+  BTC spot: $110,847.67
+  Deribit marks: 0.0411 BTC - 0.0358 BTC = 0.0053 BTC
+  Strikes: $100,000 / $102,000
+  Price: $601.10 (max payout: $2,000)
+  Implied probability: 30.1% chance BTC < $100,000
+  Type: binaries
+  Max collateral: $5,000.00

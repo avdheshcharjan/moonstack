@@ -1,0 +1,83 @@
+/**
+ * OptionBook contract address on Base (v2 - r10)
+ * @see https://basescan.org/address/0xd58b814C7Ce700f251722b5555e25aE0fa8169A1
+ */
+export const OPTION_BOOK_ADDRESS = '0xd58b814C7Ce700f251722b5555e25aE0fa8169A1';
+
+/**
+ * USDC contract address on Base
+ * @see https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+ */
+export const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+/**
+ * WETH contract address on Base
+ * @see https://basescan.org/address/0x4200000000000000000000000000000000000006
+ */
+export const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
+
+/**
+ * Unique referrer address for tracking positions
+ */
+export const REFERRER_ADDRESS = '0x0000000000000000000000000000000000000001';
+
+/**
+ * BTC price feed address on Base
+ * @see https://basescan.org/address/0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F
+ */
+export const BTC_FEED = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
+
+/**
+ * ETH price feed address on Base
+ * @see https://basescan.org/address/0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
+ */
+export const ETH_FEED = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
+
+/**
+ * Base network chain ID
+ */
+export const BASE_CHAIN_ID = 8453;
+
+/**
+ * OptionBook ABI (v2) - uses fillOrder method
+ */
+export const OPTION_BOOK_ABI = [
+  {
+    "inputs": [
+      {
+        "components": [
+          {"internalType": "address", "name": "maker", "type": "address"},
+          {"internalType": "uint256", "name": "orderExpiryTimestamp", "type": "uint256"},
+          {"internalType": "address", "name": "collateral", "type": "address"},
+          {"internalType": "bool", "name": "isCall", "type": "bool"},
+          {"internalType": "address", "name": "priceFeed", "type": "address"},
+          {"internalType": "address", "name": "implementation", "type": "address"},
+          {"internalType": "bool", "name": "isLong", "type": "bool"},
+          {"internalType": "uint256", "name": "maxCollateralUsable", "type": "uint256"},
+          {"internalType": "uint256[]", "name": "strikes", "type": "uint256[]"},
+          {"internalType": "uint256", "name": "expiry", "type": "uint256"},
+          {"internalType": "uint256", "name": "price", "type": "uint256"},
+          {"internalType": "uint256", "name": "numContracts", "type": "uint256"},
+          {"internalType": "bytes", "name": "extraOptionData", "type": "bytes"}
+        ],
+        "internalType": "struct OptionBook.Order",
+        "name": "order",
+        "type": "tuple"
+      },
+      {"internalType": "bytes", "name": "signature", "type": "bytes"},
+      {"internalType": "address", "name": "referrer", "type": "address"}
+    ],
+    "name": "fillOrder",
+    "outputs": [{"internalType": "address", "name": "optionAddress", "type": "address"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const;
+
+/**
+ * ERC20 ABI - approve and allowance functions
+ */
+export const ERC20_ABI = [
+  'function approve(address spender, uint256 amount) external returns (bool)',
+  'function allowance(address owner, address spender) external view returns (uint256)',
+] as const;

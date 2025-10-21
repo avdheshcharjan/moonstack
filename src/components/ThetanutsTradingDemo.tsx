@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserProvider, Contract, parseUnits } from 'ethers';
+import { useWallet } from '@/src/hooks/useWallet';
+import SwipeView from '@/src/components/market/SwipeView';
+import BetSettings from '@/src/components/settings/BetSettings';
+import MyBets from '@/src/components/bets/MyBets';
+import { UserPosition } from '@/src/types/orders';
+import RollingNumber from '@/src/components/shared/RollingNumber';
 
 // OptionBook contract address on Base (v2 - r10)
 const OPTION_BOOK_ADDRESS = '0xd58b814C7Ce700f251722b5555e25aE0fa8169A1';
@@ -62,16 +68,15 @@ const ThetanutsTradingDemo = () => {
   const [loading, setLoading] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState('all');
   const [selectedAsset, setSelectedAsset] = useState('all');
+  const [showBinaries, setShowBinaries] = useState(true);
   const [marketData, setMarketData] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [fetchStatus, setFetchStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
 
-  // Wallet state
-  const [walletAddress, setWalletAddress] = useState(null);
-  const [chainId, setChainId] = useState(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  // Wallet state - using hook
+  const { walletAddress, chainId, isConnecting, connectWallet, disconnectWallet } = useWallet();
 
   // Toast state
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -80,8 +85,11 @@ const ThetanutsTradingDemo = () => {
   // Page navigation
   const [currentView, setCurrentView] = useState<'market' | 'profile'>('market');
 
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
+
   // User positions (stored in localStorage)
-  const [userPositions, setUserPositions] = useState<any[]>([]);
+  const [userPositions, setUserPositions] = useState<UserPosition[]>([]);
 
   // Bet size selection
   const [selectedBetSize, setSelectedBetSize] = useState(1);
@@ -131,66 +139,6 @@ const ThetanutsTradingDemo = () => {
     }
   };
 
-  // Wallet connection functions
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert('MetaMask is not installed. Please install it to continue.');
-      return;
-    }
-
-    try {
-      setIsConnecting(true);
-      const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-      const network = await provider.getNetwork();
-
-      setWalletAddress(accounts[0]);
-      setChainId(Number(network.chainId));
-
-      // Check if on Base network (8453)
-      if (Number(network.chainId) !== 8453) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2105' }], // 8453 in hex
-          });
-          setChainId(8453);
-        } catch (switchError: any) {
-          // This error code indicates that the chain has not been added to MetaMask
-          if (switchError.code === 4902) {
-            try {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x2105',
-                  chainName: 'Base',
-                  nativeCurrency: {
-                    name: 'Ethereum',
-                    symbol: 'ETH',
-                    decimals: 18
-                  },
-                  rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://basescan.org']
-                }]
-              });
-              setChainId(8453);
-            } catch (addError) {
-              console.error('Error adding Base network:', addError);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const disconnectWallet = () => {
-    setWalletAddress(null);
-    setChainId(null);
-  };
 
   // Toast functions
   const addToast = (message: string, type: 'success' | 'error' | 'info', txHash?: string) => {
@@ -292,14 +240,16 @@ const ThetanutsTradingDemo = () => {
       // Refresh orders after successful purchase
       setTimeout(() => fetchOrders(), 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error buying option:', error);
 
       let errorMessage = 'Failed to buy option';
-      if (error.code === 'ACTION_REJECTED') {
-        errorMessage = 'Transaction rejected by user';
-      } else if (error.message) {
-        errorMessage = error.message.slice(0, 100);
+      if (error instanceof Error) {
+        if ('code' in error && error.code === 'ACTION_REJECTED') {
+          errorMessage = 'Transaction rejected by user';
+        } else if (error.message) {
+          errorMessage = error.message.slice(0, 100);
+        }
       }
 
       addToast(errorMessage, 'error');
@@ -318,9 +268,9 @@ const ThetanutsTradingDemo = () => {
     if (walletAddress) {
       const stored = localStorage.getItem(`positions_${walletAddress}`);
       if (stored) {
-        const positions = JSON.parse(stored);
+        const positions = JSON.parse(stored) as UserPosition[];
         // Reconstruct Date objects
-        const reconstructed = positions.map((pos: any) => ({
+        const reconstructed = positions.map((pos) => ({
           ...pos,
           order: {
             ...pos.order,
@@ -332,46 +282,28 @@ const ThetanutsTradingDemo = () => {
     }
   }, [walletAddress]);
 
-  // Listen for account and network changes
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length === 0) {
-        disconnectWallet();
-      } else {
-        setWalletAddress(accounts[0]);
-      }
-    };
-
-    const handleChainChanged = (chainIdHex: string) => {
-      setChainId(parseInt(chainIdHex, 16));
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
-
-    return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', handleChainChanged);
-    };
-  }, []);
-
   // Filter orders
   useEffect(() => {
     let filtered = orders;
 
-    // Only show multi-strike strategies (spreads, butterflies, condors)
-    // Filter out vanilla options (single strike)
-    filtered = filtered.filter(o => o.order.strikes.length >= 2);
+    // Split into binaries and regular options
+    const binaries = filtered.filter(o => o.order.type === 'binaries');
+    const regularOptions = filtered.filter(o => o.order.type !== 'binaries' && o.order.strikes.length >= 2);
 
-    // Filter by strategy (strike count)
-    if (selectedStrategy !== 'all') {
-      const strikeCount = parseInt(selectedStrategy);
-      filtered = filtered.filter(o => o.order.strikes.length === strikeCount);
+    // Start with appropriate set based on showBinaries
+    if (showBinaries) {
+      filtered = binaries;
+    } else {
+      filtered = regularOptions;
+
+      // Filter by strategy (strike count) - only for regular options
+      if (selectedStrategy !== 'all') {
+        const strikeCount = parseInt(selectedStrategy);
+        filtered = filtered.filter(o => o.order.strikes.length === strikeCount);
+      }
     }
 
-    // Filter by asset
+    // Filter by asset (applies to both binaries and regular options)
     if (selectedAsset !== 'all') {
       const BTC_FEED = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
       const ETH_FEED = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
@@ -381,27 +313,43 @@ const ThetanutsTradingDemo = () => {
       );
     }
 
-    // Only USDC collateral
+    // Only USDC collateral (or ETH for calls)
     const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-    filtered = filtered.filter(o =>
-      o.order.collateral.toLowerCase() === USDC.toLowerCase()
-    );
+    const WETH = '0x4200000000000000000000000000000000000006';
+    filtered = filtered.filter(o => {
+      const collateral = o.order.collateral.toLowerCase();
+      return collateral === USDC.toLowerCase() || collateral === WETH.toLowerCase();
+    });
 
     setFilteredOrders(filtered);
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [orders, selectedStrategy, selectedAsset]);
+  }, [orders, selectedStrategy, selectedAsset, showBinaries]);
 
   // Parse order helper
   const parseOrder = (orderData) => {
     const order = orderData.order;
     const strikes = order.strikes.map(s => Number(s) / 1e8);
     const price = Number(order.price) / 1e8;
-    const maxSize = Number(order.maxCollateralUsable) / 1e6;
+
+    // Handle collateral decimals - USDC is 6, WETH is 18
+    const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    const isUSDC = order.collateral.toLowerCase() === USDC.toLowerCase();
+    const decimals = isUSDC ? 1e6 : 1e18;
+    const maxSize = Number(order.maxCollateralUsable) / decimals;
+
+    // Check if this is a binary option
+    const isBinary = order.type === 'binaries';
 
     let strategyType;
-    if (strikes.length === 2) strategyType = 'SPREAD';
-    else if (strikes.length === 3) strategyType = 'BUTTERFLY';
-    else if (strikes.length === 4) strategyType = 'CONDOR';
+    if (isBinary) {
+      strategyType = 'BINARY';
+    } else if (strikes.length === 2) {
+      strategyType = 'SPREAD';
+    } else if (strikes.length === 3) {
+      strategyType = 'BUTTERFLY';
+    } else if (strikes.length === 4) {
+      strategyType = 'CONDOR';
+    }
 
     const BTC_FEED = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
     const underlying = order.priceFeed.toLowerCase() === BTC_FEED.toLowerCase() ? 'BTC' : 'ETH';
@@ -415,7 +363,9 @@ const ThetanutsTradingDemo = () => {
       expiry: new Date(order.expiry * 1000),
       pricePerContract: price,
       maxSize,
-      rawOrder: orderData
+      rawOrder: orderData,
+      isBinary,
+      binaryName: isBinary ? order.name : undefined
     };
   };
 
@@ -515,11 +465,31 @@ const ThetanutsTradingDemo = () => {
           <div className="mt-4 flex gap-6">
             <div className="bg-white/10 rounded px-4 py-2">
               <div className="text-xs text-blue-200">BTC Price</div>
-              <div className="text-xl font-bold">${marketData.BTC?.toLocaleString()}</div>
+              <div className="text-xl font-bold">
+                <RollingNumber
+                  value={marketData.BTC || 0}
+                  decimals={2}
+                  prefix="$"
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
+              </div>
             </div>
             <div className="bg-white/10 rounded px-4 py-2">
               <div className="text-xs text-blue-200">ETH Price</div>
-              <div className="text-xl font-bold">${marketData.ETH?.toLocaleString()}</div>
+              <div className="text-xl font-bold">
+                <RollingNumber
+                  value={marketData.ETH || 0}
+                  decimals={2}
+                  prefix="$"
+                  formatOptions={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                />
+              </div>
             </div>
             <div className="bg-white/10 rounded px-4 py-2">
               <div className="text-xs text-blue-200">Total Orders</div>
@@ -532,25 +502,89 @@ const ThetanutsTradingDemo = () => {
       {/* Market View */}
       {currentView === 'market' && (
         <>
+      {/* View Mode Toggle */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`flex-1 py-2 px-4 rounded font-semibold transition ${
+              viewMode === 'grid'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Grid View
+          </button>
+          <button
+            onClick={() => setViewMode('swipe')}
+            className={`flex-1 py-2 px-4 rounded font-semibold transition ${
+              viewMode === 'swipe'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Swipe View
+          </button>
+        </div>
+      </div>
+
+      {/* Grid View */}
+      {viewMode === 'grid' && (
+        <>
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">Filter Orders</h2>
 
+        {/* Product Type Toggle */}
+        <div className="mb-4">
+          <label className="block text-sm font-semibold text-gray-600 mb-2">
+            Product Type
+          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowBinaries(false)}
+              className={`flex-1 py-2 px-4 rounded font-semibold transition ${
+                !showBinaries
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Options Strategies
+            </button>
+            <button
+              onClick={() => setShowBinaries(true)}
+              className={`flex-1 py-2 px-4 rounded font-semibold transition ${
+                showBinaries
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              🎯 Binary Options
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-600 mb-2">
-              Strategy Type
+              {showBinaries ? 'Filter' : 'Strategy Type'}
             </label>
-            <select
-              value={selectedStrategy}
-              onChange={(e) => setSelectedStrategy(e.target.value)}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Strategies</option>
-              <option value="2">Spreads (2 strikes)</option>
-              <option value="3">Butterflies (3 strikes)</option>
-              <option value="4">Condors (4 strikes)</option>
-            </select>
+            {showBinaries ? (
+              <div className="p-2 border rounded bg-gray-50 text-gray-500 text-sm">
+                Showing all binary options
+              </div>
+            ) : (
+              <select
+                value={selectedStrategy}
+                onChange={(e) => setSelectedStrategy(e.target.value)}
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Strategies</option>
+                <option value="2">Spreads (2 strikes)</option>
+                <option value="3">Butterflies (3 strikes)</option>
+                <option value="4">Condors (4 strikes)</option>
+              </select>
+            )}
           </div>
 
           <div>
@@ -580,7 +614,7 @@ const ThetanutsTradingDemo = () => {
         </div>
 
         <div className="mt-4 text-sm text-gray-600">
-          Showing <strong>{filteredOrders.length}</strong> orders total ({ordersPerPage} per page)
+          Showing <strong>{filteredOrders.length}</strong> {showBinaries ? 'binary options' : 'option strategies'} ({ordersPerPage} per page)
         </div>
       </div>
 
@@ -591,26 +625,42 @@ const ThetanutsTradingDemo = () => {
           const maxPayout = calculateMaxPayout(parsed.strikes);
 
           const strategyColor = {
+            BINARY: 'gradient-to-r from-purple-600 to-pink-600',
             SPREAD: 'blue',
             BUTTERFLY: 'green',
             CONDOR: 'purple'
           }[parsed.strategyType];
 
+          const isBinary = parsed.isBinary;
+
           return (
             <div
               key={index}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition p-4 cursor-pointer border-2 border-transparent hover:border-blue-300"
+              className={`bg-white rounded-lg shadow hover:shadow-lg transition p-4 cursor-pointer border-2 ${
+                isBinary ? 'border-purple-200 hover:border-purple-400' : 'border-transparent hover:border-blue-300'
+              }`}
               onClick={() => setSelectedOrder(parsed)}
             >
               {/* Header */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <div className={`inline-block px-2 py-1 rounded text-xs font-bold text-white bg-${strategyColor}-600 mb-1`}>
-                    {parsed.strategyType}
-                  </div>
+                  {isBinary ? (
+                    <div className="inline-block px-2 py-1 rounded text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 mb-1">
+                      BINARY OPTION
+                    </div>
+                  ) : (
+                    <div className={`inline-block px-2 py-1 rounded text-xs font-bold text-white bg-${strategyColor}-600 mb-1`}>
+                      {parsed.strategyType}
+                    </div>
+                  )}
                   <div className="text-lg font-bold">
-                    {parsed.underlying} {parsed.isCall ? 'CALL' : 'PUT'}
+                    {isBinary ? parsed.binaryName : `${parsed.underlying} ${parsed.isCall ? 'CALL' : 'PUT'}`}
                   </div>
+                  {isBinary && (
+                    <div className="text-sm text-gray-600">
+                      {parsed.underlying} • {parsed.isCall ? 'Up' : 'Down'}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-gray-500">Premium</div>
@@ -622,7 +672,9 @@ const ThetanutsTradingDemo = () => {
 
               {/* Strikes */}
               <div className="mb-3">
-                <div className="text-xs font-semibold text-gray-600 mb-1">STRIKES</div>
+                <div className="text-xs font-semibold text-gray-600 mb-1">
+                  {isBinary ? 'PRICE RANGE' : 'STRIKES'}
+                </div>
                 <div className="flex gap-1 flex-wrap">
                   {parsed.strikes.map((strike, i) => (
                     <div key={i} className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
@@ -635,7 +687,7 @@ const ThetanutsTradingDemo = () => {
               {/* Details */}
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <div className="text-gray-500">Width</div>
+                  <div className="text-gray-500">{isBinary ? 'Range' : 'Width'}</div>
                   <div className="font-bold">${parsed.strikeWidth.toLocaleString()}</div>
                 </div>
                 <div>
@@ -650,7 +702,7 @@ const ThetanutsTradingDemo = () => {
 
               {/* Max Size */}
               <div className="mt-3 pt-3 border-t text-xs text-gray-600">
-                Max size: <strong>${parsed.maxSize.toFixed(2)} USDC</strong>
+                Max size: <strong>${parsed.maxSize.toFixed(2)}{isBinary && parsed.rawOrder.order.collateral.toLowerCase() === '0x4200000000000000000000000000000000000006' ? ' ETH' : ' USDC'}</strong>
               </div>
             </div>
           );
@@ -706,12 +758,28 @@ const ThetanutsTradingDemo = () => {
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-1">
-                    {selectedOrder.strategyType} - {selectedOrder.underlying}
-                  </h2>
-                  <div className="text-gray-600">
-                    {selectedOrder.isCall ? 'CALL' : 'PUT'} Option
-                  </div>
+                  {selectedOrder.isBinary ? (
+                    <>
+                      <div className="inline-block px-3 py-1 rounded text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+                        BINARY OPTION
+                      </div>
+                      <h2 className="text-2xl font-bold mb-1">
+                        {selectedOrder.binaryName}
+                      </h2>
+                      <div className="text-gray-600">
+                        {selectedOrder.underlying} • {selectedOrder.isCall ? 'Up Bet' : 'Down Bet'}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="text-2xl font-bold mb-1">
+                        {selectedOrder.strategyType} - {selectedOrder.underlying}
+                      </h2>
+                      <div className="text-gray-600">
+                        {selectedOrder.isCall ? 'CALL' : 'PUT'} Option
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
@@ -723,22 +791,47 @@ const ThetanutsTradingDemo = () => {
 
               {/* Strikes Visualization */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="text-sm font-semibold text-gray-600 mb-3">STRIKE PRICES</div>
-                <div className="flex justify-between items-center">
-                  {selectedOrder.strikes.map((strike, i) => (
-                    <React.Fragment key={i}>
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mb-2">
-                          K{i + 1}
-                        </div>
-                        <div className="font-mono text-sm">${strike.toLocaleString()}</div>
-                      </div>
-                      {i < selectedOrder.strikes.length - 1 && (
-                        <div className="flex-1 border-t-2 border-dashed border-gray-300 mx-2" />
-                      )}
-                    </React.Fragment>
-                  ))}
+                <div className="text-sm font-semibold text-gray-600 mb-3">
+                  {selectedOrder.isBinary ? 'PRICE RANGE' : 'STRIKE PRICES'}
                 </div>
+                {selectedOrder.isBinary ? (
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-lg flex items-center justify-center font-bold mb-2">
+                        Min
+                      </div>
+                      <div className="font-mono text-lg font-bold">${selectedOrder.strikes[0].toLocaleString()}</div>
+                    </div>
+                    <div className="flex-1 max-w-xs">
+                      <div className="h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full" />
+                      <div className="text-center text-sm text-gray-600 mt-2">
+                        {selectedOrder.isCall ? 'Price must be above range' : 'Price must be below range'}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-lg flex items-center justify-center font-bold mb-2">
+                        Max
+                      </div>
+                      <div className="font-mono text-lg font-bold">${selectedOrder.strikes[1].toLocaleString()}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    {selectedOrder.strikes.map((strike: number, i: number) => (
+                      <React.Fragment key={i}>
+                        <div className="text-center">
+                          <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mb-2">
+                            K{i + 1}
+                          </div>
+                          <div className="font-mono text-sm">${strike.toLocaleString()}</div>
+                        </div>
+                        {i < selectedOrder.strikes.length - 1 && (
+                          <div className="flex-1 border-t-2 border-dashed border-gray-300 mx-2" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Details Grid */}
@@ -907,152 +1000,35 @@ const ThetanutsTradingDemo = () => {
         </>
       )}
 
-      {/* Profile View */}
-      {currentView === 'profile' && (
-        <div className="space-y-6">
+      {/* Swipe View */}
+      {viewMode === 'swipe' && (
+        <>
           {!walletAddress ? (
             <div className="bg-white rounded-lg shadow p-12 text-center">
               <div className="text-4xl mb-4">🔐</div>
               <div className="text-xl font-bold text-gray-600 mb-2">Connect Your Wallet</div>
-              <div className="text-gray-500">Connect your wallet to view your positions</div>
-            </div>
-          ) : userPositions.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <div className="text-4xl mb-4">📊</div>
-              <div className="text-xl font-bold text-gray-600 mb-2">No Positions Yet</div>
-              <div className="text-gray-500 mb-4">You haven&apos;t bought any options yet</div>
+              <div className="text-gray-500 mb-4">Please connect your wallet to access Swipe View</div>
               <button
-                onClick={() => setCurrentView('market')}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                onClick={connectWallet}
+                disabled={isConnecting}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50"
               >
-                Browse Market
+                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
               </button>
             </div>
           ) : (
-            <>
-              {/* Portfolio Stats */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-bold mb-4">Portfolio Summary</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-sm font-semibold text-blue-700">Total Positions</div>
-                    <div className="text-2xl font-bold text-blue-600">{userPositions.length}</div>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-sm font-semibold text-green-700">Active</div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {userPositions.filter(p => p.status === 'active').length}
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-sm font-semibold text-purple-700">Total Invested</div>
-                    <div className="text-2xl font-bold text-purple-600">
-                      ${userPositions.reduce((sum, p) => sum + p.collateralUsed, 0).toFixed(2)}
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-sm font-semibold text-orange-700">Wallet</div>
-                    <div className="text-sm font-mono text-orange-600">
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Positions List */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-bold mb-4">My Positions</h2>
-                <div className="space-y-4">
-                  {userPositions.slice().reverse().map((position, index) => {
-                    const order = position.order;
-                    const strategyColor = {
-                      SPREAD: 'blue',
-                      BUTTERFLY: 'green',
-                      CONDOR: 'purple'
-                    }[order.strategyType];
-
-                    const daysToExpiry = Math.ceil((order.expiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                    const isExpired = daysToExpiry < 0;
-
-                    return (
-                      <div
-                        key={index}
-                        className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <div className={`inline-block px-2 py-1 rounded text-xs font-bold text-white bg-${strategyColor}-600 mb-2`}>
-                              {order.strategyType}
-                            </div>
-                            <div className="text-lg font-bold">
-                              {order.underlying} {order.isCall ? 'CALL' : 'PUT'}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Purchased {new Date(position.timestamp).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              isExpired
-                                ? 'bg-gray-200 text-gray-600'
-                                : daysToExpiry <= 7
-                                ? 'bg-yellow-200 text-yellow-800'
-                                : 'bg-green-200 text-green-800'
-                            }`}>
-                              {isExpired ? 'Expired' : `${daysToExpiry}d left`}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                          <div>
-                            <div className="text-xs text-gray-500">Invested</div>
-                            <div className="font-bold">${position.collateralUsed.toFixed(2)}</div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-500">Premium Paid</div>
-                            <div className="font-bold">${order.pricePerContract.toFixed(2)}</div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-500">Max Payout</div>
-                            <div className="font-bold text-green-600">
-                              ${calculateMaxPayout(order.strikes).toLocaleString()}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-500">Expiry</div>
-                            <div className="font-bold">{order.expiry.toLocaleDateString()}</div>
-                          </div>
-                        </div>
-
-                        <div className="mb-3">
-                          <div className="text-xs font-semibold text-gray-600 mb-1">STRIKES</div>
-                          <div className="flex gap-1 flex-wrap">
-                            {order.strikes.map((strike, i) => (
-                              <div key={i} className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                                ${strike.toLocaleString()}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="pt-3 border-t">
-                          <a
-                            href={`https://basescan.org/tx/${position.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            View Transaction →
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
+            <SwipeView walletAddress={walletAddress} />
           )}
+        </>
+      )}
+        </>
+      )}
+
+      {/* Profile View */}
+      {currentView === 'profile' && (
+        <div className="space-y-6">
+          <BetSettings walletAddress={walletAddress} />
+          <MyBets walletAddress={walletAddress} marketData={marketData} />
         </div>
       )}
 
