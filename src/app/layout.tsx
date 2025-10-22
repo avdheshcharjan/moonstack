@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   other: {
     'fc:miniapp': JSON.stringify({
-      version: 'next',
+      version: 'v1',
       imageUrl: `${process.env.NEXT_PUBLIC_URL}/logo.png`,
       button: {
         title: 'Launch Moonstack',
@@ -22,15 +22,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  useEffect(() => {
-    sdk.actions.ready();
-  }, []);
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>{children}</body>
