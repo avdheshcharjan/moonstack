@@ -157,9 +157,9 @@ const CardStack: React.FC<CardStackProps> = ({
               />
             </svg>
           </div>
-          <h2 className="text-white text-3xl font-bold mb-4">All Done!</h2>
+          <h2 className="text-white text-3xl font-bold mb-4">Great Job!</h2>
           <p className="text-slate-400 text-lg mb-6">
-            You&apos;ve reviewed all predictions! Check My Bets to track your positions.
+            You&apos;ve exhausted all the cards. Come tomorrow :)
           </p>
           <button
             onClick={onRefresh}

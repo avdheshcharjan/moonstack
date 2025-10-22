@@ -38,7 +38,7 @@ export const useToastManager = () => {
 
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 10000);
+    }, 2000);
   };
 
   const removeToast = (id: number) => {

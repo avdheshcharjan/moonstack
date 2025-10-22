@@ -66,6 +66,9 @@ export function useBatchTrading(): UseBatchTradingReturn {
       throw new Error('No trades to execute');
     }
 
+    console.log(`[BATCH DEBUG] Executing batch with ${batchedTrades.length} trades`);
+    console.log('[BATCH DEBUG] Trades:', batchedTrades.map(t => ({ underlying: t.pair.underlying, action: t.action, amount: t.collateralAmount })));
+
     try {
       setIsExecuting(true);
 
@@ -75,10 +78,14 @@ export function useBatchTrading(): UseBatchTradingReturn {
       // Check if wallet supports EIP-5792 batching
       const hasWalletSendCalls = typeof (provider.provider as { request?: (args: { method: string }) => Promise<unknown> }).request === 'function';
 
+      console.log('[BATCH DEBUG] Wallet supports wallet_sendCalls:', hasWalletSendCalls);
+
       if (hasWalletSendCalls) {
+        console.log('[BATCH DEBUG] Using wallet_sendCalls for batched execution');
         // Use batched transaction via wallet_sendCalls
         return await executeBatchedCalls(batchedTrades, walletAddress, provider);
       } else {
+        console.log('[BATCH DEBUG] Falling back to sequential execution (NOT BATCHED!)');
         // Fallback: execute sequentially
         return await executeSequential(batchedTrades, walletAddress, signer);
       }
@@ -118,6 +125,8 @@ async function executeBatchedCalls(
   walletAddress: string,
   provider: BrowserProvider
 ): Promise<string> {
+  console.log(`[BATCH CALLS] Building batched transaction for ${trades.length} trades`);
+
   const usdcInterface = new Interface(ERC20_ABI);
   const optionBookInterface = new Interface(OPTION_BOOK_ABI);
 
@@ -125,6 +134,8 @@ async function executeBatchedCalls(
 
   // Calculate total collateral needed
   const totalRequired = trades.reduce((sum, trade) => sum + trade.requiredAmount, 0n);
+
+  console.log(`[BATCH CALLS] Total collateral required: ${totalRequired} (${Number(totalRequired) / 1e6} USDC)`);
 
   // Add single USDC approval for total amount
   const approveData = usdcInterface.encodeFunctionData('approve', [
@@ -137,6 +148,8 @@ async function executeBatchedCalls(
     value: '0x0',
     data: approveData
   });
+
+  console.log('[BATCH CALLS] Added approval call');
 
   // Add fillOrder calls for each trade
   for (const trade of trades) {
@@ -168,7 +181,11 @@ async function executeBatchedCalls(
       value: '0x0',
       data: fillOrderData
     });
+
+    console.log(`[BATCH CALLS] Added fillOrder call for ${trade.pair.underlying} (${trade.action})`);
   }
+
+  console.log(`[BATCH CALLS] Total calls in batch: ${calls.length} (1 approval + ${trades.length} fillOrders)`);
 
   // Execute batch via wallet_sendCalls
   const chainIdHex = `0x${BASE_CHAIN_ID.toString(16)}`;
@@ -190,6 +207,14 @@ async function executeBatchedCalls(
     throw new Error('Provider does not support wallet_sendCalls');
   }
 
+  console.log('[BATCH CALLS] Sending wallet_sendCalls request with params:', {
+    version: '1.0',
+    from: walletAddress,
+    chainId: chainIdHex,
+    atomicRequired: true,
+    callsCount: calls.length
+  });
+
   const result = await ethProvider.request({
     method: 'wallet_sendCalls',
     params: [{
@@ -200,6 +225,8 @@ async function executeBatchedCalls(
       calls
     }]
   });
+
+  console.log('[BATCH CALLS] wallet_sendCalls result:', result);
 
   return result;
 }
@@ -212,18 +239,26 @@ async function executeSequential(
   walletAddress: string,
   signer: ContractRunner
 ): Promise<string> {
+  console.log(`[SEQUENTIAL] Executing ${trades.length} trades sequentially (NOT BATCHED!)`);
+
   const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
   const optionBookContract = new Contract(OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, signer);
 
   // Calculate total collateral needed
   const totalRequired = trades.reduce((sum, trade) => sum + trade.requiredAmount, 0n);
 
+  console.log(`[SEQUENTIAL] Total collateral required: ${totalRequired} (${Number(totalRequired) / 1e6} USDC)`);
+
   // Check and approve if needed
   const allowance = await usdcContract.allowance(walletAddress, OPTION_BOOK_ADDRESS);
 
+  console.log(`[SEQUENTIAL] Current allowance: ${allowance}, required: ${totalRequired}`);
+
   if (allowance < totalRequired) {
+    console.log('[SEQUENTIAL] Requesting approval...');
     const approveTx = await usdcContract.approve(OPTION_BOOK_ADDRESS, totalRequired);
     await approveTx.wait();
+    console.log('[SEQUENTIAL] Approval confirmed');
   }
 
   // Execute each trade
@@ -246,6 +281,8 @@ async function executeSequential(
       extraOptionData: rawOrder.extraOptionData || "0x"
     };
 
+    console.log(`[SEQUENTIAL] Executing trade ${trades.indexOf(trade) + 1}/${trades.length}: ${trade.pair.underlying} (${trade.action})`);
+
     const tx = await optionBookContract.fillOrder(
       orderParams,
       trade.order.signature,
@@ -254,7 +291,11 @@ async function executeSequential(
 
     const receipt = await tx.wait();
     lastTxHash = receipt.hash;
+
+    console.log(`[SEQUENTIAL] Trade ${trades.indexOf(trade) + 1}/${trades.length} confirmed: ${receipt.hash}`);
   }
+
+  console.log(`[SEQUENTIAL] All ${trades.length} trades completed. Last tx: ${lastTxHash}`);
 
   return lastTxHash;
 }

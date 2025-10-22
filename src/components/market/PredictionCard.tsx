@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BinaryPair } from '@/src/types/prediction';
 import { MarketData } from '@/src/types/orders';
 import RollingNumber from '@/src/components/shared/RollingNumber';
 import TradingViewChart from '@/src/components/charts/TradingViewChart';
 import BearishBullishSpectrum from './BearishBullishSpectrum';
+import { generateShareUrl, copyToClipboard } from '@/src/utils/shareUtils';
 
 interface PredictionCardProps {
   pair: BinaryPair;
@@ -28,9 +29,20 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
   currentIndex,
   totalCards,
 }) => {
+  const [showCopied, setShowCopied] = useState(false);
   const currentPrice = marketData[pair.underlying] ?? 0;
   const threshold = pair.threshold;
   const isAboveThreshold = currentPrice > threshold;
+
+  const handleShare = async (): Promise<void> => {
+    const shareUrl = generateShareUrl(pair);
+    const success = await copyToClipboard(shareUrl);
+
+    if (success) {
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    }
+  };
 
   const timeRemaining = (() => {
     const now = new Date();
@@ -130,6 +142,43 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
                   </div>
                 </div>
               </div>
+
+              {/* Share Button */}
+              <button
+                onClick={handleShare}
+                className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors active:scale-95"
+                title="Share this prediction"
+              >
+                {showCopied ? (
+                  <svg
+                    className="w-5 h-5 text-green-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5 text-slate-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                    />
+                  </svg>
+                )}
+              </button>
             </div>
 
             {/* Question */}
@@ -154,7 +203,7 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
             <div className={`flex items-center gap-2 text-lg font-semibold ${
               priceChange >= 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              <span>{priceChange >= 0 ? '↓' : '↑'}</span>
+              <span>{priceChange >= 0 ? '↑' : '↓'}</span>
               <span>{priceChangeText} (1d)</span>
             </div>
           </div>
@@ -188,10 +237,10 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
               className="flex-1 relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
               <div className="flex flex-col items-center gap-1">
-                <span className="text-xl tracking-wider">DUMP!</span>
-                <span className="text-xs font-normal opacity-90">
+                <span className="text-xl tracking-wider">
                   ${downPayout.toFixed(2)} ({downMultiplier}x)
                 </span>
+                <span className="text-xs font-normal opacity-90">DUMP!</span>
               </div>
             </button>
 
@@ -209,10 +258,10 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
               className="flex-1 relative bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
               <div className="flex flex-col items-center gap-1">
-                <span className="text-xl tracking-wider">PUMP!</span>
-                <span className="text-xs font-normal opacity-90">
+                <span className="text-xl tracking-wider">
                   ${upPayout.toFixed(2)} ({upMultiplier}x)
                 </span>
+                <span className="text-xs font-normal opacity-90">PUMP!</span>
               </div>
             </button>
           </div>

@@ -20,9 +20,15 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { toasts, addToast, removeToast } = useToastManager();
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilterType>('all');
+  const [filterKey, setFilterKey] = useState(0);
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 5);
+
+  const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
+    setExpiryFilter(newFilter);
+    setFilterKey(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (walletAddress) {
@@ -210,10 +216,11 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
     <>
       <ExpiryFilter
         selectedFilter={expiryFilter}
-        onFilterChange={setExpiryFilter}
+        onFilterChange={handleFilterChange}
         counts={expiryCounts}
       />
       <CardStack
+        key={filterKey}
         pairs={pairs}
         onSwipe={handleSwipe}
         betSize={betSize}
