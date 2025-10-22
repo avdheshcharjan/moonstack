@@ -8,11 +8,11 @@ export const metadata: Metadata = {
       version: 'next',
       imageUrl: `${process.env.NEXT_PUBLIC_URL}/embed-image.png`,
       button: {
-        title: 'Launch Thetanuts Trading',
+        title: 'Launch Moonstack',
         action: {
           type: 'launch_miniapp',
-          name: 'Thetanuts Trading Demo',
-          url: process.env.NEXT_PUBLIC_URL || 'https://thetanuts-demo.vercel.app',
+          name: 'Moonstack',
+          url: process.env.NEXT_PUBLIC_URL || 'https://moonstack.fun',
           splashImageUrl: `${process.env.NEXT_PUBLIC_URL}/splash.png`,
           splashBackgroundColor: '#000d1d',
         },
