@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOrders } from '@/src/hooks/useOrders';
 import { useBatchTrading } from '@/src/hooks/useBatchTrading';
 import { pairBinaryOptions } from '@/src/utils/binaryPairing';
+import { useLocalStorage } from '@/src/hooks/useLocalStorage';
 import CardStack from './CardStack';
 import BatchConfirmationModal from './BatchConfirmationModal';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';
@@ -11,13 +12,14 @@ interface SwipeViewProps {
   walletAddress: string | null;
 }
 
-const DEFAULT_BET_SIZE = 0.1;
-
 const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { orders, marketData, loading, error, fetchOrders, filterBinaries } = useOrders();
   const { batchedTrades, addToBatch, clearBatch, executeBatch, isExecuting, totalCollateralNeeded } = useBatchTrading();
   const { toasts, addToast, removeToast } = useToastManager();
   const [showBatchModal, setShowBatchModal] = useState(false);
+
+  const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
+  const [betSize] = useLocalStorage<number>(storageKey, 5);
 
   useEffect(() => {
     if (walletAddress) {
@@ -43,12 +45,12 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
     }
 
     // Add trade to batch instead of executing immediately
-    addToBatch(pair, action, DEFAULT_BET_SIZE);
+    addToBatch(pair, action, betSize);
     addToast(
       `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to batch`,
       'info'
     );
-  }, [walletAddress, addToBatch, addToast]);
+  }, [walletAddress, addToBatch, addToast, betSize]);
 
   const handleBatchConfirm = useCallback(async () => {
     if (!walletAddress || batchedTrades.length === 0) {
@@ -199,7 +201,7 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       <CardStack
         pairs={pairs}
         onSwipe={handleSwipe}
-        betSize={DEFAULT_BET_SIZE}
+        betSize={betSize}
         marketData={marketData}
         onRefresh={fetchOrders}
         batchedCount={batchedTrades.length}

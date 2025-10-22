@@ -3,6 +3,7 @@ import { useWallet } from '@/src/hooks/useWallet';
 import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
 import MyBets from '@/src/components/bets/MyBets';
+import FAQ from '@/src/components/faq/FAQ';
 import TopBar from '@/src/components/layout/TopBar';
 import BottomNav from '@/src/components/layout/BottomNav';
 
@@ -13,7 +14,7 @@ const ThetanutsTradingDemo = () => {
   const { walletAddress, chainId, isConnecting, connectWallet, disconnectWallet } = useWallet();
 
   // Page navigation
-  const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'earn'>('play');
+  const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
 
   // Handle hydration
   useEffect(() => {
@@ -86,16 +87,8 @@ const ThetanutsTradingDemo = () => {
           </div>
         )}
 
-        {/* Earn View */}
-        {currentView === 'earn' && (
-          <div className="flex items-center justify-center min-h-[600px]">
-            <div className="text-center">
-              <div className="text-6xl mb-4">💰</div>
-              <div className="text-2xl font-bold text-white mb-2">Earn Rewards</div>
-              <div className="text-slate-400">Coming soon...</div>
-            </div>
-          </div>
-        )}
+        {/* FAQ View */}
+        {currentView === 'faq' && <FAQ />}
 
       </div>
 

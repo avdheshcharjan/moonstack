@@ -122,19 +122,6 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
         </button>
       </div>
 
-      {/* Filter Chips - Degen, Analyst, Expert */}
-      <div className="flex items-center gap-2">
-        <button className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition-colors">
-          Degen
-        </button>
-        <button className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition-colors">
-          Analyst
-        </button>
-        <button className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition-colors">
-          Expert
-        </button>
-      </div>
-
       {/* Positions List */}
       <div className="space-y-3">
         {displayPositions.length === 0 ? (

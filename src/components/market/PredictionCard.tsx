@@ -50,17 +50,19 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     }
   })();
 
-  // Calculate expected payout for UP (PUMP) bet
+  // Calculate expected total payout for UP (PUMP) bet (includes bet amount + profit)
   const upContracts = pair.callParsed.pricePerContract > 0
     ? betSize / pair.callParsed.pricePerContract
     : 0;
-  const upPayout = upContracts * pair.callParsed.strikeWidth;
+  const upProfit = upContracts * pair.callParsed.strikeWidth;
+  const upPayout = betSize + upProfit;
 
-  // Calculate expected payout for DOWN (DUMP) bet
+  // Calculate expected total payout for DOWN (DUMP) bet (includes bet amount + profit)
   const downContracts = pair.putParsed.pricePerContract > 0
     ? betSize / pair.putParsed.pricePerContract
     : 0;
-  const downPayout = downContracts * pair.putParsed.strikeWidth;
+  const downProfit = downContracts * pair.putParsed.strikeWidth;
+  const downPayout = betSize + downProfit;
 
   const impliedProb = Math.round(pair.impliedProbability.up);
   const bearishProb = 100 - impliedProb;

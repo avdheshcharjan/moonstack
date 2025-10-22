@@ -18,9 +18,9 @@ const BetSettings: React.FC<BetSettingsProps> = ({ walletAddress }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-bold mb-4">Default Bet Size</h2>
-      <p className="text-sm text-gray-600 mb-4">
+    <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
+      <h2 className="text-xl font-bold text-white mb-4">Default Bet Size</h2>
+      <p className="text-sm text-slate-400 mb-4">
         Set your default bet amount for predictions. This setting is saved per wallet.
       </p>
 
@@ -31,18 +31,18 @@ const BetSettings: React.FC<BetSettingsProps> = ({ walletAddress }) => {
             onClick={() => handleBetSizeChange(amount)}
             className={`p-4 rounded-lg border-2 transition ${
               betSize === amount
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-300 hover:border-blue-400'
+                ? 'border-purple-500 bg-purple-500/20'
+                : 'border-slate-600 hover:border-purple-400'
             }`}
           >
-            <div className="text-xl font-bold">${amount}</div>
-            <div className="text-xs text-gray-600 mt-1">USDC</div>
+            <div className="text-xl font-bold text-white">${amount}</div>
+            <div className="text-xs text-slate-400 mt-1">USDC</div>
           </button>
         ))}
       </div>
 
-      <div className="mt-4 text-sm text-gray-500">
-        Current selection: <span className="font-semibold text-gray-700">${betSize} USDC</span>
+      <div className="mt-4 text-sm text-slate-400">
+        Current selection: <span className="font-semibold text-white">${betSize} USDC</span>
       </div>
     </div>
   );
