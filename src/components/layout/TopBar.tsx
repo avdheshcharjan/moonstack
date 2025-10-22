@@ -18,7 +18,7 @@ const TopBar: React.FC<TopBarProps> = ({ onProfileClick }) => {
                 className="w-full h-full object-cover"
               />
             </div>
-            <span className="text-white text-2xl font-black tracking-tight">MOONSTACK</span>
+            <span className="text-white text-2xl font-black tracking-tight">moonstack</span>
           </div>
 
           {/* Profile */}

@@ -8,7 +8,7 @@ export async function GET() {
       signature: '',
     },
     baseBuilder: {
-      allowedAddresses: [''], // Add your Base Account address here
+      ownerAddress: '0x88eBc2a2BCD44947c78DD80407F6Dc5b00049C1E',
     },
     miniapp: {
       version: '1',
