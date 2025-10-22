@@ -26,7 +26,7 @@ export async function GET() {
         `${URL}/logo_hero.png`
       ],
       primaryCategory: 'finance',
-      tags: ['trading', 'defi', 'options', 'crypto', 'socials', 'predictions'],
+      tags: ['trading', 'defi', 'options', 'socials', 'predictions'],
       heroImageUrl: `${URL}/logo_hero.png`,
       tagline: 'Swipe To Predict',
       ogTitle: 'Moonstack',
