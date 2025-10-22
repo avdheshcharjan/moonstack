@@ -8,7 +8,7 @@ import FAQ from '@/src/components/faq/FAQ';
 import TopBar from '@/src/components/layout/TopBar';
 import BottomNav from '@/src/components/layout/BottomNav';
 
-const ThetanutsTradingDemo = () => {
+const Moonstack = () => {
   const [mounted, setMounted] = useState(false);
 
   // Wallet state - using hook

@@ -1,7 +1,7 @@
 'use client';
 
-import ThetanutsTradingDemo from '@/src/components/ThetanutsTradingDemo';
+import Moonstack from '@/src/components/Moonstack';
 
 export default function Home() {
-  return <ThetanutsTradingDemo />;
+  return <Moonstack />;
 }
