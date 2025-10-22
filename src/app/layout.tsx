@@ -1,11 +1,7 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import './globals.css';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Thetanuts Options Trading',
-  description: 'Decentralized Options on Base - Live Order Book',
-};
+import React from 'react';
+import './globals.css';
 
 export default function RootLayout({
   children,

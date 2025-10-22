@@ -2,17 +2,31 @@ import React from 'react';
 import { BinaryPair } from '@/src/types/prediction';
 import { MarketData } from '@/src/types/orders';
 import RollingNumber from '@/src/components/shared/RollingNumber';
+import TradingViewChart from '@/src/components/charts/TradingViewChart';
+import BearishBullishSpectrum from './BearishBullishSpectrum';
 
 interface PredictionCardProps {
   pair: BinaryPair;
   marketData: MarketData;
   betSize: number;
+  onDump?: () => void;
+  onPump?: () => void;
+  onSkip?: () => void;
+  isProcessing?: boolean;
+  currentIndex?: number;
+  totalCards?: number;
 }
 
 const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
   pair,
   marketData,
   betSize,
+  onDump,
+  onPump,
+  onSkip,
+  isProcessing = false,
+  currentIndex,
+  totalCards,
 }) => {
   const currentPrice = marketData[pair.underlying] ?? 0;
   const threshold = pair.threshold;
@@ -23,114 +37,182 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     const diff = pair.expiry.getTime() - now.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     if (days > 0) {
-      return `${days} day${days !== 1 ? 's' : ''} left`;
+      return `${days}d`;
     } else if (hours > 0) {
-      return `${hours} hour${hours !== 1 ? 's' : ''} left`;
+      return `${hours}h`;
+    } else if (minutes > 0) {
+      return `${minutes}m`;
     } else {
-      return 'Expires soon';
+      return '<1m';
     }
   })();
 
-  const formattedExpiry = pair.expiry.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-
-  const contracts = pair.callParsed.pricePerContract > 0
+  // Calculate expected payout for UP (PUMP) bet
+  const upContracts = pair.callParsed.pricePerContract > 0
     ? betSize / pair.callParsed.pricePerContract
     : 0;
+  const upPayout = upContracts * pair.callParsed.strikeWidth;
 
-  const potentialPayout = contracts * pair.callParsed.strikeWidth;
-
-  const strikeRange = {
-    lower: pair.callParsed.strikes[0],
-    upper: pair.callParsed.strikes[1],
-  };
+  // Calculate expected payout for DOWN (DUMP) bet
+  const downContracts = pair.putParsed.pricePerContract > 0
+    ? betSize / pair.putParsed.pricePerContract
+    : 0;
+  const downPayout = downContracts * pair.putParsed.strikeWidth;
 
   const impliedProb = Math.round(pair.impliedProbability.up);
+  const bearishProb = 100 - impliedProb;
+
+  const priceChange = ((currentPrice - threshold) / threshold) * 100;
+  const priceChangeText = priceChange >= 0 ? `+${priceChange.toFixed(2)}%` : `${priceChange.toFixed(2)}%`;
+
+  const getTradingViewSymbol = (underlying: string): string => {
+    const symbolMap: Record<string, string> = {
+      'BTC': 'BINANCE:BTCUSDT',
+      'ETH': 'BINANCE:ETHUSDT',
+      'BNB': 'BINANCE:BNBUSDT',
+      'SOL': 'BINANCE:SOLUSDT',
+    };
+    return symbolMap[underlying] || 'BINANCE:BTCUSDT';
+  };
+
+  const upMultiplier = betSize > 0 ? (upPayout / betSize).toFixed(2) : '0';
+  const downMultiplier = betSize > 0 ? (downPayout / betSize).toFixed(2) : '0';
+
+  const getTokenLogo = (symbol: string): string => {
+    const logoMap: Record<string, string> = {
+      'BTC': '/img/btc.png',
+      'ETH': '/img/eth.png',
+      'BNB': '/img/bnb.png',
+      'SOL': '/img/sol.png',
+      'XRP': '/img/xrp.png',
+    };
+    return logoMap[symbol] || '/img/btc.png';
+  };
+
+  const progressPercentage = currentIndex !== undefined && totalCards !== undefined && totalCards > 0
+    ? ((currentIndex + 1) / totalCards) * 100
+    : 0;
 
   return (
-    <div className="w-full max-w-md mx-auto h-[600px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl overflow-hidden">
-      <div className="h-full flex flex-col p-6">
+    <div className="w-full max-w-md mx-auto h-full bg-gradient-to-br from-[#000d1d] via-slate-900 to-[#000d1d] rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
+      <div className="h-full flex flex-col">
+        {/* Progress Bar */}
+        {currentIndex !== undefined && totalCards !== undefined && (
+          <div className="w-full bg-slate-700 h-2">
+            <div
+              className="bg-gradient-to-r from-purple-600 to-pink-600 h-full transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        )}
 
-        <div className="flex-1 flex flex-col justify-between">
+        {/* Header Section */}
+        <div className="px-6 pt-6 pb-4 space-y-4">
+          {/* Asset Info */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
+                  <img
+                    src={getTokenLogo(pair.underlying)}
+                    alt={pair.underlying}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-xl font-bold">{pair.underlying}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <div className="space-y-6">
-            <div className="text-white text-3xl font-bold leading-tight text-center">
+            {/* Question */}
+            <div className="text-white text-2xl font-black leading-tight">
               {pair.question}
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-center">
-              <div className="text-white text-6xl font-black mb-2">
-                {impliedProb}%
-              </div>
-              <div className="text-purple-100 text-lg font-medium">
-                market confidence
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-slate-400 text-sm font-medium">
-                  Current Price
-                </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  isAboveThreshold
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
-                }`}>
-                  {isAboveThreshold ? '↑ Above' : '↓ Below'} ${threshold.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-white text-3xl font-bold">
-                <RollingNumber
-                  value={currentPrice}
-                  decimals={2}
-                  prefix="$"
-                  formatOptions={{
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 text-slate-300">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-lg font-medium">{timeRemaining}</span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-400">Expires {formattedExpiry}</span>
             </div>
           </div>
 
-          <div className="space-y-3 mt-6">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-800/70 rounded-xl p-4 border border-slate-700">
-                <div className="text-slate-400 text-xs font-medium mb-1">
-                  Your Bet
-                </div>
-                <div className="text-white text-xl font-bold">
-                  ${betSize} USDC
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/20 rounded-xl p-4 border border-green-500/30">
-                <div className="text-green-300 text-xs font-medium mb-1">
-                  Win Potential
-                </div>
-                <div className="text-green-400 text-xl font-bold">
-                  ${potentialPayout.toFixed(2)}
-                </div>
-              </div>
+          {/* Price Info */}
+          <div className="space-y-1">
+            <div className="text-white text-3xl font-black">
+              <RollingNumber
+                value={currentPrice}
+                decimals={2}
+                prefix="$"
+                formatOptions={{
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }}
+              />
             </div>
-
-            <div className="text-center text-slate-500 text-xs">
-              Range: ${strikeRange.lower.toLocaleString()} - ${strikeRange.upper.toLocaleString()}
+            <div className={`flex items-center gap-2 text-lg font-semibold ${
+              priceChange >= 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
+              <span>{priceChange >= 0 ? '↓' : '↑'}</span>
+              <span>{priceChangeText} (1d)</span>
             </div>
+          </div>
+
+          {/* Bearish/Bullish Spectrum */}
+          <BearishBullishSpectrum
+            bearishPercentage={bearishProb}
+            bullishPercentage={impliedProb}
+            showLabels={true}
+          />
+        </div>
+
+        {/* Chart Section */}
+        <div className="flex-1 px-2">
+          <div className="h-48 rounded-xl overflow-hidden bg-slate-950">
+            <TradingViewChart
+              symbol={getTradingViewSymbol(pair.underlying)}
+              theme="dark"
+              height={192}
+              autosize={false}
+            />
+          </div>
+        </div>
+
+        {/* Bottom Section - Action Buttons */}
+        <div className="px-6 pb-6 pt-4">
+          <div className="flex items-stretch justify-center gap-2">
+            <button
+              onClick={onDump}
+              disabled={isProcessing || !onDump}
+              className="flex-1 relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xl tracking-wider">DUMP!</span>
+                <span className="text-xs font-normal opacity-90">
+                  ${downPayout.toFixed(2)} ({downMultiplier}x)
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={onSkip}
+              disabled={isProcessing || !onSkip}
+              className="flex-1 relative bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
+            >
+              <span className="text-xl tracking-wider">SKIP</span>
+            </button>
+
+            <button
+              onClick={onPump}
+              disabled={isProcessing || !onPump}
+              className="flex-1 relative bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xl tracking-wider">PUMP!</span>
+                <span className="text-xs font-normal opacity-90">
+                  ${upPayout.toFixed(2)} ({upMultiplier}x)
+                </span>
+              </div>
+            </button>
           </div>
         </div>
       </div>

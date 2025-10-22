@@ -11,6 +11,8 @@ interface CardStackProps {
   betSize: number;
   marketData: MarketData;
   onRefresh: () => Promise<void>;
+  batchedCount: number;
+  onShowBatch: () => void;
 }
 
 const CardStack: React.FC<CardStackProps> = ({
@@ -19,6 +21,8 @@ const CardStack: React.FC<CardStackProps> = ({
   betSize,
   marketData,
   onRefresh,
+  batchedCount,
+  onShowBatch,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,6 +82,14 @@ const CardStack: React.FC<CardStackProps> = ({
     handleSwipe('no');
   }, [handleSwipe]);
 
+  const handleSwipeUp = useCallback(() => {
+    if (isProcessing || !currentPair) {
+      return;
+    }
+    // Skip without making a bet
+    setCurrentIndex(prev => prev + 1);
+  }, [isProcessing, currentPair]);
+
   const handleSwipeComplete = useCallback(() => {
   }, []);
 
@@ -92,8 +104,11 @@ const CardStack: React.FC<CardStackProps> = ({
     } else if (event.key === 'ArrowLeft') {
       event.preventDefault();
       handleSwipe('no');
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      handleSwipeUp();
     }
-  }, [isProcessing, allCardsReviewed, handleSwipe]);
+  }, [isProcessing, allCardsReviewed, handleSwipe, handleSwipeUp]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -159,21 +174,27 @@ const CardStack: React.FC<CardStackProps> = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6 text-center">
-        <div className="text-slate-400 text-sm font-medium">
-          {currentIndex + 1} of {pairs.length} predictions
+      {/* Batch indicator */}
+      {batchedCount > 0 && (
+        <div className="mb-4">
+          <motion.button
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={onShowBatch}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              {batchedCount} prediction{batchedCount !== 1 ? 's' : ''} ready
+            </span>
+            <span className="text-sm">Review & Confirm →</span>
+          </motion.button>
         </div>
-        <div className="mt-2 w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2 overflow-hidden">
-          <motion.div
-            className="bg-gradient-to-r from-purple-600 to-pink-600 h-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${((currentIndex + 1) / pairs.length) * 100}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-      </div>
+      )}
 
-      <div className="relative mb-8" style={{ height: '600px' }}>
+      <div className="relative mb-8" style={{ height: '700px' }}>
         <AnimatePresence mode="wait">
           {hasMoreCards && currentPair && (
             <motion.div
@@ -187,6 +208,7 @@ const CardStack: React.FC<CardStackProps> = ({
               <SwipeableCard
                 onSwipeRight={handleSwipeRight}
                 onSwipeLeft={handleSwipeLeft}
+                onSwipeUp={handleSwipeUp}
                 onSwipeComplete={handleSwipeComplete}
                 disabled={isProcessing}
               >
@@ -194,6 +216,12 @@ const CardStack: React.FC<CardStackProps> = ({
                   pair={currentPair}
                   marketData={marketData}
                   betSize={betSize}
+                  onDump={handleSwipeLeft}
+                  onPump={handleSwipeRight}
+                  onSkip={handleSwipeUp}
+                  isProcessing={isProcessing}
+                  currentIndex={currentIndex}
+                  totalCards={pairs.length}
                 />
               </SwipeableCard>
             </motion.div>
@@ -219,60 +247,6 @@ const CardStack: React.FC<CardStackProps> = ({
             />
           </div>
         )}
-      </div>
-
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={handleSwipeLeft}
-          disabled={isProcessing}
-          className="group relative bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
-        >
-          <span className="flex items-center gap-2">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-            NO
-          </span>
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap">
-            Press ← or swipe left
-          </div>
-        </button>
-
-        <button
-          onClick={handleSwipeRight}
-          disabled={isProcessing}
-          className="group relative bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
-        >
-          <span className="flex items-center gap-2">
-            YES
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </span>
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap">
-            Press → or swipe right
-          </div>
-        </button>
       </div>
 
       {isProcessing && (

@@ -1,11 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { parseOrder } from '../utils/optionsParser';
 import { RawOrderData, ParsedOrder, MarketData } from '../types/orders';
-
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
-const BTC_FEED = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
-const ETH_FEED = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
+import { USDC_ADDRESS, WETH_ADDRESS } from '../utils/contracts';
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 

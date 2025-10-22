@@ -1,7 +1,5 @@
 import { RawOrderData, ParsedOrder } from '../types/orders';
-
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const BTC_FEED = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
+import { USDC_ADDRESS, BTC_FEED, ETH_FEED, SOL_FEED, BNB_FEED, XRP_FEED } from './contracts';
 
 /**
  * Parses raw order data from the API into a structured format for display.
@@ -40,7 +38,22 @@ export function parseOrder(orderData: RawOrderData): ParsedOrder {
     strategyType = 'SPREAD';
   }
 
-  const underlying = order.priceFeed.toLowerCase() === BTC_FEED.toLowerCase() ? 'BTC' : 'ETH';
+  const priceFeedLower = order.priceFeed.toLowerCase();
+  let underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';
+
+  if (priceFeedLower === BTC_FEED.toLowerCase()) {
+    underlying = 'BTC';
+  } else if (priceFeedLower === ETH_FEED.toLowerCase()) {
+    underlying = 'ETH';
+  } else if (priceFeedLower === SOL_FEED.toLowerCase()) {
+    underlying = 'SOL';
+  } else if (priceFeedLower === BNB_FEED.toLowerCase()) {
+    underlying = 'BNB';
+  } else if (priceFeedLower === XRP_FEED.toLowerCase()) {
+    underlying = 'XRP';
+  } else {
+    throw new Error(`Unknown price feed: ${order.priceFeed}`);
+  }
 
   return {
     strategyType,

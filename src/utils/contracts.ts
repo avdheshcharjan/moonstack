@@ -34,6 +34,21 @@ export const BTC_FEED = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
 export const ETH_FEED = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
 
 /**
+ * SOL price feed address on Base
+ */
+export const SOL_FEED = '0x975043adBb80fc32276CbF9Bbcfd4A601a12462D';
+
+/**
+ * BNB price feed address on Base
+ */
+export const BNB_FEED = '0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1';
+
+/**
+ * XRP price feed address on Base
+ */
+export const XRP_FEED = '0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34';
+
+/**
  * Base network chain ID
  */
 export const BASE_CHAIN_ID = 8453;

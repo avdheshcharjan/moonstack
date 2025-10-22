@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/src/hooks/useLocalStorage';
-import { UserPosition, MarketData } from '@/src/types/orders';
+import { UserPosition } from '@/src/types/orders';
 
 interface MyBetsProps {
   walletAddress: string | null;
-  marketData: MarketData | null;
 }
 
-const MyBets: React.FC<MyBetsProps> = ({ walletAddress, marketData }) => {
+const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
   const [positions, setPositions] = useLocalStorage<UserPosition[]>(
     `positions_${walletAddress}`,
     []
   );
 
+  const [activeTab, setActiveTab] = useState<'ongoing' | 'completed'>('ongoing');
   const [timeRemaining, setTimeRemaining] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -37,11 +37,11 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress, marketData }) => {
           const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
           if (days > 0) {
-            countdowns[position.id] = `${days}d ${hours}h`;
+            countdowns[position.id] = `${days}D:${hours}H`;
           } else if (hours > 0) {
-            countdowns[position.id] = `${hours}h ${minutes}m`;
+            countdowns[position.id] = `${hours}H:${minutes}M`;
           } else {
-            countdowns[position.id] = `${minutes}m ${seconds}s`;
+            countdowns[position.id] = `${minutes}M:${seconds}S`;
           }
         }
       });
@@ -55,136 +55,154 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress, marketData }) => {
     return () => clearInterval(interval);
   }, [positions, walletAddress]);
 
-  const calculateIsWinning = (position: UserPosition): boolean => {
-    if (!marketData) {
-      return false;
-    }
 
-    const currentPrice = marketData[position.order.underlying];
-    if (!currentPrice) {
-      return false;
-    }
-
-    const strikes = position.order.strikes;
-    const isCall = position.order.isCall;
-
-    if (isCall) {
-      const topStrike = Math.max(...strikes);
-      return currentPrice > topStrike;
-    } else {
-      const bottomStrike = Math.min(...strikes);
-      return currentPrice < bottomStrike;
-    }
-  };
-
-  const getAssetIcon = (asset: string): string => {
-    const icons: Record<string, string> = {
-      BTC: '₿',
-      ETH: 'Ξ',
-      SOL: '◎',
-      XRP: 'X',
-      BNB: 'B',
+  const getTokenLogo = (symbol: string): string => {
+    const logoMap: Record<string, string> = {
+      'BTC': '/img/btc.png',
+      'ETH': '/img/eth.png',
+      'BNB': '/img/bnb.png',
+      'SOL': '/img/sol.png',
+      'XRP': '/img/xrp.png',
     };
-    return icons[asset] || asset;
+    return logoMap[symbol] || '/img/btc.png';
   };
 
   if (!walletAddress) {
     return (
-      <div className="bg-white rounded-lg shadow p-12 text-center">
-        <div className="text-4xl mb-4">🔐</div>
-        <div className="text-xl font-bold text-gray-600 mb-2">Connect Your Wallet</div>
-        <div className="text-gray-500">Connect your wallet to view your bets</div>
+      <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-12 text-center">
+        <div className="text-6xl mb-4">🔐</div>
+        <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
+        <div className="text-slate-400">Connect your wallet to view your bets</div>
       </div>
     );
   }
 
   if (positions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-12 text-center">
-        <div className="text-4xl mb-4">📊</div>
-        <div className="text-xl font-bold text-gray-600 mb-2">No Bets Yet</div>
-        <div className="text-gray-500">You haven&apos;t made any predictions yet</div>
+      <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-12 text-center">
+        <div className="text-6xl mb-4">📊</div>
+        <div className="text-2xl font-bold text-white mb-2">No Bets Yet</div>
+        <div className="text-slate-400">You haven&apos;t made any predictions yet</div>
       </div>
     );
   }
 
+  const ongoingPositions = positions.filter(p => timeRemaining[p.id] !== 'Expired');
+  const completedPositions = positions.filter(p => timeRemaining[p.id] === 'Expired');
+  const displayPositions = activeTab === 'ongoing' ? ongoingPositions : completedPositions;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Ongoing</h2>
-        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-          {positions.filter(p => timeRemaining[p.id] !== 'Expired').length}
-        </div>
+    <div className="space-y-6">
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-2 bg-slate-800/50 rounded-full p-1 w-fit">
+        <button
+          onClick={() => setActiveTab('ongoing')}
+          className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${
+            activeTab === 'ongoing'
+              ? 'bg-slate-700 text-white'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Ongoing
+          {ongoingPositions.length > 0 && (
+            <span className="ml-2 bg-slate-600 px-2 py-0.5 rounded-full text-xs">
+              {ongoingPositions.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('completed')}
+          className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${
+            activeTab === 'completed'
+              ? 'bg-slate-700 text-white'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Completed
+        </button>
       </div>
 
-      {positions.slice().reverse().map((position) => {
-        const isWinning = calculateIsWinning(position);
-        const isExpired = timeRemaining[position.id] === 'Expired';
-        const borderColor = isExpired
-          ? 'border-gray-300'
-          : isWinning
-          ? 'border-green-500'
-          : 'border-red-500';
-        const currentPrice = marketData?.[position.order.underlying] || 0;
+      {/* Filter Chips - Degen, Analyst, Expert */}
+      <div className="flex items-center gap-2">
+        <button className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition-colors">
+          Degen
+        </button>
+        <button className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition-colors">
+          Analyst
+        </button>
+        <button className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition-colors">
+          Expert
+        </button>
+      </div>
 
-        return (
-          <div
-            key={position.id}
-            className={`bg-gray-900 rounded-lg p-4 border-2 ${borderColor} transition-colors`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="text-4xl">
-                {getAssetIcon(position.order.underlying)}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="text-white font-bold text-lg">
-                      {position.order.underlying} {position.order.underlying === 'BTC' ? 'btc' : position.order.underlying.toLowerCase()}
-                    </div>
-                    <div className="text-gray-400 text-sm">
-                      Predicted {position.order.isCall ? 'Pump' : 'Dump'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-3">
-                  <div>
-                    <div className="text-gray-400 text-xs">Entry</div>
-                    <div className="text-white font-semibold">
-                      ${position.order.strikes[0]?.toLocaleString() || 'N/A'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400 text-xs">Current</div>
-                    <div className="text-white font-semibold">
-                      ${currentPrice.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400 text-xs">Ends in</div>
-                    <div className="text-purple-400 font-semibold text-sm">
-                      {timeRemaining[position.id] || 'Calculating...'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-gray-700">
-                  <a
-                    href={`https://basescan.org/tx/${position.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 text-sm hover:underline"
-                  >
-                    View Transaction →
-                  </a>
-                </div>
-              </div>
-            </div>
+      {/* Positions List */}
+      <div className="space-y-3">
+        {displayPositions.length === 0 ? (
+          <div className="text-center py-12 text-slate-400">
+            No {activeTab} positions
           </div>
-        );
-      })}
+        ) : (
+          displayPositions.slice().reverse().map((position) => {
+            const isPump = position.order.isCall;
+            const borderColor = isPump ? 'border-green-500/50' : 'border-red-500/50';
+
+            return (
+              <div
+                key={position.id}
+                className={`bg-slate-800/30 rounded-2xl p-4 border-2 ${borderColor} transition-all hover:bg-slate-800/50`}
+              >
+                <div className="flex items-center gap-4">
+                  {/* Token Icon */}
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-700 flex items-center justify-center flex-shrink-0">
+                    <img
+                      src={getTokenLogo(position.order.underlying)}
+                      alt={position.order.underlying}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-white font-bold text-xl">
+                        {position.order.underlying === 'BTC' ? 'Bitcoin' : position.order.underlying === 'ETH' ? 'Ethereum' : position.order.underlying === 'BNB' ? 'Bnb' : position.order.underlying === 'XRP' ? 'Xrp' : position.order.underlying}
+                      </h3>
+                      <span className="text-slate-400 text-sm font-medium">
+                        {position.order.underlying}
+                      </span>
+                    </div>
+                    <div className="text-slate-400 text-sm mb-3">
+                      Predicted {isPump ? 'Pump' : 'Dump'}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-4 bg-slate-900/50 rounded-xl p-3">
+                      <div>
+                        <div className="text-slate-500 text-xs mb-1">Entry</div>
+                        <div className="text-white font-semibold text-sm">
+                          ${position.order.strikes[0]?.toLocaleString() || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500 text-xs mb-1">Current</div>
+                        <div className="text-white font-semibold text-sm">
+                          ${position.order.strikes[0]?.toLocaleString() || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500 text-xs mb-1">Ends in</div>
+                        <div className="text-purple-400 font-bold text-sm">
+                          {timeRemaining[position.id] || 'Calculating...'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { RawOrderData, ParsedOrder } from './orders';
 
 export interface BinaryPair {
   id: string;
-  underlying: 'BTC' | 'ETH';
+  underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';
   expiry: Date;
   threshold: number;
   question: string;
@@ -14,21 +14,7 @@ export interface BinaryPair {
     up: number;
     down: number;
   };
+  uniqueWallets?: number;
 }
 
 export type SwipeAction = 'yes' | 'no' | null;
-
-export interface PredictionCard {
-  pair: BinaryPair;
-  question: string;
-  impliedProbability: number;
-  currentPrice: number;
-  threshold: number;
-  timeRemaining: string;
-  betSize: number;
-  potentialPayout: number;
-  strikeRange: {
-    lower: number;
-    upper: number;
-  };
-}

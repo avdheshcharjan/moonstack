@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOrders } from '@/src/hooks/useOrders';
-import { useTrading } from '@/src/hooks/useTrading';
+import { useBatchTrading } from '@/src/hooks/useBatchTrading';
 import { pairBinaryOptions } from '@/src/utils/binaryPairing';
 import CardStack from './CardStack';
+import BatchConfirmationModal from './BatchConfirmationModal';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';
 import { BinaryPair } from '@/src/types/prediction';
 
@@ -14,8 +15,9 @@ const DEFAULT_BET_SIZE = 0.1;
 
 const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { orders, marketData, loading, error, fetchOrders, filterBinaries } = useOrders();
-  const { executeTrade } = useTrading();
+  const { batchedTrades, addToBatch, clearBatch, executeBatch, isExecuting, totalCollateralNeeded } = useBatchTrading();
   const { toasts, addToast, removeToast } = useToastManager();
+  const [showBatchModal, setShowBatchModal] = useState(false);
 
   useEffect(() => {
     if (walletAddress) {
@@ -40,18 +42,30 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       throw new Error('Wallet not connected');
     }
 
-    const selectedOrder = action === 'yes' ? pair.callOption : pair.putOption;
+    // Add trade to batch instead of executing immediately
+    addToBatch(pair, action, DEFAULT_BET_SIZE);
+    addToast(
+      `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to batch`,
+      'info'
+    );
+  }, [walletAddress, addToBatch, addToast]);
+
+  const handleBatchConfirm = useCallback(async () => {
+    if (!walletAddress || batchedTrades.length === 0) {
+      return;
+    }
 
     try {
-      addToast('Checking USDC allowance...', 'info');
-
-      const txHash = await executeTrade(selectedOrder, DEFAULT_BET_SIZE, walletAddress);
+      const txHash = await executeBatch(walletAddress);
 
       addToast(
-        `Successfully ${action === 'yes' ? 'bought CALL' : 'bought PUT'} for ${pair.underlying}`,
+        `Successfully executed ${batchedTrades.length} prediction${batchedTrades.length !== 1 ? 's' : ''}`,
         'success',
         txHash
       );
+
+      clearBatch();
+      setShowBatchModal(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         if (err.message === 'Transaction rejected by user') {
@@ -66,9 +80,18 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       } else {
         addToast('Unknown error occurred', 'error');
       }
-      throw err;
     }
-  }, [walletAddress, executeTrade, addToast]);
+  }, [walletAddress, batchedTrades, executeBatch, clearBatch, addToast]);
+
+  const handleBatchCancel = useCallback(() => {
+    setShowBatchModal(false);
+  }, []);
+
+  const handleShowBatch = useCallback(() => {
+    if (batchedTrades.length > 0) {
+      setShowBatchModal(true);
+    }
+  }, [batchedTrades]);
 
   if (!walletAddress) {
     return (
@@ -179,6 +202,16 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         betSize={DEFAULT_BET_SIZE}
         marketData={marketData}
         onRefresh={fetchOrders}
+        batchedCount={batchedTrades.length}
+        onShowBatch={handleShowBatch}
+      />
+      <BatchConfirmationModal
+        isOpen={showBatchModal}
+        batchedTrades={batchedTrades}
+        totalCollateral={totalCollateralNeeded}
+        onConfirm={handleBatchConfirm}
+        onCancel={handleBatchCancel}
+        isExecuting={isExecuting}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </>
