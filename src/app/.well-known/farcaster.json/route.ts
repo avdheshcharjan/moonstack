@@ -16,7 +16,7 @@ function withValidProperties(properties: Record<string, undefined | string | str
           "version": "1",
           "name": "MOONSTACK",
           "iconUrl": "https://www.moonstack.fun/logo.png",
-          "splashImageUrl": "https://www.moonstack.fun/surge.png",
+          "splashImageUrl": "https://www.moonstack.fun/logo.png",
           "splashBackgroundColor": "#000d1d",
           "homeUrl": "https://www.moonstack.fun/",
           "webhookUrl": "https://www.moonstack.fun/api/webhook"
@@ -32,8 +32,8 @@ function withValidProperties(properties: Record<string, undefined | string | str
           "category": "finance",
           "tags": ["options", "trading", "defi", "predictions", "base"],
           "images": {
-            "icon": "https://your-domain.com/icon.png",
-            "splash": "https://your-domain.com/splash.png"
+            "icon": "https://www.moonstack.fun/logo.png",
+            "splash": "https://www.moonstack.fun/logo.png"
           }
         }
       }); // see the next step for the manifest_json_object
