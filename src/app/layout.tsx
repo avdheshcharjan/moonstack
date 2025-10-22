@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   other: {
     'fc:miniapp': JSON.stringify({
-      version: 'v1',
+      version: '1',
       imageUrl: `${process.env.NEXT_PUBLIC_URL}/logo.png`,
       button: {
         title: 'Launch Moonstack',

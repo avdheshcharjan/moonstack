@@ -19,7 +19,7 @@ export async function GET() {
       splashBackgroundColor: '#000d1d',
       webhookUrl: `${URL}/api/webhook`,
       subtitle: 'Swipe to Predict',
-      description: 'Predict Crypto with Yes/No.',
+      description: 'Predict Crypto with Yes and No.',
       screenshotUrls: [
         `${URL}/logo.png`,
         `${URL}/logo_splash.png`,
