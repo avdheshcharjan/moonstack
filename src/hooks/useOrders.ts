@@ -92,8 +92,7 @@ export function useOrders(): UseOrdersReturn {
       }
 
       const collateral = order.rawOrder.order.collateral.toLowerCase();
-      if (collateral !== USDC_ADDRESS.toLowerCase() &&
-          collateral !== WETH_ADDRESS.toLowerCase()) {
+      if (collateral !== USDC_ADDRESS.toLowerCase()) {
         return false;
       }
 

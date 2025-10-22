@@ -3,10 +3,12 @@ import { useOrders } from '@/src/hooks/useOrders';
 import { useBatchTrading } from '@/src/hooks/useBatchTrading';
 import { pairBinaryOptions } from '@/src/utils/binaryPairing';
 import { useLocalStorage } from '@/src/hooks/useLocalStorage';
+import { filterPairsByExpiry, sortPairsByExpiry, countPairsByExpiry } from '@/src/utils/expiryFiltering';
 import CardStack from './CardStack';
 import BatchConfirmationModal from './BatchConfirmationModal';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';
-import { BinaryPair } from '@/src/types/prediction';
+import ExpiryFilter from './ExpiryFilter';
+import { BinaryPair, ExpiryFilter as ExpiryFilterType } from '@/src/types/prediction';
 
 interface SwipeViewProps {
   walletAddress: string | null;
@@ -17,6 +19,7 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { batchedTrades, addToBatch, clearBatch, executeBatch, isExecuting, totalCollateralNeeded } = useBatchTrading();
   const { toasts, addToast, removeToast } = useToastManager();
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [expiryFilter, setExpiryFilter] = useState<ExpiryFilterType>('all');
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 5);
@@ -27,16 +30,23 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
     }
   }, [walletAddress, fetchOrders]);
 
-  // Memoize pairs with deep comparison by IDs to prevent unnecessary re-renders
-  const pairs = useMemo(() => {
+  // Memoize all pairs (before filtering) for counting
+  const allPairs = useMemo(() => {
     const binaries = filterBinaries();
     const rawBinaries = binaries.map(parsed => parsed.rawOrder);
     const newPairs = pairBinaryOptions(rawBinaries);
-
-    // Return new pairs array but preserve identity if IDs match
-    // This ensures React.memo and key matching work correctly
-    return newPairs;
+    return sortPairsByExpiry(newPairs);
   }, [filterBinaries, orders]);
+
+  // Count pairs by expiry category
+  const expiryCounts = useMemo(() => {
+    return countPairsByExpiry(allPairs);
+  }, [allPairs]);
+
+  // Filter pairs based on selected expiry filter
+  const pairs = useMemo(() => {
+    return filterPairsByExpiry(allPairs, expiryFilter);
+  }, [allPairs, expiryFilter]);
 
   const handleSwipe = useCallback(async (pair: BinaryPair, action: 'yes' | 'no') => {
     if (!walletAddress) {
@@ -198,6 +208,11 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
 
   return (
     <>
+      <ExpiryFilter
+        selectedFilter={expiryFilter}
+        onFilterChange={setExpiryFilter}
+        counts={expiryCounts}
+      />
       <CardStack
         pairs={pairs}
         onSwipe={handleSwipe}

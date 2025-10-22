@@ -37,7 +37,10 @@ export function useBatchTrading(): UseBatchTradingReturn {
     const order = action === 'yes' ? pair.callOption : pair.putOption;
     const pricePerContract = Number(order.order.price) / 1e8;
     const contractsToBuy = collateralAmount / pricePerContract;
-    const numContracts = Math.floor(contractsToBuy * 1e6);
+
+    // Multiply by 1e6 before flooring to preserve precision
+    const numContracts = Math.floor(contractsToBuy * 1e6).toString();
+
     const requiredAmount = parseUnits(collateralAmount.toString(), 6);
 
     const trade: BatchedTrade = {
@@ -45,7 +48,7 @@ export function useBatchTrading(): UseBatchTradingReturn {
       order,
       action,
       collateralAmount,
-      numContracts: numContracts.toString(),
+      numContracts,
       requiredAmount
     };
 

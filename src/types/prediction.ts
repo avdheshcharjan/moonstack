@@ -1,5 +1,7 @@
 import { RawOrderData, ParsedOrder } from './orders';
 
+export type ExpiryFilter = 'all' | '1D' | '2D' | '3D' | 'weekly' | 'monthly' | 'quarterly';
+
 export interface BinaryPair {
   id: string;
   underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';

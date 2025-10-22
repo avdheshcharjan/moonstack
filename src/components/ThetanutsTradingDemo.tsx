@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
 import { useWallet } from '@/src/hooks/useWallet';
 import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
@@ -16,9 +17,10 @@ const ThetanutsTradingDemo = () => {
   // Page navigation
   const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
 
-  // Handle hydration
+  // Handle hydration and MiniApp SDK ready
   useEffect(() => {
     setMounted(true);
+    sdk.actions.ready();
   }, []);
 
   // Prevent hydration mismatch - return null during SSR
