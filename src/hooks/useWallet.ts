@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserProvider } from 'ethers';
 import { BASE_CHAIN_ID } from '../utils/contracts';
+import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 
 interface UseWalletReturn {
   walletAddress: string | null;
@@ -17,13 +18,29 @@ export function useWallet(): UseWalletReturn {
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
 
   const connectWallet = async (): Promise<void> => {
-    if (!window.ethereum) {
-      alert('MetaMask is not installed. Please install it to continue.');
-      return;
-    }
-
     try {
       setIsConnecting(true);
+
+      // Try Base Account SDK first for smart wallet
+      try {
+        const provider = baseAccountSDK.getProvider();
+        const accounts = await provider.request({ method: 'wallet_connect' }) as string[];
+
+        if (accounts && accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          setChainId(BASE_CHAIN_ID);
+          return;
+        }
+      } catch (baseAccountError) {
+        console.log('Base Account not available, falling back to injected wallet:', baseAccountError);
+      }
+
+      // Fallback to traditional wallet connection
+      if (!window.ethereum) {
+        alert('Please install a Web3 wallet to continue.');
+        return;
+      }
+
       const provider = new BrowserProvider(window.ethereum);
       const accounts = await provider.send('eth_requestAccounts', []);
       const network = await provider.getNetwork();

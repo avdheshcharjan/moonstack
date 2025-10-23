@@ -216,20 +216,19 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
           />
         </div>
 
-        {/* Chart Section */}
-        <div className="flex-1 px-2 min-h-0">
-          <div className="h-full max-h-48 rounded-xl overflow-hidden bg-slate-950">
+        {/* Chart Section - Takes all available space */}
+        <div className="flex-1 px-2 min-h-0 flex flex-col">
+          <div className="flex-1 rounded-xl overflow-hidden bg-slate-950">
             <CoinGeckoChart
               symbol={getTradingViewSymbol(pair.underlying)}
               theme="dark"
-              height={192}
               autosize={false}
             />
           </div>
         </div>
 
         {/* Bottom Section - Action Buttons */}
-        <div className="px-4 pb-4 pt-3">
+        <div className="px-4 pb-4 pt-2">
           <div className="flex items-stretch justify-center gap-2">
             <button
               onClick={onDump}

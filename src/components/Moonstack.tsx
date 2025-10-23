@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useWallet } from '@/src/hooks/useWallet';
+import { SignInWithBaseButton } from '@base-org/account-ui/react';
 import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
 import MyBets from '@/src/components/bets/MyBets';
@@ -43,14 +44,28 @@ const Moonstack = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-12 text-center max-w-md">
                   <div className="text-6xl mb-4">🔐</div>
                   <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
-                  <div className="text-slate-400 mb-6">Please connect your wallet to start trading</div>
-                  <button
-                    onClick={connectWallet}
-                    disabled={isConnecting}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 shadow-lg"
-                  >
-                    {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-                  </button>
+                  <div className="text-slate-400 mb-6">Sign in with Base Account for instant smart wallet access</div>
+
+                  <div className="flex flex-col gap-4 items-center">
+                    {/* Sign in with Base Button */}
+                    <SignInWithBaseButton
+                      align="center"
+                      variant="solid"
+                      colorScheme="dark"
+                      onClick={connectWallet}
+                    />
+
+                    <div className="text-slate-500 text-sm">or</div>
+
+                    {/* Fallback connect button */}
+                    <button
+                      onClick={connectWallet}
+                      disabled={isConnecting}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 shadow-lg"
+                    >
+                      {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
