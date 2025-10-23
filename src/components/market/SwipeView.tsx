@@ -82,12 +82,33 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         'success'
       );
     } else {
-      // Execute immediately (legacy behavior)
+      // Execute immediately with paymaster
       addToast(
         `Executing ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}...`,
         'info'
       );
-      // TODO: Implement immediate execution with paymaster
+
+      try {
+        const { executeImmediateFillOrder } = await import('@/src/services/immediateExecution');
+        const result = await executeImmediateFillOrder(pair, action, betSize, walletAddress as Address);
+
+        if (result.success) {
+          addToast(
+            `Successfully executed ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}!`,
+            'success'
+          );
+        } else {
+          addToast(
+            result.error || 'Failed to execute bet',
+            'error'
+          );
+        }
+      } catch (error) {
+        addToast(
+          error instanceof Error ? error.message : 'Failed to execute bet',
+          'error'
+        );
+      }
     }
   }, [walletAddress, isBatchMode, addToBatch, betSize, addToast]);
 
