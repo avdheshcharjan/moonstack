@@ -1,10 +1,9 @@
-import type { Address, Hex } from 'viem';
-import { encodeFunctionData } from 'viem';
-import { getUSDCBalance, checkUSDCAllowance } from '@/src/utils/usdcApproval';
-import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS, USDC_ADDRESS, ERC20_ABI } from '@/src/utils/contracts';
 import type { RawOrderData } from '@/src/types/orders';
 import type { BinaryPair } from '@/src/types/prediction';
+import { ERC20_ABI, OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import { BrowserProvider, Contract } from 'ethers';
+import type { Address, Hex } from 'viem';
+import { encodeFunctionData } from 'viem';
 
 export interface DirectExecutionResult {
   success: boolean;
@@ -45,8 +44,12 @@ export async function executeDirectFillOrder(
     const provider = new BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
 
+    const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
+
+
     // Step 1: Check USDC balance
-    const balance = await getUSDCBalance(userAddress);
+    // const balance = await getUSDCBalance(userAddress);
+    const balance = await usdcContract.balanceOf(userAddress);
 
     // Step 2: Calculate number of contracts based on bet size and price
     // Per OptionBook.md section 2.4:
@@ -68,15 +71,13 @@ export async function executeDirectFillOrder(
     }
 
     // Step 3: Check USDC allowance and approve if needed (per OptionBook.md section 2.4)
-    const currentAllowance = await checkUSDCAllowance(userAddress, OPTION_BOOK_ADDRESS as Address);
+    // const currentAllowance = await checkUSDCAllowance(userAddress, OPTION_BOOK_ADDRESS as Address);
+    const currentAllowance = await usdcContract.allowance(userAddress, OPTION_BOOK_ADDRESS);
 
     if (currentAllowance < requiredAmount) {
       console.log('Approving USDC for OptionBook...');
       console.log('Required:', Number(requiredAmount) / 1_000_000, 'USDC');
       console.log('Current allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
-
-      // Create USDC contract instance
-      const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
 
       // Approve USDC spending
       const approveTx = await usdcContract.approve(OPTION_BOOK_ADDRESS, requiredAmount);

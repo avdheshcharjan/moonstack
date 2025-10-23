@@ -1,9 +1,10 @@
-import { createPublicClient, http, type Address, encodeFunctionData } from 'viem';
+import { createPublicClient, http, type Address, encodeFunctionData, parseAbi } from 'viem';
 import { base } from 'viem/chains';
 import { USDC_ADDRESS, OPTION_BOOK_ADDRESS, ERC20_ABI } from './contracts';
 
 /**
  * Check USDC allowance for a given owner and spender
+ * Per OptionBook.md section 2.4: Check allowance before approving
  */
 export async function checkUSDCAllowance(
   owner: Address,
@@ -14,19 +15,15 @@ export async function checkUSDCAllowance(
     transport: http(),
   });
 
-  try {
-    const allowance = await publicClient.readContract({
-      address: USDC_ADDRESS as Address,
-      abi: ERC20_ABI,
-      functionName: 'allowance',
-      args: [owner, spender],
-    } as any);
+  // @ts-expect-error - viem v2 type issue with authorizationList
+  const allowance = await publicClient.readContract({
+    address: USDC_ADDRESS as Address,
+    abi: parseAbi(ERC20_ABI),
+    functionName: 'allowance',
+    args: [owner, spender],
+  });
 
-    return allowance as bigint;
-  } catch (error) {
-    console.error('Error checking USDC allowance:', error);
-    return 0n;
-  }
+  return allowance;
 }
 
 /**
@@ -66,6 +63,7 @@ export async function needsApproval(
 
 /**
  * Get USDC balance for an address
+ * Per OptionBook.md section 2.4: Check balance before executing trade
  */
 export async function getUSDCBalance(address: Address): Promise<bigint> {
   const publicClient = createPublicClient({
@@ -73,21 +71,15 @@ export async function getUSDCBalance(address: Address): Promise<bigint> {
     transport: http(),
   });
 
-  try {
-    const balance = await publicClient.readContract({
-      address: USDC_ADDRESS as Address,
-      abi: [
-        'function balanceOf(address owner) external view returns (uint256)',
-      ],
-      functionName: 'balanceOf',
-      args: [address],
-    } as any);
+  // @ts-expect-error - viem v2 type issue with authorizationList
+  const balance = await publicClient.readContract({
+    address: USDC_ADDRESS as Address,
+    abi: parseAbi(ERC20_ABI),
+    functionName: 'balanceOf',
+    args: [address],
+  });
 
-    return balance as bigint;
-  } catch (error) {
-    console.error('Error getting USDC balance:', error);
-    return 0n;
-  }
+  return balance;
 }
 
 /**
