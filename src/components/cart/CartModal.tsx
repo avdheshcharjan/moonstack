@@ -38,31 +38,49 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
     setCurrentIndex(0);
   };
 
-  const handleSwipeRight = async () => {
+  const handleSwipeRight = () => {
     const currentTx = transactions[currentIndex];
     if (!currentTx || !address) {
+      console.error('No transaction or address found', { currentTx, address });
+      alert('Cannot execute transaction: No wallet connected or transaction missing');
       onClose();
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      const result = await executeBatchTransactions([currentTx], address);
+    console.log('========== SWIPE RIGHT DETECTED ==========');
+    console.log('Current transaction:', JSON.stringify(currentTx, null, 2));
+    console.log('User address:', address);
+    console.log('==========================================');
 
-      if (result.success) {
-        cartStorage.removeTransactions([currentTx.id]);
-        onCartUpdate?.();
-      } else {
-        alert(`Transaction failed: ${result.error}`);
+    setIsProcessing(true);
+
+    // Execute transaction asynchronously but don't await in the handler
+    // This allows the wallet popup to show immediately
+    (async () => {
+      try {
+        console.log('🚀 Starting executeBatchTransactions...');
+        const result = await executeBatchTransactions([currentTx], address);
+        console.log('✅ Transaction result:', result);
+
+        if (result.success) {
+          console.log('✅ Transaction successful, removing from cart');
+          cartStorage.removeTransactions([currentTx.id]);
+          onCartUpdate?.();
+          alert('Transaction approved and executed successfully!');
+        } else {
+          console.error('❌ Transaction failed:', result.error);
+          alert(`Transaction failed: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('❌ Error executing transaction:', error);
+        alert(error instanceof Error ? error.message : 'Failed to execute transaction');
+      } finally {
+        setIsProcessing(false);
+        console.log('🔚 Closing modal after transaction');
+        // Small delay to ensure user sees the result
+        setTimeout(() => onClose(), 500);
       }
-    } catch (error) {
-      console.error('Error executing transaction:', error);
-      alert(error instanceof Error ? error.message : 'Failed to execute transaction');
-    } finally {
-      setIsProcessing(false);
-      // Close modal after approve action
-      onClose();
-    }
+    })();
   };
 
   const handleSwipeLeft = () => {
@@ -72,6 +90,7 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
       return;
     }
 
+    console.log('Swipe left detected, discarding transaction');
     // Remove transaction from cart
     cartStorage.removeTransactions([currentTx.id]);
     onCartUpdate?.();
@@ -81,7 +100,8 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   };
 
   const handleSwipeComplete = () => {
-    // Swipe animation completed - handlers already closed the modal
+    console.log('Swipe animation completed');
+    // Don't close here - let the handlers close after their logic completes
   };
 
   const formatUSDC = (amount: bigint) => {
@@ -96,8 +116,8 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl"
-      onClick={onClose}
+      className={`fixed inset-0 bg-black/95 backdrop-blur-xl ${isProcessing ? 'z-[50]' : 'z-[100]'}`}
+      onClick={isProcessing ? undefined : onClose}
     >
       <div
         className="h-full w-full flex flex-col"
@@ -160,6 +180,15 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
             </div>
           ) : currentTx ? (
             <div className="w-full max-w-md h-[600px]">
+              {isProcessing && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                  <div className="bg-gray-800 rounded-lg p-6 text-center">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-white text-lg font-medium">Processing transaction...</p>
+                    <p className="text-gray-400 text-sm mt-2">Please confirm in your wallet</p>
+                  </div>
+                </div>
+              )}
               <CartSwipeableCard
                 onSwipeRight={handleSwipeRight}
                 onSwipeLeft={handleSwipeLeft}
