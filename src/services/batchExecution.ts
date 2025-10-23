@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem';
-import { numberToHex } from 'viem';
+import { numberToHex, encodeFunctionData } from 'viem';
 import { BrowserProvider, Contract } from 'ethers';
 import { ERC20_ABI, OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import { getBaseAccountSDK } from '@/src/providers/BaseAccountProvider';
@@ -68,7 +68,22 @@ export async function executeBatchTransactions(
       throw new Error('No wallet provider found. Please install MetaMask or another Web3 wallet.');
     }
 
+    // Get Base Account SDK to get smart account address
+    const sdk = getBaseAccountSDK();
+    const sdkProvider = sdk.getProvider();
+
+    // Get the smart account address (this is the actual sender)
+    const accounts = await sdkProvider.request({ method: 'eth_accounts' }) as string[];
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No smart account found. Please connect your wallet.');
+    }
+    const smartAccountAddress = accounts[0] as Address;
+
+    console.log('User EOA address:', userAddress);
+    console.log('Smart account address:', smartAccountAddress);
+
     // Create ethers provider for USDC approval
+    // Important: We need to use the EOA signer to approve USDC, but check balance of smart account
     const provider = new BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
@@ -80,59 +95,64 @@ export async function executeBatchTransactions(
     console.log('Total transactions:', transactions.length);
     console.log('Total USDC needed:', Number(totalUSDC) / 1_000_000, 'USDC');
 
-    // Step 1: Check USDC balance
-    const balance = await usdcContract.balanceOf(userAddress);
-    console.log('USDC balance:', Number(balance) / 1_000_000, 'USDC');
+    // Step 1: Check USDC balance of SMART ACCOUNT (not EOA)
+    const balance = await usdcContract.balanceOf(smartAccountAddress);
+    console.log('Smart account USDC balance:', Number(balance) / 1_000_000, 'USDC');
 
     if (balance < totalUSDC) {
       throw new Error(
-        `Insufficient USDC balance. Need ${Number(totalUSDC) / 1_000_000} USDC, have ${Number(balance) / 1_000_000} USDC`
+        `Insufficient USDC balance in smart account. Need ${Number(totalUSDC) / 1_000_000} USDC, have ${Number(balance) / 1_000_000} USDC. Please transfer USDC to your smart account: ${smartAccountAddress}`
       );
     }
 
-    // Step 2: Check USDC allowance and approve if needed
-    const currentAllowance = await usdcContract.allowance(userAddress, OPTION_BOOK_ADDRESS);
-    console.log('Current USDC allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
+    // Step 2: Check USDC allowance and approve if needed (for SMART ACCOUNT, not EOA)
+    const currentAllowance = await usdcContract.allowance(smartAccountAddress, OPTION_BOOK_ADDRESS);
+    console.log('Smart account USDC allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
 
+    // Step 3: Prepare batch calls (including approval if needed)
+    const calls: Array<{ to: string; value: string; data: string }> = [];
+
+    // Add approval call if needed
     if (currentAllowance < totalUSDC) {
-      console.log('Approving USDC for OptionBook...');
+      console.log('Adding USDC approval to batch...');
       console.log('Approving amount:', Number(totalUSDC) / 1_000_000, 'USDC');
 
-      const approveTx = await usdcContract.approve(OPTION_BOOK_ADDRESS, totalUSDC);
-      console.log('Approval transaction submitted:', approveTx.hash);
+      // Encode the approve function call
+      const approveData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [OPTION_BOOK_ADDRESS as Address, totalUSDC],
+      });
 
-      // Wait for approval to be mined
-      const approvalReceipt = await approveTx.wait();
-
-      if (!approvalReceipt || approvalReceipt.status !== 1) {
-        throw new Error('USDC approval failed');
-      }
-
-      console.log('USDC approval confirmed');
+      calls.push({
+        to: USDC_ADDRESS as string,
+        value: '0x0',
+        data: approveData,
+      });
     } else {
       console.log('USDC already approved');
     }
 
-    // Step 3: Prepare batch calls
-    const calls = transactions.map((tx) => ({
-      to: tx.to,
-      value: tx.value ? numberToHex(tx.value) : '0x0',
-      data: tx.data,
-    }));
+    // Add all transaction calls
+    transactions.forEach((tx) => {
+      calls.push({
+        to: tx.to,
+        value: tx.value ? numberToHex(tx.value) : '0x0',
+        data: tx.data,
+      });
+    });
 
     console.log('Prepared batch calls:', calls);
+    console.log('Total calls (including approval if needed):', calls.length);
 
-    // Step 4: Execute batch transaction using Base Account SDK
-    const sdk = getBaseAccountSDK();
-    const sdkProvider = sdk.getProvider();
-
-    console.log('Sending batch transaction...');
+    // Step 4: Execute batch transaction using Base Account SDK (from smart account)
+    console.log('Sending batch transaction from smart account...');
     const result = await sdkProvider.request({
       method: 'wallet_sendCalls',
       params: [
         {
           version: '2.0.0',
-          from: userAddress,
+          from: smartAccountAddress,
           chainId: numberToHex(base.constants.CHAIN_IDS.base),
           atomicRequired: true, // All calls must succeed or all fail
           calls: calls,
