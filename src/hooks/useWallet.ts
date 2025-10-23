@@ -12,6 +12,9 @@ interface UseWalletReturn {
   disconnectWallet: () => void;
 }
 
+const WALLET_STORAGE_KEY = 'moonstack_wallet_address';
+const CHAIN_STORAGE_KEY = 'moonstack_chain_id';
+
 export function useWallet(): UseWalletReturn {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
@@ -29,6 +32,8 @@ export function useWallet(): UseWalletReturn {
         if (accounts && accounts.length > 0) {
           setWalletAddress(accounts[0]);
           setChainId(BASE_CHAIN_ID);
+          localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
+          localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
           return;
         }
       } catch (baseAccountError) {
@@ -47,6 +52,8 @@ export function useWallet(): UseWalletReturn {
 
       setWalletAddress(accounts[0]);
       setChainId(Number(network.chainId));
+      localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
+      localStorage.setItem(CHAIN_STORAGE_KEY, Number(network.chainId).toString());
 
       if (Number(network.chainId) !== BASE_CHAIN_ID) {
         try {
@@ -74,6 +81,7 @@ export function useWallet(): UseWalletReturn {
                 }]
               });
               setChainId(BASE_CHAIN_ID);
+              localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
             } catch (addError) {
               console.error('Error adding Base network:', addError);
             }
@@ -90,7 +98,59 @@ export function useWallet(): UseWalletReturn {
   const disconnectWallet = (): void => {
     setWalletAddress(null);
     setChainId(null);
+    localStorage.removeItem(WALLET_STORAGE_KEY);
+    localStorage.removeItem(CHAIN_STORAGE_KEY);
   };
+
+  // Restore wallet connection on mount
+  useEffect(() => {
+    const restoreConnection = async (): Promise<void> => {
+      if (typeof window === 'undefined') return;
+
+      const savedAddress = localStorage.getItem(WALLET_STORAGE_KEY);
+      const savedChainId = localStorage.getItem(CHAIN_STORAGE_KEY);
+
+      if (!savedAddress) return;
+
+      try {
+        // Try Base Account SDK first
+        try {
+          const provider = baseAccountSDK.getProvider();
+          const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
+
+          if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
+            setWalletAddress(accounts[0]);
+            setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
+            return;
+          }
+        } catch (baseError) {
+          console.log('Base Account not available for auto-connect');
+        }
+
+        // Fallback to injected wallet
+        if (window.ethereum) {
+          const provider = new BrowserProvider(window.ethereum);
+          const accounts = await provider.send('eth_accounts', []);
+
+          if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
+            const network = await provider.getNetwork();
+            setWalletAddress(accounts[0]);
+            setChainId(Number(network.chainId));
+          } else {
+            // Clear storage if wallet is no longer connected
+            localStorage.removeItem(WALLET_STORAGE_KEY);
+            localStorage.removeItem(CHAIN_STORAGE_KEY);
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring wallet connection:', error);
+        localStorage.removeItem(WALLET_STORAGE_KEY);
+        localStorage.removeItem(CHAIN_STORAGE_KEY);
+      }
+    };
+
+    restoreConnection();
+  }, []);
 
   useEffect(() => {
     if (!window.ethereum) return;
@@ -100,11 +160,14 @@ export function useWallet(): UseWalletReturn {
         disconnectWallet();
       } else {
         setWalletAddress(accounts[0]);
+        localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
       }
     };
 
     const handleChainChanged = (chainIdHex: string): void => {
-      setChainId(parseInt(chainIdHex, 16));
+      const newChainId = parseInt(chainIdHex, 16);
+      setChainId(newChainId);
+      localStorage.setItem(CHAIN_STORAGE_KEY, newChainId.toString());
     };
 
     window.ethereum.on('accountsChanged', handleAccountsChanged);

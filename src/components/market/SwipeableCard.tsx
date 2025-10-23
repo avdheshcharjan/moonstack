@@ -115,9 +115,9 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       animate={exitX !== 0 ? { x: exitX } : exitY !== 0 ? { y: exitY } : {}}
       transition={{
         type: 'spring',
-        stiffness: 300,
-        damping: 30,
-        mass: 1,
+        stiffness: 150,
+        damping: 35,
+        mass: 1.5,
       }}
     >
       <div className="relative w-full max-w-md mx-auto h-full rounded-3xl overflow-hidden">
