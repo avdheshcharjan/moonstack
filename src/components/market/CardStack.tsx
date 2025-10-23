@@ -4,6 +4,7 @@ import { BinaryPair } from '@/src/types/prediction';
 import { MarketData } from '@/src/types/orders';
 import PredictionCard from './PredictionCard';
 import SwipeableCard from './SwipeableCard';
+import SwipeInstructionsModal from './SwipeInstructionsModal';
 
 interface CardStackProps {
   pairs: BinaryPair[];
@@ -24,6 +25,11 @@ const CardStack: React.FC<CardStackProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [preloadedIndices, setPreloadedIndices] = useState<Set<number>>(new Set([0, 1, 2]));
   const currentPairIdRef = React.useRef<string | null>(null);
+  const [showInstructionsModal, setShowInstructionsModal] = useState(true);
+
+  const handleCloseInstructions = useCallback(() => {
+    setShowInstructionsModal(false);
+  }, []);
 
   const currentPair = pairs[currentIndex];
   const hasMoreCards = currentIndex < pairs.length;
@@ -173,6 +179,10 @@ const CardStack: React.FC<CardStackProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto px-2 py-2">
       <div className="relative" style={{ height: 'calc(100vh - 180px)', maxHeight: '600px' }}>
+        <SwipeInstructionsModal
+          isOpen={showInstructionsModal}
+          onClose={handleCloseInstructions}
+        />
         <AnimatePresence mode="wait">
           {hasMoreCards && currentPair && (
             <motion.div
@@ -228,11 +238,7 @@ const CardStack: React.FC<CardStackProps> = ({
       </div>
 
       {isProcessing && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 text-center"
-        >
+        <div className="mt-4 text-center">
           <div className="inline-flex items-center gap-3 bg-purple-600 text-white px-6 py-3 rounded-full shadow-lg">
             <svg
               className="animate-spin h-6 w-6 text-white"
@@ -256,7 +262,7 @@ const CardStack: React.FC<CardStackProps> = ({
             </svg>
             <span className="font-semibold">Executing transaction...</span>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
