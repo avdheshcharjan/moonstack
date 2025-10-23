@@ -62,8 +62,8 @@ export async function executeImmediateFillOrder(
       OPTION_BOOK_ADDRESS as Address
     );
 
-    // Prepare calls array
-    const calls: Array<{ to: Address; data: Hex }> = [];
+    // Prepare calls array with proper typing
+    const calls: { to: Address; data: Hex; value?: bigint }[] = [];
 
     // Add approval call if needed
     if (approvalNeeded) {
@@ -71,6 +71,7 @@ export async function executeImmediateFillOrder(
       calls.push({
         to: USDC_ADDRESS as Address,
         data: approveCallData as Hex,
+        value: 0n,
       });
     }
 
@@ -105,11 +106,13 @@ export async function executeImmediateFillOrder(
     calls.push({
       to: OPTION_BOOK_ADDRESS as Address,
       data: fillOrderData as Hex,
+      value: 0n,
     });
 
     // Execute transaction using sendUserOperation
-    const txHash = await smartAccountClient.sendUserOperation({
-      calls: calls as any,
+    // Cast to any to avoid deep type instantiation error in permissionless library
+    const txHash: Hex = await (smartAccountClient as any).sendUserOperation({
+      calls,
     });
 
     console.log('Transaction submitted:', txHash);
