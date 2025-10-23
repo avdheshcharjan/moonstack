@@ -6,9 +6,7 @@ import { filterPairsByExpiry, sortPairsByExpiry, countPairsByExpiry } from '@/sr
 import CardStack from './CardStack';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';
 import ExpiryFilter from './ExpiryFilter';
-import BatchConfirmationModal from './BatchConfirmationModal';
 import { BinaryPair, ExpiryFilter as ExpiryFilterType } from '@/src/types/prediction';
-import { useBatchTransactions } from '@/src/hooks/useBatchTransactions';
 import type { Address } from 'viem';
 
 interface SwipeViewProps {
@@ -20,24 +18,9 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { toasts, addToast, removeToast } = useToastManager();
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilterType>('all');
   const [filterKey, setFilterKey] = useState(0);
-  const [showBatchModal, setShowBatchModal] = useState(false);
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 5);
-
-  // Batch transactions
-  const {
-    batch,
-    batchStatuses,
-    isBatchMode,
-    isExecuting,
-    addToBatch,
-    removeFromBatch,
-    clearBatch,
-    toggleBatchMode,
-    executeBatch,
-    getTotalUSDCNeeded,
-  } = useBatchTransactions();
 
   const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
     setExpiryFilter(newFilter);
@@ -74,61 +57,36 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       throw new Error('Wallet not connected');
     }
 
-    if (isBatchMode) {
-      // Add to batch instead of executing immediately
-      addToBatch(pair, action, betSize);
-      addToast(
-        `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to batch`,
-        'success'
-      );
-    } else {
-      // Execute immediately with paymaster
-      addToast(
-        `Executing ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}...`,
-        'info'
-      );
+    // Show loading toast
+    addToast(
+      `Executing ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}...`,
+      'info'
+    );
 
-      try {
-        const { executeImmediateFillOrder } = await import('@/src/services/immediateExecution');
-        const result = await executeImmediateFillOrder(pair, action, betSize, walletAddress as Address);
+    try {
+      // Use direct execution with user's wallet (no smart account)
+      const { executeDirectFillOrder } = await import('@/src/services/directExecution');
+      const result = await executeDirectFillOrder(pair, action, betSize, walletAddress as Address);
 
-        if (result.success) {
-          addToast(
-            `Successfully executed ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}!`,
-            'success'
-          );
-        } else {
-          addToast(
-            result.error || 'Failed to execute bet',
-            'error'
-          );
-        }
-      } catch (error) {
+      if (result.success) {
         addToast(
-          error instanceof Error ? error.message : 'Failed to execute bet',
+          `Successfully executed ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}!`,
+          'success',
+          result.txHash
+        );
+      } else {
+        addToast(
+          result.error || 'Failed to execute bet',
           'error'
         );
       }
-    }
-  }, [walletAddress, isBatchMode, addToBatch, betSize, addToast]);
-
-  const handleExecuteBatch = useCallback(async () => {
-    if (!walletAddress) {
-      addToast('Wallet not connected', 'error');
-      return;
-    }
-
-    try {
-      await executeBatch(walletAddress as Address);
-      addToast(`Successfully executed ${batch.length} bets!`, 'success');
-      setShowBatchModal(false);
     } catch (error) {
       addToast(
-        error instanceof Error ? error.message : 'Failed to execute batch',
+        error instanceof Error ? error.message : 'Failed to execute bet',
         'error'
       );
     }
-  }, [walletAddress, executeBatch, batch.length, addToast]);
+  }, [walletAddress, betSize, addToast]);
 
 
   if (!walletAddress) {
@@ -240,25 +198,6 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         counts={expiryCounts}
       />
 
-      {/* Batch Mode Controls */}
-      {batch.length > 0 && (
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <button
-            onClick={() => setShowBatchModal(true)}
-            className="px-3 py-1.5 text-sm rounded-lg font-bold bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center gap-1"
-          >
-            Review Batch ({batch.length})
-          </button>
-
-          <button
-            onClick={clearBatch}
-            className="px-3 py-1.5 text-sm rounded-lg font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
-          >
-            Clear All
-          </button>
-        </div>
-      )}
-
       <CardStack
         key={filterKey}
         pairs={pairs}
@@ -266,17 +205,6 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         betSize={betSize}
         marketData={marketData}
         onRefresh={fetchOrders}
-      />
-
-      <BatchConfirmationModal
-        isOpen={showBatchModal}
-        batch={batch}
-        batchStatuses={batchStatuses}
-        totalUSDC={getTotalUSDCNeeded()}
-        isExecuting={isExecuting}
-        onExecute={handleExecuteBatch}
-        onClose={() => setShowBatchModal(false)}
-        onRemoveBet={removeFromBatch}
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
