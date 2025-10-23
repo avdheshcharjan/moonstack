@@ -10,7 +10,9 @@ interface SwipeableCardProps {
   disabled: boolean;
 }
 
-const SWIPE_THRESHOLD = 100;
+const HORIZONTAL_SWIPE_THRESHOLD = 120;
+const VERTICAL_SWIPE_THRESHOLD = 100;
+const VISUAL_FEEDBACK_THRESHOLD = 50;
 
 const SwipeableCard: React.FC<SwipeableCardProps> = ({
   children,
@@ -47,32 +49,52 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     const velocityY = info.velocity.y;
 
     // Check for vertical swipe up first
-    if (offsetY < -SWIPE_THRESHOLD || velocityY < -500) {
+    if (offsetY < -VERTICAL_SWIPE_THRESHOLD || velocityY < -500) {
       setExitY(-1000);
       onSwipeUp();
       onSwipeComplete();
-    } else if (offsetX > SWIPE_THRESHOLD || velocityX > 500) {
+    } else if (offsetX > HORIZONTAL_SWIPE_THRESHOLD || velocityX > 500) {
       setExitX(1000);
       onSwipeRight();
       onSwipeComplete();
-    } else if (offsetX < -SWIPE_THRESHOLD || velocityX < -500) {
+    } else if (offsetX < -HORIZONTAL_SWIPE_THRESHOLD || velocityX < -500) {
       setExitX(-1000);
       onSwipeLeft();
       onSwipeComplete();
     }
   };
 
-  const currentX = x.get();
-  const currentY = y.get();
-  const showYesOverlay = currentX > 0 && Math.abs(currentY) < SWIPE_THRESHOLD / 2;
-  const showNoOverlay = currentX < 0 && Math.abs(currentY) < SWIPE_THRESHOLD / 2;
-  const showSkipOverlay = currentY < 0 && Math.abs(currentX) < SWIPE_THRESHOLD / 2;
-  const overlayOpacityX = Math.abs(currentX) / SWIPE_THRESHOLD;
-  const overlayOpacityY = Math.abs(currentY) / SWIPE_THRESHOLD;
+  // Create reactive opacity transforms for progressive color intensity
+  // These will update in real-time as the user drags
+  const pumpOpacity = useTransform(x, (latest) => {
+    if (latest < VISUAL_FEEDBACK_THRESHOLD) return 0;
+    const progressDistance = latest - VISUAL_FEEDBACK_THRESHOLD;
+    const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD + 30;
+    return Math.min(progressDistance / maxProgressDistance, 1);
+  });
+
+  const dumpOpacity = useTransform(x, (latest) => {
+    if (latest > -VISUAL_FEEDBACK_THRESHOLD) return 0;
+    const progressDistance = Math.abs(latest) - VISUAL_FEEDBACK_THRESHOLD;
+    const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD + 30;
+    return Math.min(progressDistance / maxProgressDistance, 1);
+  });
+
+  const skipOpacity = useTransform(y, (latest) => {
+    if (latest > -VISUAL_FEEDBACK_THRESHOLD) return 0;
+    const progressDistance = Math.abs(latest) - VISUAL_FEEDBACK_THRESHOLD;
+    const maxProgressDistance = VERTICAL_SWIPE_THRESHOLD + 30;
+    return Math.min(progressDistance / maxProgressDistance, 1);
+  });
+
+  // Background opacity for overlay (scales with drag distance)
+  const pumpBgOpacity = useTransform(pumpOpacity, (latest) => latest * 0.5);
+  const dumpBgOpacity = useTransform(dumpOpacity, (latest) => latest * 0.5);
+  const skipBgOpacity = useTransform(skipOpacity, (latest) => latest * 0.5);
 
   return (
     <motion.div
-      className="relative w-full h-full select-none cursor-grab active:cursor-grabbing"
+      className="relative w-full h-full select-none cursor-grab active:cursor-grabbing overflow-hidden"
       style={{
         x,
         y,
@@ -85,65 +107,76 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       animate={exitX !== 0 ? { x: exitX } : exitY !== 0 ? { y: exitY } : {}}
       transition={{
         type: 'spring',
-        stiffness: 300,
-        damping: 30,
+        stiffness: 500,
+        damping: 20,
       }}
     >
-      {children}
+      <div className="relative w-full max-w-md mx-auto h-full rounded-3xl overflow-hidden">
+        {children}
 
-      {showYesOverlay && (
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl"
+        {/* PUMP Overlay (Swipe Right) */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundColor: `rgba(34, 197, 94, ${Math.min(overlayOpacityX * 0.3, 0.3)})`,
+            backgroundColor: 'rgba(16, 185, 129, 1)',
+            opacity: pumpBgOpacity,
           }}
         >
-          <div
-            className="text-6xl font-bold text-green-500 transform rotate-12 border-4 border-green-500 px-8 py-4 rounded-xl"
-            style={{
-              opacity: Math.min(overlayOpacityX, 1),
-            }}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ opacity: pumpOpacity }}
           >
-            PUMP
-          </div>
-        </div>
-      )}
+            <div
+              className="text-6xl font-bold transform rotate-12 border-4 px-8 py-4 rounded-xl tracking-wider"
+              style={{ color: '#FFFFFF', borderColor: '#10B981', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
+            >
+              PUMP
+            </div>
+          </motion.div>
+        </motion.div>
 
-      {showNoOverlay && (
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl"
+        {/* DUMP Overlay (Swipe Left) */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundColor: `rgba(239, 68, 68, ${Math.min(overlayOpacityX * 0.3, 0.3)})`,
+            backgroundColor: 'rgba(239, 68, 68, 1)',
+            opacity: dumpBgOpacity,
           }}
         >
-          <div
-            className="text-6xl font-bold text-red-500 transform -rotate-12 border-4 border-red-500 px-8 py-4 rounded-xl"
-            style={{
-              opacity: Math.min(overlayOpacityX, 1),
-            }}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ opacity: dumpOpacity }}
           >
-            DUMP
-          </div>
-        </div>
-      )}
+            <div
+              className="text-6xl font-bold transform -rotate-12 border-4 px-8 py-4 rounded-xl tracking-wider"
+              style={{ color: '#FFFFFF', borderColor: '#EF4444', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
+            >
+              DUMP
+            </div>
+          </motion.div>
+        </motion.div>
 
-      {showSkipOverlay && (
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl"
+        {/* SKIP Overlay (Swipe Up) */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundColor: `rgba(168, 85, 247, ${Math.min(overlayOpacityY * 0.3, 0.3)})`,
+            backgroundColor: 'rgba(168, 85, 247, 1)',
+            opacity: skipBgOpacity,
           }}
         >
-          <div
-            className="text-6xl font-bold text-purple-500 border-4 border-purple-500 px-8 py-4 rounded-xl"
-            style={{
-              opacity: Math.min(overlayOpacityY, 1),
-            }}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ opacity: skipOpacity }}
           >
-            SKIP
-          </div>
-        </div>
-      )}
+            <div
+              className="text-6xl font-bold border-4 px-8 py-4 rounded-xl tracking-wider"
+              style={{ color: '#FFFFFF', borderColor: '#a855f7', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
+            >
+              SKIP
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 };
