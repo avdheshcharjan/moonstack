@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
+import React from 'react';
 import './globals.css';
 import type { Metadata } from 'next';
+import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
 
 export const metadata: Metadata = {
   other: {
@@ -25,7 +25,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <BaseAccountProvider>
+          {children}
+        </BaseAccountProvider>
+      </body>
     </html>
   );
 }

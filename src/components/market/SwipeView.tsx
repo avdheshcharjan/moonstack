@@ -219,37 +219,24 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         counts={expiryCounts}
       />
 
-      {/* Batch Mode Toggle and Review Button */}
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <button
-          onClick={toggleBatchMode}
-          className={`px-3 py-1.5 text-sm rounded-lg font-bold transition-colors ${
-            isBatchMode
-              ? 'bg-purple-600 text-white'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-          }`}
-        >
-          {isBatchMode ? '✓ Batch Mode ON' : 'Batch Mode OFF'}
-        </button>
-
-        {isBatchMode && batch.length > 0 && (
+      {/* Batch Mode Controls */}
+      {batch.length > 0 && (
+        <div className="flex items-center justify-center gap-2 mb-2">
           <button
             onClick={() => setShowBatchModal(true)}
             className="px-3 py-1.5 text-sm rounded-lg font-bold bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center gap-1"
           >
             Review Batch ({batch.length})
           </button>
-        )}
 
-        {isBatchMode && batch.length > 0 && (
           <button
             onClick={clearBatch}
             className="px-3 py-1.5 text-sm rounded-lg font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
           >
             Clear All
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <CardStack
         key={filterKey}

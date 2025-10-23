@@ -5,6 +5,7 @@ const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const searchParams = request.nextUrl.searchParams;
   const coinId = searchParams.get('coinId');
+  const timeRange = searchParams.get('timeRange') || '1';
 
   if (!coinId) {
     return NextResponse.json({ error: 'coinId is required' }, { status: 400 });
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const url = new URL(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart`);
     url.searchParams.append('vs_currency', 'usd');
-    url.searchParams.append('days', '1');
+    url.searchParams.append('days', timeRange);
 
     if (COINGECKO_API_KEY) {
       url.searchParams.append('interval', 'hourly');
