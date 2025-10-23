@@ -87,29 +87,29 @@ export const OPTION_BOOK_ABI = [
     "inputs": [
       {
         "components": [
-          {"internalType": "address", "name": "maker", "type": "address"},
-          {"internalType": "uint256", "name": "orderExpiryTimestamp", "type": "uint256"},
-          {"internalType": "address", "name": "collateral", "type": "address"},
-          {"internalType": "bool", "name": "isCall", "type": "bool"},
-          {"internalType": "address", "name": "priceFeed", "type": "address"},
-          {"internalType": "address", "name": "implementation", "type": "address"},
-          {"internalType": "bool", "name": "isLong", "type": "bool"},
-          {"internalType": "uint256", "name": "maxCollateralUsable", "type": "uint256"},
-          {"internalType": "uint256[]", "name": "strikes", "type": "uint256[]"},
-          {"internalType": "uint256", "name": "expiry", "type": "uint256"},
-          {"internalType": "uint256", "name": "price", "type": "uint256"},
-          {"internalType": "uint256", "name": "numContracts", "type": "uint256"},
-          {"internalType": "bytes", "name": "extraOptionData", "type": "bytes"}
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "uint256", "name": "orderExpiryTimestamp", "type": "uint256" },
+          { "internalType": "address", "name": "collateral", "type": "address" },
+          { "internalType": "bool", "name": "isCall", "type": "bool" },
+          { "internalType": "address", "name": "priceFeed", "type": "address" },
+          { "internalType": "address", "name": "implementation", "type": "address" },
+          { "internalType": "bool", "name": "isLong", "type": "bool" },
+          { "internalType": "uint256", "name": "maxCollateralUsable", "type": "uint256" },
+          { "internalType": "uint256[]", "name": "strikes", "type": "uint256[]" },
+          { "internalType": "uint256", "name": "expiry", "type": "uint256" },
+          { "internalType": "uint256", "name": "price", "type": "uint256" },
+          { "internalType": "uint256", "name": "numContracts", "type": "uint256" },
+          { "internalType": "bytes", "name": "extraOptionData", "type": "bytes" }
         ],
         "internalType": "struct OptionBook.Order",
         "name": "order",
         "type": "tuple"
       },
-      {"internalType": "bytes", "name": "signature", "type": "bytes"},
-      {"internalType": "address", "name": "referrer", "type": "address"}
+      { "internalType": "bytes", "name": "signature", "type": "bytes" },
+      { "internalType": "address", "name": "referrer", "type": "address" }
     ],
     "name": "fillOrder",
-    "outputs": [{"internalType": "address", "name": "optionAddress", "type": "address"}],
+    "outputs": [{ "internalType": "address", "name": "optionAddress", "type": "address" }],
     "stateMutability": "nonpayable",
     "type": "function"
   }
@@ -121,4 +121,5 @@ export const OPTION_BOOK_ABI = [
 export const ERC20_ABI = [
   'function approve(address spender, uint256 amount) external returns (bool)',
   'function allowance(address owner, address spender) external view returns (uint256)',
+  'function balanceOf(address owner) external view returns (uint256)',
 ] as const;

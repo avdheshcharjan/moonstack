@@ -1,10 +1,10 @@
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
-import { getUSDCBalance } from '@/src/utils/usdcApproval';
-import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS } from '@/src/utils/contracts';
+import { getUSDCBalance, checkUSDCAllowance } from '@/src/utils/usdcApproval';
+import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS, USDC_ADDRESS, ERC20_ABI } from '@/src/utils/contracts';
 import type { RawOrderData } from '@/src/types/orders';
 import type { BinaryPair } from '@/src/types/prediction';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, Contract } from 'ethers';
 
 export interface DirectExecutionResult {
   success: boolean;
@@ -14,11 +14,12 @@ export interface DirectExecutionResult {
 
 /**
  * Execute a single fillOrder transaction directly with the user's wallet
- * Simplified flow - no approval needed:
+ * Per OptionBook.md section 2.4:
  * 1. Check USDC balance
- * 2. Calculate numContracts from betSize
- * 3. Call fillOrder with user's wallet
- * 4. Use the referrer address from contracts
+ * 2. Check USDC allowance and approve if needed
+ * 3. Calculate numContracts from betSize
+ * 4. Call fillOrder with user's wallet
+ * 5. Use the referrer address from contracts
  */
 export async function executeDirectFillOrder(
   pair: BinaryPair,
@@ -66,7 +67,34 @@ export async function executeDirectFillOrder(
       );
     }
 
-    // Step 3: Prepare fillOrder call
+    // Step 3: Check USDC allowance and approve if needed (per OptionBook.md section 2.4)
+    const currentAllowance = await checkUSDCAllowance(userAddress, OPTION_BOOK_ADDRESS as Address);
+
+    if (currentAllowance < requiredAmount) {
+      console.log('Approving USDC for OptionBook...');
+      console.log('Required:', Number(requiredAmount) / 1_000_000, 'USDC');
+      console.log('Current allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
+
+      // Create USDC contract instance
+      const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
+
+      // Approve USDC spending
+      const approveTx = await usdcContract.approve(OPTION_BOOK_ADDRESS, requiredAmount);
+      console.log('Approval transaction submitted:', approveTx.hash);
+
+      // Wait for approval to be mined
+      const approvalReceipt = await approveTx.wait();
+
+      if (!approvalReceipt || approvalReceipt.status !== 1) {
+        throw new Error('USDC approval failed');
+      }
+
+      console.log('USDC approval confirmed');
+    } else {
+      console.log('USDC already approved, current allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
+    }
+
+    // Step 4: Prepare fillOrder call
     // Per OptionBook.md section 2.4: DO NOT modify order fields except numContracts
     const orderParams = {
       maker: order.order.maker as Address,
@@ -89,7 +117,7 @@ export async function executeDirectFillOrder(
     console.log('Bet size:', betSize, 'USDC');
     console.log('Num contracts:', numContracts.toString());
 
-    // Step 4: Execute fillOrder transaction
+    // Step 5: Execute fillOrder transaction
     const fillOrderData = encodeFunctionData({
       abi: OPTION_BOOK_ABI,
       functionName: 'fillOrder',
