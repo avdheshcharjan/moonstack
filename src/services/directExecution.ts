@@ -1,27 +1,37 @@
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
-import { createSmartAccountWithPaymaster } from '@/src/lib/smartAccount';
-import { needsApproval, encodeUSDCApprove, getUSDCBalance } from '@/src/utils/usdcApproval';
-import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
+import { getUSDCBalance } from '@/src/utils/usdcApproval';
+import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS } from '@/src/utils/contracts';
 import type { RawOrderData } from '@/src/types/orders';
 import type { BinaryPair } from '@/src/types/prediction';
+import { BrowserProvider } from 'ethers';
 
-export interface ImmediateExecutionResult {
+export interface DirectExecutionResult {
   success: boolean;
   txHash?: Hex;
   error?: string;
 }
 
 /**
- * Execute a single fillOrder transaction immediately with paymaster sponsorship
+ * Execute a single fillOrder transaction directly with the user's wallet
+ * Simplified flow - no approval needed:
+ * 1. Check USDC balance
+ * 2. Calculate numContracts from betSize
+ * 3. Call fillOrder with user's wallet
+ * 4. Use the referrer address from contracts
  */
-export async function executeImmediateFillOrder(
+export async function executeDirectFillOrder(
   pair: BinaryPair,
   action: 'yes' | 'no',
   betSize: number,
-  ownerAddress: Address
-): Promise<ImmediateExecutionResult> {
+  userAddress: Address
+): Promise<DirectExecutionResult> {
   try {
+    // Validate wallet connection
+    if (!window.ethereum) {
+      throw new Error('No wallet provider found. Please install MetaMask or another Web3 wallet.');
+    }
+
     // Select the order based on action
     const order: RawOrderData = action === 'yes' ? pair.callOption : pair.putOption;
 
@@ -30,11 +40,14 @@ export async function executeImmediateFillOrder(
       throw new Error('Invalid order data');
     }
 
-    // Create smart account client with paymaster support
-    const smartAccountClient = await createSmartAccountWithPaymaster(ownerAddress);
-    const smartAccountAddress = smartAccountClient.account.address;
+    // Create ethers provider for transaction execution
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
 
-    // Calculate number of contracts based on bet size and price
+    // Step 1: Check USDC balance
+    const balance = await getUSDCBalance(userAddress);
+
+    // Step 2: Calculate number of contracts based on bet size and price
     // Per OptionBook.md section 2.4:
     // - price is in 8 decimals
     // - betSize is in dollars
@@ -44,40 +57,18 @@ export async function executeImmediateFillOrder(
     const numContracts = BigInt(Math.floor(contractsToBuy * 1e6)); // Scale to 6 decimals and round down
 
     // Calculate total USDC needed
-    const betSizeInUSDC = BigInt(Math.floor(betSize * 1_000_000)); // Convert betSize to USDC (6 decimals)
-    const totalNeeded = betSizeInUSDC;
+    const requiredAmount = BigInt(Math.floor(betSize * 1_000_000)); // Convert betSize to USDC (6 decimals)
 
-    // Check USDC balance of the owner wallet (not the smart account)
-    const balance = await getUSDCBalance(ownerAddress);
-    if (balance < totalNeeded) {
+    // Validate balance
+    if (balance < requiredAmount) {
       throw new Error(
-        `Insufficient USDC balance. Need ${Number(totalNeeded) / 1_000_000} USDC, have ${Number(balance) / 1_000_000} USDC`
+        `Insufficient USDC balance. Need ${Number(requiredAmount) / 1_000_000} USDC, have ${Number(balance) / 1_000_000} USDC`
       );
     }
 
-    // Check if we need approval
-    const approvalNeeded = await needsApproval(
-      smartAccountAddress,
-      totalNeeded,
-      OPTION_BOOK_ADDRESS as Address
-    );
-
-    // Prepare calls array with proper typing
-    const calls: { to: Address; data: Hex; value?: bigint }[] = [];
-
-    // Add approval call if needed
-    if (approvalNeeded) {
-      const approveCallData = encodeUSDCApprove(totalNeeded);
-      calls.push({
-        to: USDC_ADDRESS as Address,
-        data: approveCallData as Hex,
-        value: 0n,
-      });
-    }
-
-    // Prepare fillOrder call - validate and convert all fields
+    // Step 3: Prepare fillOrder call
     // Per OptionBook.md section 2.4: DO NOT modify order fields except numContracts
-    const typedOrder = {
+    const orderParams = {
       maker: order.order.maker as Address,
       orderExpiryTimestamp: BigInt(order.order.orderExpiryTimestamp),
       collateral: order.order.collateral as Address,
@@ -86,46 +77,56 @@ export async function executeImmediateFillOrder(
       implementation: order.order.implementation as Address,
       isLong: order.order.isLong, // Keep original - signature will fail if modified
       maxCollateralUsable: BigInt(order.order.maxCollateralUsable),
-      strikes: order.order.strikes.map((s: string | bigint) => BigInt(s)),
+      strikes: order.order.strikes.map((s: string) => BigInt(s)),
       expiry: BigInt(order.order.expiry),
       price: BigInt(order.order.price),
       numContracts: numContracts, // Calculated above based on bet size
       extraOptionData: (order.order.extraOptionData || '0x') as Hex,
     };
 
+    console.log('Executing fillOrder...');
+    console.log('Order params:', orderParams);
+    console.log('Bet size:', betSize, 'USDC');
+    console.log('Num contracts:', numContracts.toString());
+
+    // Step 4: Execute fillOrder transaction
     const fillOrderData = encodeFunctionData({
       abi: OPTION_BOOK_ABI,
       functionName: 'fillOrder',
       args: [
-        typedOrder,
+        orderParams,
         order.signature as Hex,
-        REFERRER_ADDRESS as Address,
+        REFERRER_ADDRESS as Address, // Use referrer address from contracts
       ],
     });
 
-    calls.push({
-      to: OPTION_BOOK_ADDRESS as Address,
-      data: fillOrderData as Hex,
-      value: 0n,
+    console.log('Executing fillOrder...');
+    const tx = await signer.sendTransaction({
+      to: OPTION_BOOK_ADDRESS,
+      data: fillOrderData,
     });
 
-    // Execute transaction using sendUserOperation
-    // Cast to any to avoid deep type instantiation error in permissionless library
-    const txHash: Hex = await (smartAccountClient as any).sendUserOperation({
-      calls,
-    });
+    console.log('Transaction submitted:', tx.hash);
 
-    console.log('Transaction submitted:', txHash);
+    // Wait for transaction to be mined
+    const receipt = await tx.wait();
 
-    // Store position in database
-    await storePosition(pair, action, order, txHash, ownerAddress);
+    if (receipt && receipt.status === 1) {
+      const txHash = receipt.hash as Hex;
+      console.log('Transaction confirmed:', txHash);
 
-    return {
-      success: true,
-      txHash,
-    };
+      // Store position in database
+      await storePosition(pair, action, order, txHash, userAddress, betSize);
+
+      return {
+        success: true,
+        txHash,
+      };
+    } else {
+      throw new Error('Transaction failed');
+    }
   } catch (error) {
-    console.error('Immediate execution failed:', error);
+    console.error('Direct execution failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -141,10 +142,14 @@ async function storePosition(
   action: 'yes' | 'no',
   order: RawOrderData,
   txHash: Hex,
-  walletAddress: Address
+  walletAddress: Address,
+  betSize: number
 ): Promise<void> {
   try {
     const parsed = action === 'yes' ? pair.callParsed : pair.putParsed;
+
+    // Calculate collateral used based on actual bet size
+    const collateralUsed = BigInt(Math.floor(betSize * 1_000_000));
 
     const response = await fetch('/api/positions', {
       method: 'POST',
@@ -162,7 +167,7 @@ async function storePosition(
         expiry: pair.expiry.toISOString(),
         price_per_contract: order.order.price.toString(),
         max_size: order.order.maxCollateralUsable.toString(),
-        collateral_used: (BigInt(order.order.price) * BigInt(order.order.numContracts)).toString(),
+        collateral_used: collateralUsed.toString(),
         num_contracts: order.order.numContracts.toString(),
         raw_order: order,
       }),

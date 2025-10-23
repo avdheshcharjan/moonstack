@@ -62,10 +62,11 @@ const CardStack: React.FC<CardStackProps> = ({
     setIsProcessing(true);
     try {
       await onSwipe(currentPair, action);
-      // Move to next card after swipe (whether batch or immediate)
+      // Move to next card after successful execution
       setCurrentIndex(prev => prev + 1);
     } catch (error) {
       console.error('Swipe action failed:', error);
+      // Don't move to next card on error - let user retry or skip
     } finally {
       setIsProcessing(false);
     }
@@ -227,10 +228,14 @@ const CardStack: React.FC<CardStackProps> = ({
       </div>
 
       {isProcessing && (
-        <div className="mt-4 text-center">
-          <div className="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 text-center"
+        >
+          <div className="inline-flex items-center gap-3 bg-purple-600 text-white px-6 py-3 rounded-full shadow-lg">
             <svg
-              className="animate-spin h-5 w-5 text-white"
+              className="animate-spin h-6 w-6 text-white"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -249,9 +254,9 @@ const CardStack: React.FC<CardStackProps> = ({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            Processing transaction...
+            <span className="font-semibold">Executing transaction...</span>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
