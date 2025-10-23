@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BinaryPair } from '@/src/types/prediction';
 import { MarketData } from '@/src/types/orders';
 import RollingNumber from '@/src/components/shared/RollingNumber';
-import TradingViewChart from '@/src/components/charts/TradingViewChart';
+import CoinGeckoChart from '@/src/components/charts/CoinGeckoChart';
 import BearishBullishSpectrum from './BearishBullishSpectrum';
 import { generateShareUrl, copyToClipboard } from '@/src/utils/shareUtils';
 
@@ -219,7 +219,7 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
         {/* Chart Section */}
         <div className="flex-1 px-2 min-h-0">
           <div className="h-full max-h-48 rounded-xl overflow-hidden bg-slate-950">
-            <TradingViewChart
+            <CoinGeckoChart
               symbol={getTradingViewSymbol(pair.underlying)}
               theme="dark"
               height={192}
@@ -237,10 +237,10 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
               className="flex-1 relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg tracking-wider">
+                <span className="text-lg tracking-wider">DUMP!</span>
+                <span className="text-xs font-normal opacity-90">
                   ${downPayout.toFixed(2)} ({downMultiplier}x)
                 </span>
-                <span className="text-xs font-normal opacity-90">DUMP!</span>
               </div>
             </button>
 
@@ -258,10 +258,10 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
               className="flex-1 relative bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg tracking-wider">
+                <span className="text-lg tracking-wider">PUMP!</span>
+                <span className="text-xs font-normal opacity-90">
                   ${upPayout.toFixed(2)} ({upMultiplier}x)
                 </span>
-                <span className="text-xs font-normal opacity-90">PUMP!</span>
               </div>
             </button>
           </div>
