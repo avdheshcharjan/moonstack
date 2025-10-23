@@ -12,7 +12,7 @@ interface SwipeableCardProps {
 
 const HORIZONTAL_SWIPE_THRESHOLD = 120;
 const VERTICAL_SWIPE_THRESHOLD = 100;
-const VISUAL_FEEDBACK_THRESHOLD = 50;
+const VISUAL_FEEDBACK_THRESHOLD = 15; // Reduced from 50 for instant feedback
 
 const SwipeableCard: React.FC<SwipeableCardProps> = ({
   children,
@@ -69,28 +69,34 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   const pumpOpacity = useTransform(x, (latest) => {
     if (latest < VISUAL_FEEDBACK_THRESHOLD) return 0;
     const progressDistance = latest - VISUAL_FEEDBACK_THRESHOLD;
-    const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD + 30;
-    return Math.min(progressDistance / maxProgressDistance, 1);
+    const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD - 20; // Changed from +30 to -20 for faster ramp
+    const baseOpacity = Math.min(progressDistance / maxProgressDistance, 1);
+    // Add instant 0.2 opacity boost when threshold crossed
+    return baseOpacity > 0 ? Math.min(baseOpacity + 0.2, 1) : 0;
   });
 
   const dumpOpacity = useTransform(x, (latest) => {
     if (latest > -VISUAL_FEEDBACK_THRESHOLD) return 0;
     const progressDistance = Math.abs(latest) - VISUAL_FEEDBACK_THRESHOLD;
-    const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD + 30;
-    return Math.min(progressDistance / maxProgressDistance, 1);
+    const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD - 20; // Changed from +30 to -20 for faster ramp
+    const baseOpacity = Math.min(progressDistance / maxProgressDistance, 1);
+    // Add instant 0.2 opacity boost when threshold crossed
+    return baseOpacity > 0 ? Math.min(baseOpacity + 0.2, 1) : 0;
   });
 
   const skipOpacity = useTransform(y, (latest) => {
     if (latest > -VISUAL_FEEDBACK_THRESHOLD) return 0;
     const progressDistance = Math.abs(latest) - VISUAL_FEEDBACK_THRESHOLD;
-    const maxProgressDistance = VERTICAL_SWIPE_THRESHOLD + 30;
-    return Math.min(progressDistance / maxProgressDistance, 1);
+    const maxProgressDistance = VERTICAL_SWIPE_THRESHOLD - 20; // Changed from +30 to -20 for faster ramp
+    const baseOpacity = Math.min(progressDistance / maxProgressDistance, 1);
+    // Add instant 0.2 opacity boost when threshold crossed
+    return baseOpacity > 0 ? Math.min(baseOpacity + 0.2, 1) : 0;
   });
 
-  // Background opacity for overlay (scales with drag distance)
-  const pumpBgOpacity = useTransform(pumpOpacity, (latest) => latest * 0.5);
-  const dumpBgOpacity = useTransform(dumpOpacity, (latest) => latest * 0.5);
-  const skipBgOpacity = useTransform(skipOpacity, (latest) => latest * 0.5);
+  // Background opacity for overlay (scales with drag distance) - increased intensity
+  const pumpBgOpacity = useTransform(pumpOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
+  const dumpBgOpacity = useTransform(dumpOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
+  const skipBgOpacity = useTransform(skipOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
 
   return (
     <motion.div
@@ -107,8 +113,9 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       animate={exitX !== 0 ? { x: exitX } : exitY !== 0 ? { y: exitY } : {}}
       transition={{
         type: 'spring',
-        stiffness: 500,
-        damping: 20,
+        stiffness: 800,  // Increased from 500 for faster animation
+        damping: 25,     // Increased from 20 to prevent bounce
+        mass: 0.5,       // Added for quicker acceleration
       }}
     >
       <div className="relative w-full max-w-md mx-auto h-full rounded-3xl overflow-hidden">

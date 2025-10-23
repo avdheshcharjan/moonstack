@@ -31,7 +31,7 @@ const Moonstack = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#000d1d] via-slate-900 to-[#000d1d]">
       {/* Top Bar */}
-      <TopBar onProfileClick={() => setCurrentView('mybets')} />
+      <TopBar />
 
       {/* Main Content */}
       <div className="pt-16 pb-20 px-2 max-w-7xl mx-auto">
