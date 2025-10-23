@@ -13,7 +13,7 @@ const Moonstack = () => {
   const [mounted, setMounted] = useState(false);
 
   // Wallet state - using hook
-  const { walletAddress, chainId, isConnecting, connectWallet, disconnectWallet } = useWallet();
+  const { walletAddress, connectWallet } = useWallet();
 
   // Page navigation
   const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
@@ -30,7 +30,7 @@ const Moonstack = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#000d1d] via-slate-900 to-[#000d1d]">
+    <div className="min-h-screen bg-gradient-to-br from-[#000d1d] via-slate-900 to-[#000d1d] overflow-x-hidden">
       {/* Top Bar */}
       <TopBar />
 
@@ -46,26 +46,12 @@ const Moonstack = () => {
                   <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
                   <div className="text-slate-400 mb-6">Sign in with Base Account for instant smart wallet access</div>
 
-                  <div className="flex flex-col gap-4 items-center">
-                    {/* Sign in with Base Button */}
-                    <SignInWithBaseButton
-                      align="center"
-                      variant="solid"
-                      colorScheme="dark"
-                      onClick={connectWallet}
-                    />
-
-                    <div className="text-slate-500 text-sm">or</div>
-
-                    {/* Fallback connect button */}
-                    <button
-                      onClick={connectWallet}
-                      disabled={isConnecting}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 shadow-lg"
-                    >
-                      {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-                    </button>
-                  </div>
+                  <SignInWithBaseButton
+                    align="center"
+                    variant="solid"
+                    colorScheme="dark"
+                    onClick={connectWallet}
+                  />
                 </div>
               </div>
             ) : (

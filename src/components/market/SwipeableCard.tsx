@@ -100,7 +100,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   return (
     <motion.div
-      className="relative w-full h-full select-none cursor-grab active:cursor-grabbing overflow-hidden"
+      className="relative w-full h-full select-none cursor-grab active:cursor-grabbing overflow-hidden touch-auto"
       style={{
         x,
         y,
@@ -109,13 +109,15 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       }}
       drag={disabled ? false : true}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      dragElastic={0}
+      dragMomentum={false}
       onDragEnd={handleDragEnd}
       animate={exitX !== 0 ? { x: exitX } : exitY !== 0 ? { y: exitY } : {}}
       transition={{
         type: 'spring',
-        stiffness: 800,  // Increased from 500 for faster animation
-        damping: 25,     // Increased from 20 to prevent bounce
-        mass: 0.5,       // Added for quicker acceleration
+        stiffness: 300,
+        damping: 30,
+        mass: 1,
       }}
     >
       <div className="relative w-full max-w-md mx-auto h-full rounded-3xl overflow-hidden">

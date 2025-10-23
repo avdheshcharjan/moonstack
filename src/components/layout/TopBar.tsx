@@ -6,7 +6,7 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = () => {
   return (
-    <div className="fixed top-0 left-0 right-0 bg-gradient-to-b from-[#000d1d] via-slate-900/95 to-transparent backdrop-blur-lg z-40 border-b border-slate-800/50">
+    <div className="fixed top-0 left-0 right-0 bg-gradient-to-b from-[#000d1d] via-slate-900/95 to-transparent backdrop-blur-lg z-50 border-b border-slate-800/50 touch-none pointer-events-auto">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
