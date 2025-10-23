@@ -109,7 +109,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       }}
       drag={disabled ? false : true}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0}
+      dragElastic={0.7}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       animate={exitX !== 0 ? { x: exitX } : exitY !== 0 ? { y: exitY } : {}}
