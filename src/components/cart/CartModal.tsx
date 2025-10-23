@@ -21,7 +21,17 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   useEffect(() => {
     if (isOpen) {
       loadTransactions();
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore body scroll when modal is closed
+      document.body.style.overflow = 'unset';
     }
+
+    // Cleanup function to restore scroll on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen]);
 
   const loadTransactions = () => {
@@ -123,11 +133,17 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-900 border-0 md:border md:border-gray-700 rounded-none md:rounded-lg shadow-xl w-full h-full md:max-w-2xl md:w-full md:mx-4 md:max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-2xl font-bold text-white">Transaction Cart</h2>
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-700">
+          <h2 className="text-xl md:text-2xl font-bold text-white">Transaction Cart</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -140,7 +156,7 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {transactions.length === 0 ? (
             <div className="text-center py-12">
               <svg
@@ -223,26 +239,26 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
 
         {/* Footer */}
         {transactions.length > 0 && (
-          <div className="border-t border-gray-700 p-6">
+          <div className="border-t border-gray-700 p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-gray-400">Total Selected ({selectedIds.size}):</span>
-              <span className="text-2xl font-bold text-white">
+              <span className="text-sm md:text-base text-gray-400">Total Selected ({selectedIds.size}):</span>
+              <span className="text-xl md:text-2xl font-bold text-white">
                 ${formatUSDC(getTotalUSDC())} USDC
               </span>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col md:flex-row gap-3">
               <button
                 onClick={handleDiscard}
                 disabled={isProcessing || selectedIds.size === 0}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors"
+                className="w-full md:flex-1 px-4 md:px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors text-sm md:text-base"
               >
                 Discard Selected
               </button>
               <button
                 onClick={handleApprove}
                 disabled={isProcessing || selectedIds.size === 0}
-                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors"
+                className="w-full md:flex-1 px-4 md:px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors text-sm md:text-base"
               >
                 {isProcessing ? 'Processing...' : 'Approve & Execute'}
               </button>
