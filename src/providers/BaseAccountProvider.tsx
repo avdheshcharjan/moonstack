@@ -2,6 +2,9 @@
 
 import React, { ReactNode, useEffect, useState } from 'react';
 import { createBaseAccountSDK } from '@base-org/account';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { base } from 'wagmi/chains';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 interface BaseAccountProviderProps {
   children: ReactNode;
@@ -33,6 +36,17 @@ export const baseAccountSDK = new Proxy({} as ReturnType<typeof createBaseAccoun
   }
 });
 
+// Wagmi configuration
+const wagmiConfig = createConfig({
+  chains: [base],
+  transports: {
+    [base.id]: http(),
+  },
+});
+
+// React Query client
+const queryClient = new QueryClient();
+
 export function BaseAccountProvider({ children }: BaseAccountProviderProps): JSX.Element {
   const [mounted, setMounted] = useState(false);
 
@@ -44,5 +58,11 @@ export function BaseAccountProvider({ children }: BaseAccountProviderProps): JSX
     return <>{children}</>;
   }
 
-  return <>{children}</>;
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
 }

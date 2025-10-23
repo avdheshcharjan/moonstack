@@ -1,9 +1,17 @@
 import type { Address, Hex } from 'viem';
-import { encodeFunctionData } from 'viem';
-import { createSmartAccountWithPaymaster } from '@/src/lib/smartAccount';
-import { needsApproval, encodeUSDCApprove, calculateTotalUSDCNeeded, getUSDCBalance } from '@/src/utils/usdcApproval';
-import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
+import { numberToHex } from 'viem';
+import { BrowserProvider, Contract } from 'ethers';
+import { ERC20_ABI, OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
+import { getBaseAccountSDK } from '@/src/providers/BaseAccountProvider';
+import { base } from '@base-org/account';
+import type { CartTransaction } from '@/src/types/cart';
 import type { BatchBet } from '@/src/hooks/useBatchTransactions';
+
+export interface BatchExecutionResult {
+  success: boolean;
+  txHash?: string;
+  error?: string;
+}
 
 export interface BatchTransactionResult {
   id: string;
@@ -13,172 +21,137 @@ export interface BatchTransactionResult {
 }
 
 /**
- * Execute a batch of betting transactions with paymaster sponsorship
- * All fillOrder calls are bundled into a single batch transaction
+ * Execute batch transactions for old BatchBet interface (legacy support)
+ * This is for backward compatibility with useBatchTransactions hook
  */
 export async function executeBatchTransactions(
   bets: BatchBet[],
   ownerAddress: Address
-): Promise<BatchTransactionResult[]> {
-  const results: BatchTransactionResult[] = bets.map(bet => ({
-    id: bet.id,
-    status: 'pending' as const,
-  }));
+): Promise<BatchTransactionResult[]>;
+
+/**
+ * Execute batch transactions for CartTransaction interface (new implementation)
+ */
+export async function executeBatchTransactions(
+  transactions: CartTransaction[],
+  userAddress: Address
+): Promise<BatchExecutionResult>;
+
+/**
+ * Implementation that handles both interfaces
+ */
+export async function executeBatchTransactions(
+  items: BatchBet[] | CartTransaction[],
+  userAddress: Address
+): Promise<BatchTransactionResult[] | BatchExecutionResult> {
+  // Check if it's the old BatchBet[] interface
+  if (items.length > 0 && 'pair' in items[0]) {
+    const bets = items as BatchBet[];
+    const results: BatchTransactionResult[] = bets.map(bet => ({
+      id: bet.id,
+      status: 'failed' as const,
+      error: 'Batch transaction logic for BatchBet is deprecated. Please use cart-based transactions.',
+    }));
+    return results;
+  }
+
+  // Otherwise, it's CartTransaction[] - call the main implementation
+  const transactions = items as CartTransaction[];
 
   try {
-    // COMMENTED OUT: Batch transaction and paymaster logic
-    /*
-    // Create smart account client with paymaster support
-    const smartAccountClient = await createSmartAccountWithPaymaster(ownerAddress);
-    const smartAccountAddress = smartAccountClient.account.address;
+    if (transactions.length === 0) {
+      throw new Error('No transactions to execute');
+    }
 
-    // Check USDC balance
-    const balance = await getUSDCBalance(smartAccountAddress);
-    const totalNeeded = calculateTotalUSDCNeeded(
-      bets.map(bet => ({
-        betSize: bet.betSize,
-        numContracts: BigInt(bet.order.order.numContracts),
-      }))
-    );
+    // Validate wallet connection
+    if (!window.ethereum) {
+      throw new Error('No wallet provider found. Please install MetaMask or another Web3 wallet.');
+    }
 
-    if (balance < totalNeeded) {
+    // Create ethers provider for USDC approval
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
+
+    // Calculate total USDC needed
+    const totalUSDC = transactions.reduce((sum, tx) => sum + (tx.requiredUSDC || 0n), 0n);
+
+    console.log('Batch execution starting...');
+    console.log('Total transactions:', transactions.length);
+    console.log('Total USDC needed:', Number(totalUSDC) / 1_000_000, 'USDC');
+
+    // Step 1: Check USDC balance
+    const balance = await usdcContract.balanceOf(userAddress);
+    console.log('USDC balance:', Number(balance) / 1_000_000, 'USDC');
+
+    if (balance < totalUSDC) {
       throw new Error(
-        `Insufficient USDC balance. Need ${Number(totalNeeded) / 1_000_000} USDC, have ${Number(balance) / 1_000_000} USDC`
+        `Insufficient USDC balance. Need ${Number(totalUSDC) / 1_000_000} USDC, have ${Number(balance) / 1_000_000} USDC`
       );
     }
 
-    // Check if we need approval
-    const approvalNeeded = await needsApproval(
-      smartAccountAddress,
-      totalNeeded,
-      OPTION_BOOK_ADDRESS as Address
-    );
+    // Step 2: Check USDC allowance and approve if needed
+    const currentAllowance = await usdcContract.allowance(userAddress, OPTION_BOOK_ADDRESS);
+    console.log('Current USDC allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
 
-    // Prepare batch calls
-    const calls: Array<{ to: Address; data: Hex }> = [];
+    if (currentAllowance < totalUSDC) {
+      console.log('Approving USDC for OptionBook...');
+      console.log('Approving amount:', Number(totalUSDC) / 1_000_000, 'USDC');
 
-    // Add approval call if needed
-    if (approvalNeeded) {
-      const approveCallData = encodeUSDCApprove(totalNeeded);
-      calls.push({
-        to: USDC_ADDRESS as Address,
-        data: approveCallData as Hex,
-      });
+      const approveTx = await usdcContract.approve(OPTION_BOOK_ADDRESS, totalUSDC);
+      console.log('Approval transaction submitted:', approveTx.hash);
+
+      // Wait for approval to be mined
+      const approvalReceipt = await approveTx.wait();
+
+      if (!approvalReceipt || approvalReceipt.status !== 1) {
+        throw new Error('USDC approval failed');
+      }
+
+      console.log('USDC approval confirmed');
+    } else {
+      console.log('USDC already approved');
     }
 
-    // Add all fillOrder calls to the batch
-    for (const bet of bets) {
-      const typedOrder = {
-        ...bet.order.order,
-        maker: bet.order.order.maker as Address,
-        orderExpiryTimestamp: BigInt(bet.order.order.orderExpiryTimestamp),
-        collateral: bet.order.order.collateral as Address,
-        priceFeed: bet.order.order.priceFeed as Address,
-        implementation: bet.order.order.implementation as Address,
-        maxCollateralUsable: BigInt(bet.order.order.maxCollateralUsable),
-        strikes: bet.order.order.strikes.map((s: string | bigint) => BigInt(s)),
-        expiry: BigInt(bet.order.order.expiry),
-        price: BigInt(bet.order.order.price),
-        numContracts: BigInt(bet.order.order.numContracts),
-        extraOptionData: bet.order.order.extraOptionData as Hex,
-      };
-
-      const fillOrderData = encodeFunctionData({
-        abi: OPTION_BOOK_ABI,
-        functionName: 'fillOrder',
-        args: [
-          typedOrder,
-          bet.order.signature as Hex,
-          REFERRER_ADDRESS as Address,
-        ],
-      });
-
-      calls.push({
-        to: OPTION_BOOK_ADDRESS as Address,
-        data: fillOrderData as Hex,
-      });
-    }
-
-    // Execute all calls in a single batch transaction using sendUserOperation
-    const txHash = await smartAccountClient.sendUserOperation({
-      calls: calls as any,
-    });
-
-    console.log('Batch transaction submitted:', txHash);
-
-    // Update all results to submitted
-    results.forEach((result, index) => {
-      results[index] = {
-        id: result.id,
-        status: 'submitted',
-        txHash,
-      };
-    });
-
-    // Mark all as confirmed (skip waiting for receipt for now)
-    results.forEach((result, index) => {
-      results[index] = {
-        id: result.id,
-        status: 'confirmed',
-        txHash,
-      };
-    });
-
-    // Store all positions in Supabase
-    await Promise.all(
-      bets.map(bet => storePosition(bet, txHash, ownerAddress))
-    );
-    */
-
-    // Temporary: Return all as failed until batch logic is fixed
-    throw new Error('Batch transaction logic is currently disabled');
-
-    return results;
-  } catch (error) {
-    // If batch-level error occurs, mark all as failed
-    return bets.map(bet => ({
-      id: bet.id,
-      status: 'failed' as const,
-      error: error instanceof Error ? error.message : 'Unknown error',
+    // Step 3: Prepare batch calls
+    const calls = transactions.map((tx) => ({
+      to: tx.to,
+      value: tx.value ? numberToHex(tx.value) : '0x0',
+      data: tx.data,
     }));
-  }
-}
 
-/**
- * Store position in Supabase database
- */
-async function storePosition(bet: BatchBet, txHash: Hex, walletAddress: Address): Promise<void> {
-  try {
-    const order = bet.order.order;
-    const parsed = bet.action === 'yes' ? bet.pair.callParsed : bet.pair.putParsed;
+    console.log('Prepared batch calls:', calls);
 
-    const response = await fetch('/api/positions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        wallet_address: walletAddress,
-        tx_hash: txHash,
-        strategy_type: parsed.strategyType,
-        underlying: bet.pair.underlying,
-        is_call: order.isCall,
-        strikes: order.strikes.map(s => s.toString()),
-        strike_width: parsed.strikeWidth,
-        expiry: bet.pair.expiry.toISOString(),
-        price_per_contract: order.price.toString(),
-        max_size: order.maxCollateralUsable.toString(),
-        collateral_used: (BigInt(order.price) * BigInt(order.numContracts)).toString(),
-        num_contracts: order.numContracts.toString(),
-        raw_order: bet.order,
-      }),
+    // Step 4: Execute batch transaction using Base Account SDK
+    const sdk = getBaseAccountSDK();
+    const sdkProvider = sdk.getProvider();
+
+    console.log('Sending batch transaction...');
+    const result = await sdkProvider.request({
+      method: 'wallet_sendCalls',
+      params: [
+        {
+          version: '2.0.0',
+          from: userAddress,
+          chainId: numberToHex(base.constants.CHAIN_IDS.base),
+          atomicRequired: true, // All calls must succeed or all fail
+          calls: calls,
+        },
+      ],
     });
 
-    if (!response.ok) {
-      console.error('Failed to store position:', await response.text());
-    }
+    console.log('Batch transaction sent:', result);
+
+    return {
+      success: true,
+      txHash: result as string,
+    };
   } catch (error) {
-    console.error('Error storing position:', error);
-    // Don't throw - we don't want to fail the transaction if storage fails
+    console.error('Batch execution failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
   }
 }
+

@@ -4,11 +4,14 @@ import { ERC20_ABI, OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS, USDC
 import { BrowserProvider, Contract } from 'ethers';
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
+import { cartStorage } from '@/src/utils/cartStorage';
+import type { CartTransaction } from '@/src/types/cart';
 
 export interface DirectExecutionResult {
   success: boolean;
   txHash?: Hex;
   error?: string;
+  addedToCart?: boolean;
 }
 
 /**
@@ -129,31 +132,28 @@ export async function executeDirectFillOrder(
       ],
     });
 
-    console.log('Executing fillOrder...');
-    const tx = await signer.sendTransaction({
-      to: OPTION_BOOK_ADDRESS,
+    // Add transaction to cart instead of executing
+    const cartTransaction: CartTransaction = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      to: OPTION_BOOK_ADDRESS as Address,
       data: fillOrderData,
-    });
+      description: `${action.toUpperCase()} - ${pair.underlying} - $${betSize}`,
+      timestamp: Date.now(),
+      requiredUSDC: requiredAmount,
+      orderDetails: {
+        marketId: pair.id || pair.underlying,
+        side: action.toUpperCase() as 'YES' | 'NO',
+        amount: betSize.toString(),
+      },
+    };
 
-    console.log('Transaction submitted:', tx.hash);
+    console.log('Adding transaction to cart:', cartTransaction);
+    cartStorage.addTransaction(cartTransaction);
 
-    // Wait for transaction to be mined
-    const receipt = await tx.wait();
-
-    if (receipt && receipt.status === 1) {
-      const txHash = receipt.hash as Hex;
-      console.log('Transaction confirmed:', txHash);
-
-      // Store position in database
-      await storePosition(pair, action, order, txHash, userAddress, betSize);
-
-      return {
-        success: true,
-        txHash,
-      };
-    } else {
-      throw new Error('Transaction failed');
-    }
+    return {
+      success: true,
+      addedToCart: true,
+    };
   } catch (error) {
     console.error('Direct execution failed:', error);
     return {
