@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
-import { useWallet } from '@/src/hooks/useWallet';
-import { SignInWithBaseButton } from '@base-org/account-ui/react';
-import SwipeView from '@/src/components/market/SwipeView';
-import BetSettings from '@/src/components/settings/BetSettings';
 import MyBets from '@/src/components/bets/MyBets';
 import FAQ from '@/src/components/faq/FAQ';
-import TopBar from '@/src/components/layout/TopBar';
 import BottomNav from '@/src/components/layout/BottomNav';
+import TopBar from '@/src/components/layout/TopBar';
+import SwipeView from '@/src/components/market/SwipeView';
+import BetSettings from '@/src/components/settings/BetSettings';
+import { useWallet } from '@/src/hooks/useWallet';
+import { SignInWithBaseButton } from '@base-org/account-ui/react';
+import { sdk } from '@farcaster/miniapp-sdk';
+import { useEffect, useState } from 'react';
 
 const Moonstack = () => {
   const [mounted, setMounted] = useState(false);
@@ -31,8 +31,7 @@ const Moonstack = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#000d1d] via-slate-900 to-[#000d1d] overflow-x-hidden">
-      {/* Top Bar */}
-      <TopBar />
+
 
       {/* Main Content */}
       <div className="pt-16 pb-20 px-2 max-w-7xl mx-auto">
@@ -97,6 +96,9 @@ const Moonstack = () => {
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={currentView} onTabChange={(tab) => setCurrentView(tab as typeof currentView)} />
+
+      {/* Top Bar */}
+      <TopBar />
     </div>
   );
 };

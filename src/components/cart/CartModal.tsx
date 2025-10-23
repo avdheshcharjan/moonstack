@@ -5,7 +5,7 @@ import type { CartTransaction } from '@/src/types/cart';
 import { cartStorage } from '@/src/utils/cartStorage';
 import { executeBatchTransactions } from '@/src/services/batchExecution';
 import { useAccount } from 'wagmi';
-import SwipeableCard from '@/src/components/market/SwipeableCard';
+import CartSwipeableCard from '@/src/components/cart/CartSwipeableCard';
 
 interface CartModalProps {
   isOpen: boolean;
@@ -15,22 +15,18 @@ interface CartModalProps {
 
 export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   const [transactions, setTransactions] = useState<CartTransaction[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isProcessing, setIsProcessing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { address } = useAccount();
 
   useEffect(() => {
     if (isOpen) {
       loadTransactions();
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
     } else {
-      // Restore body scroll when modal is closed
       document.body.style.overflow = 'unset';
     }
 
-    // Cleanup function to restore scroll on unmount
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -40,83 +36,52 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
     const txs = cartStorage.getTransactions();
     setTransactions(txs);
     setCurrentIndex(0);
-    // Auto-select all by default
-    setSelectedIds(new Set(txs.map(tx => tx.id)));
-  };
-
-  const toggleSelection = (id: string) => {
-    setSelectedIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
   };
 
   const handleSwipeRight = async () => {
-    // Swipe right = Approve current transaction
     const currentTx = transactions[currentIndex];
-    if (!currentTx || !address) return;
+    if (!currentTx || !address) {
+      onClose();
+      return;
+    }
 
     setIsProcessing(true);
     try {
       const result = await executeBatchTransactions([currentTx], address);
 
       if (result.success) {
-        // Remove executed transaction from cart
         cartStorage.removeTransactions([currentTx.id]);
-        loadTransactions();
         onCartUpdate?.();
-
-        alert(`Transaction approved and executed!`);
       } else {
         alert(`Transaction failed: ${result.error}`);
-        // Move to next card even on failure
-        setCurrentIndex(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error executing transaction:', error);
       alert(error instanceof Error ? error.message : 'Failed to execute transaction');
-      setCurrentIndex(prev => prev + 1);
     } finally {
       setIsProcessing(false);
+      // Close modal after approve action
+      onClose();
     }
   };
 
   const handleSwipeLeft = () => {
-    // Swipe left = Discard current transaction
     const currentTx = transactions[currentIndex];
-    if (!currentTx) return;
+    if (!currentTx) {
+      onClose();
+      return;
+    }
 
+    // Remove transaction from cart
     cartStorage.removeTransactions([currentTx.id]);
-    loadTransactions();
     onCartUpdate?.();
-  };
 
-  const handleSwipeUp = () => {
-    // Skip to next transaction
-    setCurrentIndex(prev => prev + 1);
+    // Close modal immediately after discard action
+    onClose();
   };
 
   const handleSwipeComplete = () => {
-    // Auto-advance to next card
-    setTimeout(() => {
-      if (currentIndex < transactions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-      } else {
-        // All cards swiped, close modal
-        onClose();
-      }
-    }, 100);
-  };
-
-  const getTotalUSDC = () => {
-    return transactions
-      .filter(tx => selectedIds.has(tx.id))
-      .reduce((sum, tx) => sum + (tx.requiredUSDC || 0n), 0n);
+    // Swipe animation completed - handlers already closed the modal
   };
 
   const formatUSDC = (amount: bigint) => {
@@ -131,57 +96,53 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl"
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border-0 md:border md:border-gray-700 rounded-none md:rounded-lg shadow-xl w-full h-full md:max-w-2xl md:w-full md:mx-4 md:max-h-[90vh] flex flex-col"
+        className="h-full w-full flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-700">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold text-white">Transaction Cart</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              {transactions.length > 0 ? `${currentIndex + 1} of ${transactions.length}` : 'Empty'}
-            </p>
+        {/* Header with Instructions */}
+        <div className="flex flex-col items-center p-4 md:p-6 space-y-3">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-bold text-white">Cart</h2>
+              {transactions.length > 0 && (
+                <span className="text-gray-400 text-sm">
+                  {currentIndex + 1}/{transactions.length}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors p-2"
+              disabled={isProcessing}
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-            disabled={isProcessing}
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          {/* Swipe Instructions Note */}
+          {transactions.length > 0 && (
+            <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-2 w-full max-w-md">
+              <p className="text-center text-sm text-gray-300">
+                Swipe <span className="text-green-400 font-semibold">right to approve</span> or{' '}
+                <span className="text-red-400 font-semibold">left to discard</span>
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Swipe Instructions */}
-        <div className="px-4 py-3 bg-gray-800/50 border-b border-gray-700">
-          <div className="flex justify-around text-xs md:text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
-                <span className="text-red-400">←</span>
-              </div>
-              <span className="text-gray-400">Swipe left to discard</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
-                <span className="text-green-400">→</span>
-              </div>
-              <span className="text-gray-400">Swipe right to approve</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Content - Swipeable Card */}
-        <div className="flex-1 overflow-hidden p-4 md:p-6 relative">
+        {/* Main Content Area */}
+        <div className="flex-1 flex items-center justify-center px-4 pb-20">
           {transactions.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center py-12">
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gray-800 rounded-full flex items-center justify-center">
                 <svg
-                  className="w-16 h-16 mx-auto mb-4 text-gray-600"
+                  className="w-10 h-10 text-gray-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -190,124 +151,89 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                   />
                 </svg>
-                <p className="text-gray-400 text-lg">Your cart is empty</p>
-                <p className="text-gray-500 text-sm mt-2">Add transactions by swiping cards</p>
               </div>
+              <p className="text-gray-400 text-xl mb-2">Cart is empty</p>
+              <p className="text-gray-600 text-sm">Add items by swiping right</p>
             </div>
           ) : currentTx ? (
-            <div className="h-full w-full">
-              <SwipeableCard
+            <div className="w-full max-w-md h-[600px]">
+              <CartSwipeableCard
                 onSwipeRight={handleSwipeRight}
                 onSwipeLeft={handleSwipeLeft}
-                onSwipeUp={handleSwipeUp}
                 onSwipeComplete={handleSwipeComplete}
                 disabled={isProcessing}
               >
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 h-full w-full p-6 md:p-8 flex flex-col justify-between">
-                  {/* Card Content */}
-                  <div className="flex-1 flex flex-col justify-center">
-                    <div className="space-y-4">
-                      {/* Badge */}
-                      {currentTx.orderDetails && (
-                        <div className="flex justify-center">
-                          <div
-                            className={`px-4 py-2 rounded-full text-sm font-bold ${
-                              currentTx.orderDetails.side === 'YES'
-                                ? 'bg-green-500/30 text-green-300 border-2 border-green-400'
-                                : 'bg-red-500/30 text-red-300 border-2 border-red-400'
-                            }`}
-                          >
-                            {currentTx.orderDetails.side}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Description */}
-                      <h3 className="text-2xl md:text-3xl font-bold text-white text-center">
-                        {currentTx.description}
-                      </h3>
-
-                      {/* Amount */}
-                      <div className="text-center space-y-2">
-                        <p className="text-gray-400 text-sm">Amount</p>
-                        <p className="text-4xl md:text-5xl font-bold text-white">
-                          ${formatUSDC(currentTx.requiredUSDC || 0n)}
-                        </p>
-                        <p className="text-gray-400 text-lg">USDC</p>
+                <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black h-full w-full flex flex-col justify-center items-center p-8 relative">
+                  {/* Side Badge */}
+                  {currentTx.orderDetails && (
+                    <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
+                      <div
+                        className={`px-6 py-2 rounded-full text-lg font-bold ${
+                          currentTx.orderDetails.side === 'YES'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-red-500 text-white'
+                        }`}
+                      >
+                        {currentTx.orderDetails.side}
                       </div>
+                    </div>
+                  )}
 
-                      {/* Timestamp */}
-                      <p className="text-center text-sm text-gray-500">
-                        Added: {new Date(currentTx.timestamp).toLocaleString()}
+                  {/* Main Content */}
+                  <div className="text-center space-y-8 mt-12">
+                    {/* Market Name */}
+                    {currentTx.orderDetails && (
+                      <div>
+                        <p className="text-gray-500 text-sm uppercase tracking-wider mb-2">Market</p>
+                        <h3 className="text-white text-3xl font-bold">
+                          {currentTx.orderDetails.marketId}
+                        </h3>
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    <div>
+                      <p className="text-gray-400 text-base">
+                        {currentTx.description}
                       </p>
+                    </div>
 
-                      {/* Order Details */}
-                      {currentTx.orderDetails && (
-                        <div className="mt-6 p-4 bg-gray-800/50 rounded-lg space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-400">Market:</span>
-                            <span className="text-white font-medium">{currentTx.orderDetails.marketId}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-400">Position:</span>
-                            <span className="text-white font-medium">{currentTx.orderDetails.side}</span>
-                          </div>
-                        </div>
-                      )}
+                    {/* Amount - Hero */}
+                    <div className="py-8">
+                      <p className="text-gray-500 text-sm uppercase tracking-wider mb-3">Amount</p>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-6xl font-bold text-white">
+                          ${formatUSDC(currentTx.requiredUSDC || 0n)}
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-lg mt-2">USDC</p>
                     </div>
                   </div>
 
-                  {/* Checkbox for selection */}
-                  <div className="mt-6 flex items-center justify-center">
-                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(currentTx.id)}
-                        onChange={() => toggleSelection(currentTx.id)}
-                        className="w-6 h-6 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                        disabled={isProcessing}
-                      />
-                      <span className="text-gray-300 text-sm">Include in batch execution</span>
-                    </label>
+                  {/* Footer Info */}
+                  <div className="absolute bottom-6 left-0 right-0 text-center">
+                    <p className="text-gray-600 text-xs">
+                      Added {new Date(currentTx.timestamp).toLocaleTimeString()}
+                    </p>
                   </div>
                 </div>
-              </SwipeableCard>
+              </CartSwipeableCard>
             </div>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-gray-400 text-lg">All transactions reviewed!</p>
-                <button
-                  onClick={onClose}
-                  className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                >
-                  Close
-                </button>
-              </div>
+            <div className="text-center">
+              <p className="text-gray-400 text-xl mb-4">All done!</p>
+              <button
+                onClick={onClose}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+              >
+                Close
+              </button>
             </div>
           )}
         </div>
-
-        {/* Footer - Only show selected transactions summary */}
-        {transactions.length > 0 && selectedIds.size > 0 && (
-          <div className="border-t border-gray-700 p-4 md:p-6 bg-gray-800/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Selected Transactions</p>
-                <p className="text-lg font-bold text-white">{selectedIds.size} selected</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-400">Total Amount</p>
-                <p className="text-2xl font-bold text-white">
-                  ${formatUSDC(getTotalUSDC())} USDC
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
