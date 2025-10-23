@@ -4,7 +4,7 @@ export type ExpiryFilter = 'all' | '1D' | '2D' | '3D' | 'weekly' | 'monthly' | '
 
 export interface BinaryPair {
   id: string;
-  underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';
+  underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG';
   expiry: Date;
   threshold: number;
   question: string;

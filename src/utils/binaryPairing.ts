@@ -1,7 +1,7 @@
 import { RawOrderData, ParsedOrder } from '../types/orders';
 import { BinaryPair } from '../types/prediction';
 import { parseOrder } from './optionsParser';
-import { BTC_FEED, ETH_FEED, SOL_FEED, BNB_FEED, XRP_FEED } from './contracts';
+import { BTC_FEED, ETH_FEED, SOL_FEED, BNB_FEED, XRP_FEED, DOGE_FEED, PAXG_FEED } from './contracts';
 
 /**
  * Extracts the decision boundary strike from a binary option.
@@ -43,9 +43,9 @@ function formatExpiryDate(unixTimestamp: number): string {
  * Determines the underlying asset from the price feed address.
  *
  * @param priceFeed Oracle price feed address
- * @returns 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB'
+ * @returns 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG'
  */
-function getUnderlyingAsset(priceFeed: string): 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' {
+function getUnderlyingAsset(priceFeed: string): 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG' {
   const priceFeedLower = priceFeed.toLowerCase();
 
   if (priceFeedLower === BTC_FEED.toLowerCase()) {
@@ -62,6 +62,12 @@ function getUnderlyingAsset(priceFeed: string): 'BTC' | 'ETH' | 'SOL' | 'XRP' | 
   }
   if (priceFeedLower === XRP_FEED.toLowerCase()) {
     return 'XRP';
+  }
+  if (priceFeedLower === DOGE_FEED.toLowerCase()) {
+    return 'DOGE';
+  }
+  if (priceFeedLower === PAXG_FEED.toLowerCase()) {
+    return 'PAXG';
   }
   throw new Error(`Unknown price feed: ${priceFeed}`);
 }
@@ -84,12 +90,12 @@ function calculateImpliedProbability(premium: number, maxPayout: number): number
 /**
  * Generates a prediction question for a binary pair.
  *
- * @param asset Underlying asset ('BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB')
+ * @param asset Underlying asset ('BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG')
  * @param decisionBoundary Decision boundary price
  * @param expiry Unix timestamp of expiry
  * @returns Prediction question string
  */
-function generatePredictionQuestion(asset: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB', decisionBoundary: number, expiry: number): string {
+function generatePredictionQuestion(asset: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG', decisionBoundary: number, expiry: number): string {
   const formattedDate = formatExpiryDate(expiry);
   const formattedPrice = decisionBoundary.toLocaleString('en-US', {
     style: 'currency',
@@ -104,7 +110,7 @@ function generatePredictionQuestion(asset: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB'
  * Pairs complementary binary options (CALL and PUT) into prediction market cards.
  *
  * Pairing criteria:
- * - Same underlying asset (BTC, ETH, SOL, XRP, or BNB via priceFeed)
+ * - Same underlying asset (BTC, ETH, SOL, XRP, BNB, DOGE, or PAXG via priceFeed)
  * - Same expiry timestamp
  * - Same decision boundary (the shared strike price between CALL and PUT)
  * - One CALL (isCall=true) and one PUT (isCall=false)
@@ -131,7 +137,7 @@ export function pairBinaryOptions(orders: RawOrderData[]): BinaryPair[] {
 
   // Group binaries by pairing key: underlying_expiry_decisionBoundary
   interface PairingGroup {
-    underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';
+    underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG';
     expiry: number;
     decisionBoundary: number;
     calls: Array<{ raw: RawOrderData; parsed: ParsedOrder }>;

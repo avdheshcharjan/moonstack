@@ -1,5 +1,5 @@
 import { RawOrderData, ParsedOrder } from '../types/orders';
-import { USDC_ADDRESS, BTC_FEED, ETH_FEED, SOL_FEED, BNB_FEED, XRP_FEED } from './contracts';
+import { USDC_ADDRESS, BTC_FEED, ETH_FEED, SOL_FEED, BNB_FEED, XRP_FEED, DOGE_FEED, PAXG_FEED } from './contracts';
 
 /**
  * Parses raw order data from the API into a structured format for display.
@@ -39,7 +39,7 @@ export function parseOrder(orderData: RawOrderData): ParsedOrder {
   }
 
   const priceFeedLower = order.priceFeed.toLowerCase();
-  let underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';
+  let underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG';
 
   if (priceFeedLower === BTC_FEED.toLowerCase()) {
     underlying = 'BTC';
@@ -51,6 +51,10 @@ export function parseOrder(orderData: RawOrderData): ParsedOrder {
     underlying = 'BNB';
   } else if (priceFeedLower === XRP_FEED.toLowerCase()) {
     underlying = 'XRP';
+  } else if (priceFeedLower === DOGE_FEED.toLowerCase()) {
+    underlying = 'DOGE';
+  } else if (priceFeedLower === PAXG_FEED.toLowerCase()) {
+    underlying = 'PAXG';
   } else {
     throw new Error(`Unknown price feed: ${order.priceFeed}`);
   }

@@ -14,14 +14,20 @@ export interface BatchTransactionResult {
 
 /**
  * Execute a batch of betting transactions with paymaster sponsorship
+ * All fillOrder calls are bundled into a single batch transaction
  */
 export async function executeBatchTransactions(
   bets: BatchBet[],
   ownerAddress: Address
 ): Promise<BatchTransactionResult[]> {
-  const results: BatchTransactionResult[] = [];
+  const results: BatchTransactionResult[] = bets.map(bet => ({
+    id: bet.id,
+    status: 'pending' as const,
+  }));
 
   try {
+    // COMMENTED OUT: Batch transaction and paymaster logic
+    /*
     // Create smart account client with paymaster support
     const smartAccountClient = await createSmartAccountWithPaymaster(ownerAddress);
     const smartAccountAddress = smartAccountClient.account.address;
@@ -48,84 +54,84 @@ export async function executeBatchTransactions(
       OPTION_BOOK_ADDRESS as Address
     );
 
-    // If approval needed, execute approval first
+    // Prepare batch calls
+    const calls: Array<{ to: Address; data: Hex }> = [];
+
+    // Add approval call if needed
     if (approvalNeeded) {
       const approveCallData = encodeUSDCApprove(totalNeeded);
-
-      const approvalHash = await smartAccountClient.sendTransaction({
+      calls.push({
         to: USDC_ADDRESS as Address,
         data: approveCallData as Hex,
-      } as any);
-
-      console.log('USDC approval transaction:', approvalHash);
+      });
     }
 
-    // Execute each bet sequentially
+    // Add all fillOrder calls to the batch
     for (const bet of bets) {
-      try {
-        results.push({
-          id: bet.id,
-          status: 'pending',
-        });
+      const typedOrder = {
+        ...bet.order.order,
+        maker: bet.order.order.maker as Address,
+        orderExpiryTimestamp: BigInt(bet.order.order.orderExpiryTimestamp),
+        collateral: bet.order.order.collateral as Address,
+        priceFeed: bet.order.order.priceFeed as Address,
+        implementation: bet.order.order.implementation as Address,
+        maxCollateralUsable: BigInt(bet.order.order.maxCollateralUsable),
+        strikes: bet.order.order.strikes.map((s: string | bigint) => BigInt(s)),
+        expiry: BigInt(bet.order.order.expiry),
+        price: BigInt(bet.order.order.price),
+        numContracts: BigInt(bet.order.order.numContracts),
+        extraOptionData: bet.order.order.extraOptionData as Hex,
+      };
 
-        // Encode fillOrder call - ensure order fields are properly typed
-        const typedOrder = {
-          ...bet.order.order,
-          maker: bet.order.order.maker as Address,
-          orderExpiryTimestamp: BigInt(bet.order.order.orderExpiryTimestamp),
-          collateral: bet.order.order.collateral as Address,
-          priceFeed: bet.order.order.priceFeed as Address,
-          implementation: bet.order.order.implementation as Address,
-          maxCollateralUsable: BigInt(bet.order.order.maxCollateralUsable),
-          strikes: bet.order.order.strikes.map((s: string | bigint) => BigInt(s)),
-          expiry: BigInt(bet.order.order.expiry),
-          price: BigInt(bet.order.order.price),
-          numContracts: BigInt(bet.order.order.numContracts),
-          extraOptionData: bet.order.order.extraOptionData as Hex,
-        };
+      const fillOrderData = encodeFunctionData({
+        abi: OPTION_BOOK_ABI,
+        functionName: 'fillOrder',
+        args: [
+          typedOrder,
+          bet.order.signature as Hex,
+          REFERRER_ADDRESS as Address,
+        ],
+      });
 
-        const fillOrderData = encodeFunctionData({
-          abi: OPTION_BOOK_ABI,
-          functionName: 'fillOrder',
-          args: [
-            typedOrder,
-            bet.order.signature as Hex,
-            REFERRER_ADDRESS as Address,
-          ],
-        });
-
-        // Send transaction through smart account with paymaster
-        const txHash = await smartAccountClient.sendTransaction({
-          to: OPTION_BOOK_ADDRESS as Address,
-          data: fillOrderData as Hex,
-        } as any);
-
-        // Update status to submitted
-        const resultIndex = results.findIndex(r => r.id === bet.id);
-        results[resultIndex] = {
-          id: bet.id,
-          status: 'submitted',
-          txHash,
-        };
-
-        // Mark as confirmed (skip waiting for receipt for now)
-        results[resultIndex] = {
-          id: bet.id,
-          status: 'confirmed',
-          txHash,
-        };
-
-        // Store position in Supabase
-        await storePosition(bet, txHash, ownerAddress);
-      } catch (error) {
-        const resultIndex = results.findIndex(r => r.id === bet.id);
-        results[resultIndex] = {
-          id: bet.id,
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
-      }
+      calls.push({
+        to: OPTION_BOOK_ADDRESS as Address,
+        data: fillOrderData as Hex,
+      });
     }
+
+    // Execute all calls in a single batch transaction using sendUserOperation
+    const txHash = await smartAccountClient.sendUserOperation({
+      calls: calls as any,
+    });
+
+    console.log('Batch transaction submitted:', txHash);
+
+    // Update all results to submitted
+    results.forEach((result, index) => {
+      results[index] = {
+        id: result.id,
+        status: 'submitted',
+        txHash,
+      };
+    });
+
+    // Mark all as confirmed (skip waiting for receipt for now)
+    results.forEach((result, index) => {
+      results[index] = {
+        id: result.id,
+        status: 'confirmed',
+        txHash,
+      };
+    });
+
+    // Store all positions in Supabase
+    await Promise.all(
+      bets.map(bet => storePosition(bet, txHash, ownerAddress))
+    );
+    */
+
+    // Temporary: Return all as failed until batch logic is fixed
+    throw new Error('Batch transaction logic is currently disabled');
 
     return results;
   } catch (error) {

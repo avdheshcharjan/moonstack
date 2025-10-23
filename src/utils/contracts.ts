@@ -49,6 +49,16 @@ export const BNB_FEED = '0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1';
 export const XRP_FEED = '0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34';
 
 /**
+ * DOGE price feed address on Base
+ */
+export const DOGE_FEED = '0x8422f3d3CAFf15Ca682939310d6A5e619AE08e57';
+
+/**
+ * PAXG price feed address on Base
+ */
+export const PAXG_FEED = '0x5213eBB69743b85644dbB6E25cdF994aFBb8cF31';
+
+/**
  * Base network chain ID
  */
 export const BASE_CHAIN_ID = 8453;

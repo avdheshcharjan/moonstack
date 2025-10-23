@@ -32,7 +32,7 @@ export interface RawOrderData {
 
 export interface ParsedOrder {
   strategyType: 'BINARY' | 'SPREAD' | 'BUTTERFLY' | 'CONDOR';
-  underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB';
+  underlying: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG';
   isCall: boolean;
   strikes: number[];
   strikeWidth: number;
@@ -50,6 +50,8 @@ export interface MarketData {
   SOL?: number;
   XRP?: number;
   BNB?: number;
+  DOGE?: number;
+  PAXG?: number;
   [key: string]: number | undefined;
 }
 
