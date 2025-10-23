@@ -55,6 +55,20 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
     return symbolMap[symbol] || 'bitcoin';
   };
 
+  const formatPrice = (price: number): string => {
+    if (price >= 1000000) {
+      return `$${(price / 1000000).toFixed(1)}M`;
+    } else if (price >= 1000) {
+      return `$${(price / 1000).toFixed(1)}K`;
+    } else if (price >= 1) {
+      return `$${price.toFixed(2)}`;
+    } else if (price >= 0.01) {
+      return `$${price.toFixed(3)}`;
+    } else {
+      return `$${price.toFixed(4)}`;
+    }
+  };
+
   useEffect(() => {
     const fetchChartData = async (): Promise<void> => {
       try {
@@ -127,7 +141,23 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
     const maxPrice = Math.max(...allPrices);
     const priceRange = maxPrice - minPrice;
 
-    const padding = { top: 20, right: 20, bottom: 30, left: 60 };
+    // Calculate dynamic left padding based on price label width
+    const fontSize = rect.width < 400 ? 9 : 10;
+    ctx.font = `${fontSize}px sans-serif`;
+    
+    // Measure the width of all price labels to find the longest
+    let maxLabelWidth = 0;
+    for (let i = 0; i <= 4; i++) {
+      const price = maxPrice - (priceRange / 4) * i;
+      const formattedPrice = formatPrice(price);
+      const textWidth = ctx.measureText(formattedPrice).width;
+      maxLabelWidth = Math.max(maxLabelWidth, textWidth);
+    }
+    
+    // Set left padding: max label width + spacing buffer (15px)
+    const leftPadding = Math.max(40, Math.ceil(maxLabelWidth) + 15);
+
+    const padding = { top: 20, right: 20, bottom: 30, left: leftPadding };
     const chartWidth = rect.width - padding.left - padding.right;
     const chartHeight = rect.height - padding.top - padding.bottom;
     const candleSpacing = chartWidth / candles.length;
@@ -158,12 +188,12 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
 
     // Draw price labels
     ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)';
-    ctx.font = '10px sans-serif';
+    ctx.font = `${fontSize}px sans-serif`;
     ctx.textAlign = 'right';
     for (let i = 0; i <= 4; i++) {
       const price = maxPrice - (priceRange / 4) * i;
       const y = padding.top + (chartHeight / 4) * i;
-      ctx.fillText(`$${price.toFixed(2)}`, padding.left - 10, y + 4);
+      ctx.fillText(formatPrice(price), padding.left - 10, y + 4);
     }
 
     // Draw candlesticks
