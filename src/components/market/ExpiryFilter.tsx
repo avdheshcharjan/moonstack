@@ -19,8 +19,8 @@ const ExpiryFilter: React.FC<ExpiryFilterProps> = ({ selectedFilter, onFilterCha
   ];
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 mb-4">
-      <div className="flex flex-wrap gap-2 justify-center">
+    <div className="w-full max-w-4xl mx-auto px-2 mb-2">
+      <div className="flex flex-wrap gap-1.5 justify-center">
         {filters.map((filter) => {
           const count = counts[filter.value];
           const isSelected = selectedFilter === filter.value;
@@ -32,7 +32,7 @@ const ExpiryFilter: React.FC<ExpiryFilterProps> = ({ selectedFilter, onFilterCha
               onClick={() => !isDisabled && onFilterChange(filter.value)}
               disabled={isDisabled}
               className={`
-                px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold transition-all
+                px-2.5 py-1 rounded-lg text-xs font-semibold transition-all
                 ${isSelected
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105'
                   : isDisabled
@@ -42,7 +42,7 @@ const ExpiryFilter: React.FC<ExpiryFilterProps> = ({ selectedFilter, onFilterCha
               `}
             >
               <span>{filter.label}</span>
-              <span className={`ml-1 sm:ml-2 text-xs ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
+              <span className={`ml-1 text-xs ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
                 ({count})
               </span>
             </button>

@@ -15,7 +15,7 @@ const FAQ: React.FC = () => {
     },
     {
       question: 'How do I place a prediction?',
-      answer: 'Connect your wallet, select your default bet size in settings, then swipe right for PUMP (price goes up), swipe left for DUMP (price goes down), or swipe up to SKIP. Your predictions are batched and executed together when you confirm.',
+      answer: 'Connect your wallet, select your default bet size in settings, then swipe right for PUMP (price goes up), swipe left for DUMP (price goes down), or swipe up to SKIP. Each prediction executes immediately.',
     },
     {
       question: 'What does the payout calculation mean?',
@@ -32,10 +32,6 @@ const FAQ: React.FC = () => {
     {
       question: 'When do predictions expire?',
       answer: 'Each prediction card shows the time remaining until expiry. You can see countdowns like "2d" (2 days), "5h" (5 hours), or "30m" (30 minutes). Your position settles at the expiry time.',
-    },
-    {
-      question: 'How does batched trading work?',
-      answer: 'Instead of executing each prediction immediately, your predictions are added to a batch. You can review all your predictions and submit them together in a single transaction, saving on gas fees.',
     },
     {
       question: 'Can I change my default bet size?',

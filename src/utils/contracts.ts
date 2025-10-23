@@ -54,6 +54,22 @@ export const XRP_FEED = '0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34';
 export const BASE_CHAIN_ID = 8453;
 
 /**
+ * EntryPoint contract address for ERC-4337 (v0.7)
+ * @see https://docs.alchemy.com/docs/entrypoint-addresses
+ */
+export const ENTRYPOINT_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
+
+/**
+ * Bundler URL for Base network (configure in .env.local)
+ */
+export const BUNDLER_URL = process.env.NEXT_PUBLIC_BUNDLER_URL || '';
+
+/**
+ * Paymaster URL for Base network (configure in .env.local)
+ */
+export const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
+
+/**
  * OptionBook ABI (v2) - uses fillOrder method
  */
 export const OPTION_BOOK_ABI = [

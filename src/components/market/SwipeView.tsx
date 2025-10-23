@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOrders } from '@/src/hooks/useOrders';
-import { useBatchTrading } from '@/src/hooks/useBatchTrading';
 import { pairBinaryOptions } from '@/src/utils/binaryPairing';
 import { useLocalStorage } from '@/src/hooks/useLocalStorage';
 import { filterPairsByExpiry, sortPairsByExpiry, countPairsByExpiry } from '@/src/utils/expiryFiltering';
 import CardStack from './CardStack';
-import BatchConfirmationModal from './BatchConfirmationModal';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';
 import ExpiryFilter from './ExpiryFilter';
+import BatchConfirmationModal from './BatchConfirmationModal';
 import { BinaryPair, ExpiryFilter as ExpiryFilterType } from '@/src/types/prediction';
+import { useBatchTransactions } from '@/src/hooks/useBatchTransactions';
+import type { Address } from 'viem';
 
 interface SwipeViewProps {
   walletAddress: string | null;
@@ -16,14 +17,27 @@ interface SwipeViewProps {
 
 const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { orders, marketData, loading, error, fetchOrders, filterBinaries } = useOrders();
-  const { batchedTrades, addToBatch, clearBatch, executeBatch, isExecuting, totalCollateralNeeded } = useBatchTrading();
   const { toasts, addToast, removeToast } = useToastManager();
-  const [showBatchModal, setShowBatchModal] = useState(false);
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilterType>('all');
   const [filterKey, setFilterKey] = useState(0);
+  const [showBatchModal, setShowBatchModal] = useState(false);
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 5);
+
+  // Batch transactions
+  const {
+    batch,
+    batchStatuses,
+    isBatchMode,
+    isExecuting,
+    addToBatch,
+    removeFromBatch,
+    clearBatch,
+    toggleBatchMode,
+    executeBatch,
+    getTotalUSDCNeeded,
+  } = useBatchTransactions();
 
   const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
     setExpiryFilter(newFilter);
@@ -60,56 +74,41 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       throw new Error('Wallet not connected');
     }
 
-    // Add trade to batch instead of executing immediately
-    addToBatch(pair, action, betSize);
-    addToast(
-      `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to batch`,
-      'info'
-    );
-  }, [walletAddress, addToBatch, addToast, betSize]);
+    if (isBatchMode) {
+      // Add to batch instead of executing immediately
+      addToBatch(pair, action, betSize);
+      addToast(
+        `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to batch`,
+        'success'
+      );
+    } else {
+      // Execute immediately (legacy behavior)
+      addToast(
+        `Executing ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}...`,
+        'info'
+      );
+      // TODO: Implement immediate execution with paymaster
+    }
+  }, [walletAddress, isBatchMode, addToBatch, betSize, addToast]);
 
-  const handleBatchConfirm = useCallback(async () => {
-    if (!walletAddress || batchedTrades.length === 0) {
+  const handleExecuteBatch = useCallback(async () => {
+    if (!walletAddress) {
+      addToast('Wallet not connected', 'error');
       return;
     }
 
     try {
-      const txHash = await executeBatch(walletAddress);
-
-      addToast(
-        `Successfully executed ${batchedTrades.length} prediction${batchedTrades.length !== 1 ? 's' : ''}`,
-        'success',
-        txHash
-      );
-
-      clearBatch();
+      await executeBatch(walletAddress as Address);
+      addToast(`Successfully executed ${batch.length} bets!`, 'success');
       setShowBatchModal(false);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        if (err.message === 'Transaction rejected by user') {
-          addToast('Transaction rejected', 'error');
-        } else if (err.message.toLowerCase().includes('insufficient')) {
-          addToast('Insufficient USDC balance', 'error');
-        } else if (err.message.toLowerCase().includes('network')) {
-          addToast('Network error. Please try again.', 'error');
-        } else {
-          addToast(`Transaction failed: ${err.message}`, 'error');
-        }
-      } else {
-        addToast('Unknown error occurred', 'error');
-      }
+    } catch (error) {
+      addToast(
+        error instanceof Error ? error.message : 'Failed to execute batch',
+        'error'
+      );
     }
-  }, [walletAddress, batchedTrades, executeBatch, clearBatch, addToast]);
+  }, [walletAddress, executeBatch, batch.length, addToast]);
 
-  const handleBatchCancel = useCallback(() => {
-    setShowBatchModal(false);
-  }, []);
-
-  const handleShowBatch = useCallback(() => {
-    if (batchedTrades.length > 0) {
-      setShowBatchModal(true);
-    }
-  }, [batchedTrades]);
 
   if (!walletAddress) {
     return (
@@ -219,6 +218,39 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         onFilterChange={handleFilterChange}
         counts={expiryCounts}
       />
+
+      {/* Batch Mode Toggle and Review Button */}
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <button
+          onClick={toggleBatchMode}
+          className={`px-3 py-1.5 text-sm rounded-lg font-bold transition-colors ${
+            isBatchMode
+              ? 'bg-purple-600 text-white'
+              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          {isBatchMode ? '✓ Batch Mode ON' : 'Batch Mode OFF'}
+        </button>
+
+        {isBatchMode && batch.length > 0 && (
+          <button
+            onClick={() => setShowBatchModal(true)}
+            className="px-3 py-1.5 text-sm rounded-lg font-bold bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center gap-1"
+          >
+            Review Batch ({batch.length})
+          </button>
+        )}
+
+        {isBatchMode && batch.length > 0 && (
+          <button
+            onClick={clearBatch}
+            className="px-3 py-1.5 text-sm rounded-lg font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
+          >
+            Clear All
+          </button>
+        )}
+      </div>
+
       <CardStack
         key={filterKey}
         pairs={pairs}
@@ -226,17 +258,19 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         betSize={betSize}
         marketData={marketData}
         onRefresh={fetchOrders}
-        batchedCount={batchedTrades.length}
-        onShowBatch={handleShowBatch}
       />
+
       <BatchConfirmationModal
         isOpen={showBatchModal}
-        batchedTrades={batchedTrades}
-        totalCollateral={totalCollateralNeeded}
-        onConfirm={handleBatchConfirm}
-        onCancel={handleBatchCancel}
+        batch={batch}
+        batchStatuses={batchStatuses}
+        totalUSDC={getTotalUSDCNeeded()}
         isExecuting={isExecuting}
+        onExecute={handleExecuteBatch}
+        onClose={() => setShowBatchModal(false)}
+        onRemoveBet={removeFromBatch}
       />
+
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </>
   );

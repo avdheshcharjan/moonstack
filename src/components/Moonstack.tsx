@@ -34,7 +34,7 @@ const Moonstack = () => {
       <TopBar onProfileClick={() => setCurrentView('mybets')} />
 
       {/* Main Content */}
-      <div className="pt-20 pb-24 px-4 max-w-7xl mx-auto">
+      <div className="pt-16 pb-20 px-2 max-w-7xl mx-auto">
         {/* Play View */}
         {currentView === 'play' && (
           <>

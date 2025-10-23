@@ -1,19 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { useLocalStorage } from '@/src/hooks/useLocalStorage';
-import { UserPosition } from '@/src/types/orders';
+import { DbUserPosition } from '@/src/utils/supabase';
+import { getBaseScanTxUrl, formatTxHash } from '@/src/utils/basescan';
 
 interface MyBetsProps {
   walletAddress: string | null;
 }
 
 const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
-  const [positions, setPositions] = useLocalStorage<UserPosition[]>(
-    `positions_${walletAddress}`,
-    []
-  );
+  const [positions, setPositions] = useState<DbUserPosition[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'ongoing' | 'completed'>('ongoing');
   const [timeRemaining, setTimeRemaining] = useState<Record<string, string>>({});
+
+  // Fetch positions from database
+  useEffect(() => {
+    if (!walletAddress) {
+      setPositions([]);
+      return;
+    }
+
+    const fetchPositions = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/positions?wallet=${walletAddress}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch positions');
+        }
+
+        const data = await response.json();
+        setPositions(data.data || []);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
+        setPositions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPositions();
+
+    // Refresh positions every 30 seconds
+    const interval = setInterval(fetchPositions, 30000);
+
+    return () => clearInterval(interval);
+  }, [walletAddress]);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -25,7 +61,7 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
 
       positions.forEach((position) => {
         const now = Date.now();
-        const expiryTime = position.order.expiry.getTime();
+        const expiryTime = new Date(position.expiry).getTime();
         const diff = expiryTime - now;
 
         if (diff <= 0) {
@@ -73,6 +109,25 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
         <div className="text-6xl mb-4">🔐</div>
         <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
         <div className="text-slate-400">Connect your wallet to view your bets</div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-12 text-center">
+        <div className="text-2xl font-bold text-white mb-2">Loading...</div>
+        <div className="text-slate-400">Fetching your positions</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-12 text-center">
+        <div className="text-6xl mb-4">⚠️</div>
+        <div className="text-2xl font-bold text-white mb-2">Error Loading Bets</div>
+        <div className="text-slate-400">{error}</div>
       </div>
     );
   }
@@ -130,7 +185,7 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
           </div>
         ) : (
           displayPositions.slice().reverse().map((position) => {
-            const isPump = position.order.isCall;
+            const isPump = position.is_call;
             const borderColor = isPump ? 'border-green-500/50' : 'border-red-500/50';
 
             return (
@@ -142,8 +197,8 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                   {/* Token Icon */}
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-700 flex items-center justify-center flex-shrink-0">
                     <img
-                      src={getTokenLogo(position.order.underlying)}
-                      alt={position.order.underlying}
+                      src={getTokenLogo(position.underlying)}
+                      alt={position.underlying}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -152,10 +207,10 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-white font-bold text-xl">
-                        {position.order.underlying === 'BTC' ? 'Bitcoin' : position.order.underlying === 'ETH' ? 'Ethereum' : position.order.underlying === 'BNB' ? 'Bnb' : position.order.underlying === 'XRP' ? 'Xrp' : position.order.underlying}
+                        {position.underlying === 'BTC' ? 'Bitcoin' : position.underlying === 'ETH' ? 'Ethereum' : position.underlying === 'BNB' ? 'Bnb' : position.underlying === 'XRP' ? 'Xrp' : position.underlying}
                       </h3>
                       <span className="text-slate-400 text-sm font-medium">
-                        {position.order.underlying}
+                        {position.underlying}
                       </span>
                     </div>
                     <div className="text-slate-400 text-sm mb-3">
@@ -167,13 +222,20 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                       <div>
                         <div className="text-slate-500 text-xs mb-1">Entry</div>
                         <div className="text-white font-semibold text-sm">
-                          ${position.order.strikes[0]?.toLocaleString() || 'N/A'}
+                          ${position.strikes[0]?.toLocaleString() || 'N/A'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-slate-500 text-xs mb-1">Current</div>
-                        <div className="text-white font-semibold text-sm">
-                          ${position.order.strikes[0]?.toLocaleString() || 'N/A'}
+                        <div className="text-slate-500 text-xs mb-1">PnL</div>
+                        <div className={`font-semibold text-sm ${
+                          position.pnl > 0 ? 'text-green-400' : position.pnl < 0 ? 'text-red-400' : 'text-white'
+                        }`}>
+                          {position.pnl > 0 ? '+' : ''}${position.pnl.toFixed(2)}
+                          {position.pnl_percentage !== 0 && (
+                            <span className="text-xs ml-1">
+                              ({position.pnl_percentage > 0 ? '+' : ''}{position.pnl_percentage.toFixed(1)}%)
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div>
@@ -183,6 +245,23 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Transaction Link */}
+                    {position.tx_hash && (
+                      <div className="mt-3 pt-3 border-t border-slate-700/50">
+                        <a
+                          href={getBaseScanTxUrl(position.tx_hash as `0x${string}`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          <span>View on BaseScan: {formatTxHash(position.tx_hash as `0x${string}`)}</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

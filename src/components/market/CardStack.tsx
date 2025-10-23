@@ -11,8 +11,6 @@ interface CardStackProps {
   betSize: number;
   marketData: MarketData;
   onRefresh: () => Promise<void>;
-  batchedCount: number;
-  onShowBatch: () => void;
 }
 
 const CardStack: React.FC<CardStackProps> = ({
@@ -21,8 +19,6 @@ const CardStack: React.FC<CardStackProps> = ({
   betSize,
   marketData,
   onRefresh,
-  batchedCount,
-  onShowBatch,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -66,6 +62,7 @@ const CardStack: React.FC<CardStackProps> = ({
     setIsProcessing(true);
     try {
       await onSwipe(currentPair, action);
+      // Move to next card after swipe (whether batch or immediate)
       setCurrentIndex(prev => prev + 1);
     } catch (error) {
       console.error('Swipe action failed:', error);
@@ -173,28 +170,8 @@ const CardStack: React.FC<CardStackProps> = ({
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8">
-      {/* Batch indicator */}
-      {batchedCount > 0 && (
-        <div className="mb-4">
-          <motion.button
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={onShowBatch}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-between"
-          >
-            <span className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              {batchedCount} prediction{batchedCount !== 1 ? 's' : ''} ready
-            </span>
-            <span className="text-sm">Review & Confirm →</span>
-          </motion.button>
-        </div>
-      )}
-
-      <div className="relative mb-8" style={{ height: '700px' }}>
+    <div className="w-full max-w-4xl mx-auto px-2 py-2">
+      <div className="relative" style={{ height: 'calc(100vh - 180px)', maxHeight: '600px' }}>
         <AnimatePresence mode="wait">
           {hasMoreCards && currentPair && (
             <motion.div

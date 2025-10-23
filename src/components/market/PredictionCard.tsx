@@ -112,7 +112,7 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
 
   return (
     <div className="w-full max-w-md mx-auto h-full bg-gradient-to-br from-[#000d1d] via-slate-900 to-[#000d1d] rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col justify-between">
         {/* Progress Bar */}
         {currentIndex !== undefined && totalCards !== undefined && (
           <div className="w-full bg-slate-700 h-2">
@@ -124,12 +124,12 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
         )}
 
         {/* Header Section */}
-        <div className="px-6 pt-6 pb-4 space-y-4">
+        <div className="px-4 pt-4 pb-2 space-y-2">
           {/* Asset Info */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
                   <img
                     src={getTokenLogo(pair.underlying)}
                     alt={pair.underlying}
@@ -138,7 +138,7 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-white text-xl font-bold">{pair.underlying}</span>
+                    <span className="text-white text-lg font-bold">{pair.underlying}</span>
                   </div>
                 </div>
               </div>
@@ -182,14 +182,14 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
             </div>
 
             {/* Question */}
-            <div className="text-white text-2xl font-black leading-tight">
+            <div className="text-white text-lg font-black leading-tight">
               {pair.question}
             </div>
           </div>
 
           {/* Price Info */}
-          <div className="space-y-1">
-            <div className="text-white text-3xl font-black">
+          <div className="space-y-0.5">
+            <div className="text-white text-2xl font-black">
               <RollingNumber
                 value={currentPrice}
                 decimals={2}
@@ -200,7 +200,7 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
                 }}
               />
             </div>
-            <div className={`flex items-center gap-2 text-lg font-semibold ${
+            <div className={`flex items-center gap-1 text-base font-semibold ${
               priceChange >= 0 ? 'text-green-400' : 'text-red-400'
             }`}>
               <span>{priceChange >= 0 ? '↑' : '↓'}</span>
@@ -217,8 +217,8 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
         </div>
 
         {/* Chart Section */}
-        <div className="flex-1 px-2">
-          <div className="h-48 rounded-xl overflow-hidden bg-slate-950">
+        <div className="flex-1 px-2 min-h-0">
+          <div className="h-full max-h-48 rounded-xl overflow-hidden bg-slate-950">
             <TradingViewChart
               symbol={getTradingViewSymbol(pair.underlying)}
               theme="dark"
@@ -229,15 +229,15 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
         </div>
 
         {/* Bottom Section - Action Buttons */}
-        <div className="px-6 pb-6 pt-4">
+        <div className="px-4 pb-4 pt-3">
           <div className="flex items-stretch justify-center gap-2">
             <button
               onClick={onDump}
               disabled={isProcessing || !onDump}
-              className="flex-1 relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
+              className="flex-1 relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-xl tracking-wider">
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-lg tracking-wider">
                   ${downPayout.toFixed(2)} ({downMultiplier}x)
                 </span>
                 <span className="text-xs font-normal opacity-90">DUMP!</span>
@@ -247,18 +247,18 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
             <button
               onClick={onSkip}
               disabled={isProcessing || !onSkip}
-              className="flex-1 relative bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
+              className="flex-1 relative bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
-              <span className="text-xl tracking-wider">SKIP</span>
+              <span className="text-lg tracking-wider">SKIP</span>
             </button>
 
             <button
               onClick={onPump}
               disabled={isProcessing || !onPump}
-              className="flex-1 relative bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
+              className="flex-1 relative bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-xl tracking-wider">
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-lg tracking-wider">
                   ${upPayout.toFixed(2)} ({upMultiplier}x)
                 </span>
                 <span className="text-xs font-normal opacity-90">PUMP!</span>
