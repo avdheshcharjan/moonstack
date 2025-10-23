@@ -172,7 +172,7 @@ const CardStack: React.FC<CardStackProps> = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto px-2 py-2">
-      <div className="relative" style={{ height: 'calc(100vh - 180px)', maxHeight: '600px' }}>
+      <div className="relative" style={{ height: 'calc(100vh - 220px)', maxHeight: '600px' }}>
         <AnimatePresence mode="wait">
           {hasMoreCards && currentPair && (
             <motion.div
@@ -225,6 +225,22 @@ const CardStack: React.FC<CardStackProps> = ({
             />
           </div>
         )}
+      </div>
+
+      {/* Swipe Instructions Footer */}
+      <div className="mt-3 flex items-center justify-center gap-4 text-xs opacity-60">
+        <div className="flex items-center gap-1.5 text-red-400">
+          <span className="text-base">←</span>
+          <span className="font-medium">DUMP</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-purple-400">
+          <span className="text-base">↑</span>
+          <span className="font-medium">SKIP</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-green-400">
+          <span className="text-base">→</span>
+          <span className="font-medium">PUMP</span>
+        </div>
       </div>
 
       {isProcessing && (
