@@ -48,7 +48,7 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   }, [isOpen, address, transactions.length]);
 
   const loadTransactions = () => {
-    const txs = cartStorage.getTransactions(address);
+    const txs = cartStorage.getTransactions();
     setTransactions(txs);
   };
 
@@ -86,9 +86,14 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   };
 
   const handleSwipeRight = async () => {
-    if (!address || transactions.length === 0) {
-      console.error('No transactions or address found', { address, txCount: transactions.length });
-      addToast('Cannot execute: No wallet connected or cart is empty', 'error');
+    if (!address) {
+      addToast('Please sign in with Base to execute transactions', 'error');
+      return;
+    }
+
+    if (transactions.length === 0) {
+      console.error('No transactions found', { txCount: transactions.length });
+      addToast('Cart is empty', 'error');
       return;
     }
 
@@ -108,7 +113,7 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
         console.log('✅ Batch execution successful');
 
         // Clear cart
-        cartStorage.clearCart(address);
+        cartStorage.clearCart();
         onCartUpdate?.();
 
         // Show success toast with BaseScan link
@@ -130,15 +135,10 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   };
 
   const handleSwipeLeft = () => {
-    if (!address) {
-      onClose();
-      return;
-    }
-
     console.log('Swipe left detected, discarding ALL transactions');
 
     // Clear entire cart
-    cartStorage.clearCart(address);
+    cartStorage.clearCart();
     onCartUpdate?.();
 
     // Close modal immediately
@@ -161,6 +161,12 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   if (!isOpen) {
     return null;
   }
+
+  const handleRemoveTransaction = (txId: string) => {
+    cartStorage.removeTransactions([txId]);
+    loadTransactions();
+    onCartUpdate?.();
+  };
 
   return (
     <div
@@ -205,96 +211,196 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex items-center justify-center px-4 pb-20">
-          {transactions.length === 0 ? (
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gray-800 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-10 h-10 text-gray-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                  />
-                </svg>
+        <div className="flex-1 flex flex-col items-center px-4 pb-20 overflow-hidden">
+          {!address ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-6 bg-blue-600/20 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-white text-xl mb-2 font-semibold">Sign in Required</p>
+                <p className="text-gray-400 text-sm">Please sign in with Base to view and execute your cart</p>
               </div>
-              <p className="text-gray-400 text-xl mb-2">Cart is empty</p>
-              <p className="text-gray-600 text-sm">Add items by swiping right</p>
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gray-800 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-gray-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-gray-400 text-xl mb-2">Cart is empty</p>
+                <p className="text-gray-600 text-sm">Add items by swiping right</p>
+              </div>
             </div>
           ) : (
-            <div className="w-full max-w-md h-[600px]">
-              {(isProcessing || isCheckingAllowance) && (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center">
-                  <div className="bg-gray-800 rounded-lg p-6 text-center">
-                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white text-lg font-medium">
-                      {isCheckingAllowance ? 'Checking allowance...' : 'Executing batch...'}
-                    </p>
-                    <p className="text-gray-400 text-sm mt-2">
-                      {isCheckingAllowance ? 'Please wait' : 'Please confirm in your wallet'}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <CartSwipeableCard
-                onSwipeRight={handleSwipeRight}
-                onSwipeLeft={handleSwipeLeft}
-                onSwipeComplete={handleSwipeComplete}
-                disabled={isProcessing || isCheckingAllowance}
-              >
-                <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black h-full w-full flex flex-col justify-center items-center p-8 relative">
-                  {/* Batch Badge */}
-                  <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
-                    <div className="px-6 py-2 rounded-full text-lg font-bold bg-blue-600 text-white">
-                      BATCH
-                    </div>
-                  </div>
+            <>
+              {/* Transaction List */}
+              <div className="w-full max-w-md mb-4 flex-1 overflow-y-auto">
+                <div className="space-y-3">
+                  {transactions.map((tx) => (
+                    <div
+                      key={tx.id}
+                      className="bg-gradient-to-br from-slate-800 via-slate-800/80 to-slate-900 rounded-xl p-4 border border-slate-700/50 shadow-lg"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        {/* Transaction Details */}
+                        <div className="flex-1 min-w-0">
+                          {/* Market and Side */}
+                          {tx.orderDetails && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-white font-bold text-lg">
+                                {tx.orderDetails.marketId}
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                  tx.orderDetails.side === 'YES'
+                                    ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                                    : 'bg-red-600/20 text-red-400 border border-red-600/30'
+                                }`}
+                              >
+                                {tx.orderDetails.side}
+                              </span>
+                            </div>
+                          )}
 
-                  {/* Main Content */}
-                  <div className="text-center space-y-8 mt-12">
-                    {/* Transaction Count */}
-                    <div>
-                      <p className="text-gray-500 text-sm uppercase tracking-wider mb-2">Transactions</p>
-                      <h3 className="text-white text-3xl font-bold">
-                        {transactions.length} {transactions.length === 1 ? 'Order' : 'Orders'}
-                      </h3>
-                    </div>
+                          {/* Bet Amount */}
+                          {tx.orderDetails && (
+                            <div className="text-slate-300 text-sm mb-2">
+                              Bet: <span className="font-semibold text-white">${tx.orderDetails.amount}</span>
+                            </div>
+                          )}
 
-                    {/* Description */}
-                    <div>
-                      <p className="text-gray-400 text-base">
-                        Execute all transactions in a single gasless batch
-                      </p>
-                    </div>
+                          {/* Required USDC */}
+                          <div className="text-slate-400 text-xs">
+                            USDC Required: <span className="text-slate-300 font-medium">${formatUSDC(tx.requiredUSDC || 0n)}</span>
+                          </div>
+                        </div>
 
-                    {/* Total Amount - Hero */}
-                    <div className="py-8">
-                      <p className="text-gray-500 text-sm uppercase tracking-wider mb-3">Total Amount</p>
-                      <div className="flex items-baseline justify-center gap-2">
-                        <span className="text-6xl font-bold text-white">
-                          ${formatUSDC(getTotalUSDC())}
-                        </span>
+                        {/* Remove Button */}
+                        <button
+                          onClick={() => handleRemoveTransaction(tx.id)}
+                          disabled={isProcessing || isCheckingAllowance}
+                          className="flex-shrink-0 p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 hover:border-red-600/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                          title="Remove transaction"
+                        >
+                          <svg
+                            className="w-4 h-4 text-red-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
                       </div>
-                      <p className="text-gray-500 text-lg mt-2">USDC</p>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              </div>
 
-                  {/* Footer Info */}
-                  <div className="absolute bottom-6 left-0 right-0 px-6">
-                    <div className="text-center space-y-2">
-                      <p className="text-gray-500 text-xs">
-                        {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} ready to execute
+              {/* Batch Execution Card */}
+              <div className="w-full max-w-md h-[400px] relative">
+                {(isProcessing || isCheckingAllowance) && (
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-3xl">
+                    <div className="bg-gray-800 rounded-lg p-6 text-center">
+                      <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-white text-lg font-medium">
+                        {isCheckingAllowance ? 'Checking allowance...' : 'Executing batch...'}
+                      </p>
+                      <p className="text-gray-400 text-sm mt-2">
+                        {isCheckingAllowance ? 'Please wait' : 'Please confirm in your wallet'}
                       </p>
                     </div>
                   </div>
-                </div>
-              </CartSwipeableCard>
-            </div>
+                )}
+                <CartSwipeableCard
+                  onSwipeRight={handleSwipeRight}
+                  onSwipeLeft={handleSwipeLeft}
+                  onSwipeComplete={handleSwipeComplete}
+                  disabled={isProcessing || isCheckingAllowance}
+                >
+                  <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black h-full w-full flex flex-col justify-center items-center p-8 relative">
+                    {/* Batch Badge */}
+                    <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
+                      <div className="px-6 py-2 rounded-full text-lg font-bold bg-blue-600 text-white shadow-lg">
+                        BATCH
+                      </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="text-center space-y-6 mt-8">
+                      {/* Transaction Count */}
+                      <div>
+                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Transactions</p>
+                        <h3 className="text-white text-2xl font-bold">
+                          {transactions.length} {transactions.length === 1 ? 'Order' : 'Orders'}
+                        </h3>
+                      </div>
+
+                      {/* Total Amount - Hero */}
+                      <div className="py-4">
+                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Total Amount</p>
+                        <div className="flex items-baseline justify-center gap-2">
+                          <span className="text-5xl font-bold text-white">
+                            ${formatUSDC(getTotalUSDC())}
+                          </span>
+                        </div>
+                        <p className="text-gray-500 text-sm mt-1">USDC</p>
+                      </div>
+
+                      {/* Gasless Badge */}
+                      <div className="px-4 py-2 bg-purple-900/30 rounded-lg border border-purple-500/20">
+                        <div className="flex items-center justify-center gap-2 text-purple-300 text-xs">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                          <span className="font-medium">Gasless Execution</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CartSwipeableCard>
+              </div>
+            </>
           )}
         </div>
       </div>

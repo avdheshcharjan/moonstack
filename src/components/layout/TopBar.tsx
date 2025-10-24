@@ -13,11 +13,19 @@ const TopBar: React.FC<TopBarProps> = () => {
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
+    const updateCartCount = () => {
+      const count = cartStorage.getCount();
+      console.log('[TopBar] Updating cart count:', { count });
+      setCartCount(count);
+    };
+
     // Initial load
+    console.log('[TopBar] Initial cart count load');
     updateCartCount();
 
     // Listen for storage changes
     const handleStorageChange = () => {
+      console.log('[TopBar] Cart storage changed event received');
       updateCartCount();
     };
 
@@ -32,12 +40,8 @@ const TopBar: React.FC<TopBarProps> = () => {
     };
   }, []);
 
-  const updateCartCount = () => {
-    setCartCount(cartStorage.getCount());
-  };
-
   const handleCartUpdate = () => {
-    updateCartCount();
+    setCartCount(cartStorage.getCount());
     // Dispatch custom event for other components
     window.dispatchEvent(new Event('cartUpdated'));
   };
