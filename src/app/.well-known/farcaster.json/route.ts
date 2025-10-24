@@ -31,7 +31,7 @@ export async function GET() {
       tagline: 'Predict Like Tinder',
       ogTitle: 'Moonstack',
       ogDescription: 'Swipe to Predict',
-      ogImageUrl: `${URL}/logo.png`,
+      ogImageUrl: `${URL}/logo_hero.png`,
       noindex: true,
     },
   });
