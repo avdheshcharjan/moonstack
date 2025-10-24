@@ -8,6 +8,9 @@ import ToastContainer, { useToastManager } from '../shared/ToastContainer';
 import ExpiryFilter from './ExpiryFilter';
 import { BinaryPair, ExpiryFilter as ExpiryFilterType } from '@/src/types/prediction';
 import type { Address } from 'viem';
+import ApprovalModal from '@/src/components/cart/ApprovalModal';
+import { needsInitialApproval } from '@/src/utils/approvalTracking';
+import { getSmartAccountAddress } from '@/src/lib/smartAccount';
 
 interface SwipeViewProps {
   walletAddress: string | null;
@@ -24,6 +27,11 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 5);
 
+  // Approval modal state
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalComplete, setApprovalComplete] = useState(false);
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true);
+
   const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
     setExpiryFilter(newFilter);
     setFilterKey(prev => prev + 1);
@@ -34,6 +42,43 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
       fetchOrders();
     }
   }, [walletAddress, fetchOrders]);
+
+  // Check approval on mount and wallet change
+  useEffect(() => {
+    if (walletAddress) {
+      checkNeedsApproval();
+    } else {
+      setIsCheckingApproval(false);
+      setApprovalComplete(false);
+    }
+  }, [walletAddress]);
+
+  const checkNeedsApproval = async () => {
+    if (!walletAddress) return;
+
+    setIsCheckingApproval(true);
+    try {
+      const smartAccountAddress = await getSmartAccountAddress(walletAddress as Address);
+      const needed = await needsInitialApproval(walletAddress as Address, smartAccountAddress);
+
+      if (needed) {
+        setShowApprovalModal(true);
+        setApprovalComplete(false);
+      } else {
+        setApprovalComplete(true);
+      }
+    } catch (error) {
+      console.error('Failed to check approval:', error);
+      setApprovalComplete(true); // Allow swiping on error
+    } finally {
+      setIsCheckingApproval(false);
+    }
+  };
+
+  const handleApprovalComplete = () => {
+    setApprovalComplete(true);
+    setShowApprovalModal(false);
+  };
 
   // Memoize all pairs (before filtering) for counting
   const allPairs = useMemo(() => {
@@ -192,6 +237,75 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
     );
   }
 
+  // Show loading state while checking approval
+  if (isCheckingApproval) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px] px-4">
+        <div className="text-center">
+          <svg
+            className="animate-spin h-12 w-12 mx-auto text-purple-500 mb-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          <div className="text-white text-xl">Checking approval...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show approval required message if not approved
+  if (!approvalComplete) {
+    return (
+      <>
+        <div className="flex items-center justify-center min-h-[600px] px-4">
+          <div className="text-center">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 mx-auto text-purple-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="text-white text-2xl font-bold mb-2">Approval Required</div>
+            <div className="text-slate-400 text-sm mb-4">
+              Please approve USDC spending to start swiping
+            </div>
+          </div>
+        </div>
+
+        <ApprovalModal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          onApprovalComplete={handleApprovalComplete}
+          walletAddress={walletAddress as Address}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <ExpiryFilter
@@ -212,6 +326,13 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+
+      <ApprovalModal
+        isOpen={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        onApprovalComplete={handleApprovalComplete}
+        walletAddress={walletAddress as Address}
+      />
     </>
   );
 };

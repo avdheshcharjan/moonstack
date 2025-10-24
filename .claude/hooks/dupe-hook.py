@@ -12,7 +12,7 @@ def main():
     # Check if this is the /dupe command
     if prompt.strip() == '/dupe':
         # Run the new-cursor-terminal.sh script
-        script_path = '/Users/silasrhyneer/Code/ASI/new-cursor-terminal.sh'
+        script_path = '/Users/avuthegreat/Code/ASI/new-cursor-terminal.sh'
         try:
             subprocess.run([script_path], check=True)
             # Block the prompt from going to Claude by returning error
