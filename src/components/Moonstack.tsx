@@ -17,6 +17,9 @@ const Moonstack = () => {
 
   // Page navigation
   const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
+  
+  // Swipe instructions modal state (persists during session)
+  const [hasSeenSwipeInstructions, setHasSeenSwipeInstructions] = useState(false);
 
   // Handle hydration and MiniApp SDK ready
   useEffect(() => {
@@ -54,7 +57,11 @@ const Moonstack = () => {
                 </div>
               </div>
             ) : (
-              <SwipeView walletAddress={walletAddress} />
+              <SwipeView 
+                walletAddress={walletAddress} 
+                hasSeenSwipeInstructions={hasSeenSwipeInstructions}
+                onSwipeInstructionsSeen={() => setHasSeenSwipeInstructions(true)}
+              />
             )}
           </>
         )}

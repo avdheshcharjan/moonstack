@@ -11,9 +11,11 @@ import type { Address } from 'viem';
 
 interface SwipeViewProps {
   walletAddress: string | null;
+  hasSeenSwipeInstructions: boolean;
+  onSwipeInstructionsSeen: () => void;
 }
 
-const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
+const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstructions, onSwipeInstructionsSeen }) => {
   const { orders, marketData, loading, error, fetchOrders, filterBinaries } = useOrders();
   const { toasts, addToast, removeToast } = useToastManager();
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilterType>('all');
@@ -205,6 +207,8 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         betSize={betSize}
         marketData={marketData}
         onRefresh={fetchOrders}
+        showInstructions={!hasSeenSwipeInstructions}
+        onInstructionsSeen={onSwipeInstructionsSeen}
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

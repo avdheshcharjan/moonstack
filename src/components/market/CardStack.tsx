@@ -12,6 +12,8 @@ interface CardStackProps {
   betSize: number;
   marketData: MarketData;
   onRefresh: () => Promise<void>;
+  showInstructions?: boolean;
+  onInstructionsSeen?: () => void;
 }
 
 const CardStack: React.FC<CardStackProps> = ({
@@ -20,16 +22,17 @@ const CardStack: React.FC<CardStackProps> = ({
   betSize,
   marketData,
   onRefresh,
+  showInstructions = true,
+  onInstructionsSeen,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [preloadedIndices, setPreloadedIndices] = useState<Set<number>>(new Set([0, 1, 2]));
   const currentPairIdRef = React.useRef<string | null>(null);
-  const [showInstructionsModal, setShowInstructionsModal] = useState(true);
 
   const handleCloseInstructions = useCallback(() => {
-    setShowInstructionsModal(false);
-  }, []);
+    onInstructionsSeen?.();
+  }, [onInstructionsSeen]);
 
   const currentPair = pairs[currentIndex];
   const hasMoreCards = currentIndex < pairs.length;
@@ -180,7 +183,7 @@ const CardStack: React.FC<CardStackProps> = ({
     <div className="w-full max-w-4xl mx-auto px-2 py-2">
       <div className="relative" style={{ height: 'calc(100vh - 180px)', maxHeight: '600px' }}>
         <SwipeInstructionsModal
-          isOpen={showInstructionsModal}
+          isOpen={showInstructions}
           onClose={handleCloseInstructions}
         />
         <AnimatePresence mode="wait">
