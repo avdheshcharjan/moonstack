@@ -32,29 +32,54 @@ export function getBaseAccountProvider() {
  * Get the current crypto key account
  */
 export async function getBaseAccount() {
-  const account = await getCryptoKeyAccount();
-  if (!account?.account?.address) {
-    throw new Error('No Base Account found. Please connect your wallet first.');
+  console.log('🔍 [smartAccount] Getting crypto key account...');
+  try {
+    const account = await getCryptoKeyAccount();
+    console.log('✅ [smartAccount] Got account:', account ? 'exists' : 'null');
+    console.log('✅ [smartAccount] Account address:', account?.account?.address || 'none');
+
+    if (!account?.account?.address) {
+      console.error('❌ [smartAccount] No Base Account found');
+      throw new Error('No Base Account found. Please connect your wallet first.');
+    }
+    return account;
+  } catch (error) {
+    console.error('❌ [smartAccount] Error getting crypto key account:', error);
+    throw error;
   }
-  return account;
 }
 
 /**
  * Get the user's Base Account address
  */
 export async function getBaseAccountAddress(): Promise<Address> {
-  const account = await getBaseAccount();
-  return account.account.address as Address;
+  console.log('🔍 [smartAccount] getBaseAccountAddress called');
+  try {
+    const account = await getBaseAccount();
+    const address = account.account.address as Address;
+    console.log('✅ [smartAccount] Returning address:', address);
+    return address;
+  } catch (error) {
+    console.error('❌ [smartAccount] Failed to get Base Account address:', error);
+    throw error;
+  }
 }
 
 /**
  * Check if Base Account is connected
  */
 export async function isBaseAccountConnected(): Promise<boolean> {
+  console.log('🔍 [smartAccount] Checking if Base Account is connected...');
   try {
     const account = await getCryptoKeyAccount();
-    return Boolean(account?.account?.address);
-  } catch {
+    const isConnected = Boolean(account?.account?.address);
+    console.log('✅ [smartAccount] Base Account connected:', isConnected);
+    if (isConnected) {
+      console.log('✅ [smartAccount] Base Account address:', account.account.address);
+    }
+    return isConnected;
+  } catch (error) {
+    console.error('❌ [smartAccount] Error checking connection:', error);
     return false;
   }
 }

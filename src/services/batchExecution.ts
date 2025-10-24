@@ -1,9 +1,9 @@
 import type { BatchBet } from '@/src/hooks/useBatchTransactions';
-import { checkBatchCapabilities, getBaseAccountProvider } from '@/src/lib/smartAccount';
+import { checkBatchCapabilities, getBaseAccountProvider, getBaseAccountAddress } from '@/src/lib/smartAccount';
 import type { CartTransaction } from '@/src/types/cart';
 import { OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import { encodeUSDCApprove, formatUSDC, getUSDCBalance, needsApproval } from '@/src/utils/usdcApproval';
-import { base, getCryptoKeyAccount } from '@base-org/account';
+import { base } from '@base-org/account';
 import type { Address, Hex } from 'viem';
 import { numberToHex } from 'viem';
 
@@ -59,66 +59,96 @@ export async function executeBatchTransactions(
   const transactions = items as CartTransaction[];
 
   try {
+    console.log('🔧 [batchExecution] Starting batch execution service...');
+
     if (transactions.length === 0) {
+      console.error('❌ [batchExecution] No transactions to execute');
       throw new Error('No transactions to execute');
     }
 
-    console.log('Batch execution starting...');
-    console.log('Total transactions:', transactions.length);
+    console.log('✅ [batchExecution] Batch execution starting...');
+    console.log('📊 [batchExecution] Total transactions:', transactions.length);
 
     // Calculate total USDC needed from cart transactions
     const totalUSDC = transactions.reduce((sum, tx) => sum + (tx.requiredUSDC || 0n), 0n);
-    console.log('Total USDC needed:', formatUSDC(totalUSDC), 'USDC');
+    console.log('💰 [batchExecution] Total USDC needed:', formatUSDC(totalUSDC), 'USDC');
 
-    // Get Base Account provider and address
-    const provider = getBaseAccountProvider();
-
-    // Get the crypto account - this requires the user to have signed in with Base Account
-    let cryptoAccount;
+    // Get Base Account provider first
+    console.log('🔌 [batchExecution] Getting Base Account provider...');
+    let provider;
     try {
-      cryptoAccount = await getCryptoKeyAccount();
+      provider = getBaseAccountProvider();
+      console.log('✅ [batchExecution] Provider obtained successfully');
     } catch (error) {
-      console.error('Error getting crypto key account:', error);
-      throw new Error('Failed to access Base Account. Please sign in with Base Account.');
+      console.error('❌ [batchExecution] Failed to get provider:', error);
+      throw new Error('Failed to get Base Account provider. Please try reconnecting.');
     }
 
-    if (!cryptoAccount?.account?.address) {
-      console.error('getCryptoKeyAccount returned null or undefined');
-      throw new Error('Base Account not connected. Please sign in with "Sign in with Base" button and try again.');
+    // Get the Base Account address - using same pattern as ApprovalModal
+    console.log('🔍 [batchExecution] Getting Base Account address...');
+    let baseAccountAddress: Address;
+    try {
+      baseAccountAddress = await getBaseAccountAddress();
+      console.log('✅ [batchExecution] Base Account address:', baseAccountAddress);
+    } catch (error) {
+      console.error('❌ [batchExecution] Failed to get Base Account address:', error);
+      throw new Error('Failed to access Base Account. Please sign in with "Sign in with Base" and try again.');
     }
-
-    const baseAccountAddress = cryptoAccount.account.address as Address;
-    console.log('Base Account address:', baseAccountAddress);
 
     // Check wallet capabilities
-    const capabilities = await checkBatchCapabilities(baseAccountAddress);
-    console.log('Wallet capabilities:', capabilities);
+    console.log('🔍 [batchExecution] Checking wallet capabilities...');
+    let capabilities;
+    try {
+      capabilities = await checkBatchCapabilities(baseAccountAddress);
+      console.log('✅ [batchExecution] Wallet capabilities:', JSON.stringify(capabilities, null, 2));
+    } catch (error) {
+      console.error('❌ [batchExecution] Failed to check capabilities:', error);
+      throw new Error('Failed to verify wallet capabilities');
+    }
 
     if (!capabilities.atomicBatchSupported) {
+      console.error('❌ [batchExecution] Wallet does not support atomic batching');
       throw new Error('Wallet does not support atomic batching');
     }
 
     // Check balance on EOA wallet
-    const balance = await getUSDCBalance(userAddress);
-    console.log('User USDC balance:', formatUSDC(balance), 'USDC');
+    console.log('💰 [batchExecution] Checking USDC balance for user:', userAddress);
+    let balance;
+    try {
+      balance = await getUSDCBalance(userAddress);
+      console.log('✅ [batchExecution] User USDC balance:', formatUSDC(balance), 'USDC');
+    } catch (error) {
+      console.error('❌ [batchExecution] Failed to check balance:', error);
+      throw new Error('Failed to check USDC balance');
+    }
 
     if (balance < totalUSDC) {
+      console.error('❌ [batchExecution] Insufficient balance:', formatUSDC(balance), 'USDC, need:', formatUSDC(totalUSDC), 'USDC');
       throw new Error(`Insufficient USDC balance. Need ${formatUSDC(totalUSDC)} USDC, have ${formatUSDC(balance)} USDC`);
     }
 
     // Build calls array for wallet_sendCalls
+    console.log('🏗️ [batchExecution] Building calls array...');
     const calls: { to: string; value: string; data: string }[] = [];
 
     // Check if approval needed for Base Account
-    const approvalNeeded = await needsApproval(
-      baseAccountAddress,
-      totalUSDC,
-      OPTION_BOOK_ADDRESS as Address
-    );
+    console.log('🔍 [batchExecution] Checking if approval needed...');
+    let approvalNeeded;
+    try {
+      approvalNeeded = await needsApproval(
+        baseAccountAddress,
+        totalUSDC,
+        OPTION_BOOK_ADDRESS as Address
+      );
+      console.log('✅ [batchExecution] Approval needed:', approvalNeeded);
+    } catch (error) {
+      console.error('❌ [batchExecution] Failed to check approval:', error);
+      throw new Error('Failed to check USDC approval status');
+    }
 
     // Add approval call FIRST if needed
     if (approvalNeeded) {
-      console.log('Adding approval call for', formatUSDC(totalUSDC), 'USDC');
+      console.log('➕ [batchExecution] Adding approval call for', formatUSDC(totalUSDC), 'USDC');
       const approveCallData = encodeUSDCApprove(totalUSDC);
       calls.push({
         to: USDC_ADDRESS,
@@ -126,10 +156,11 @@ export async function executeBatchTransactions(
         data: approveCallData,
       });
     } else {
-      console.log('Approval not needed - sufficient allowance');
+      console.log('✅ [batchExecution] Approval not needed - sufficient allowance');
     }
 
     // Add all fillOrder calls
+    console.log('➕ [batchExecution] Adding', transactions.length, 'fillOrder calls...');
     for (const tx of transactions) {
       calls.push({
         to: tx.to,
@@ -138,22 +169,48 @@ export async function executeBatchTransactions(
       });
     }
 
-    console.log('Executing batch with', calls.length, 'calls via wallet_sendCalls (gasless)');
+    console.log('📦 [batchExecution] Total calls in batch:', calls.length);
+    console.log('🚀 [batchExecution] Executing batch via wallet_sendCalls (gasless)...');
 
     // Execute via wallet_sendCalls RPC method (EIP-5792)
-    const batchCallId = await provider.request({
-      method: 'wallet_sendCalls',
-      params: [{
+    let batchCallId;
+    try {
+      const requestParams = {
         version: '2.0.0',
         from: baseAccountAddress,
         chainId: numberToHex(base.constants.CHAIN_IDS.base),
         atomicRequired: true, // All calls must succeed or all fail
         calls: calls,
-      }],
-    });
+      };
 
-    console.log('Batch call submitted:', batchCallId);
-    console.log('Transaction will be processed by the network...');
+      console.log('📤 [batchExecution] Sending wallet_sendCalls request with params:', JSON.stringify({
+        ...requestParams,
+        calls: `${calls.length} calls`,
+      }));
+
+      batchCallId = await provider.request({
+        method: 'wallet_sendCalls',
+        params: [requestParams],
+      });
+
+      console.log('✅ [batchExecution] Batch call submitted successfully!');
+      console.log('📝 [batchExecution] Batch call ID:', batchCallId);
+    } catch (error) {
+      console.error('❌ [batchExecution] wallet_sendCalls failed:', error);
+      console.error('❌ [batchExecution] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code,
+        data: (error as any)?.data,
+      });
+
+      // Re-throw with more context
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to submit batch transaction to wallet');
+    }
+
+    console.log('✅ [batchExecution] Transaction will be processed by the network...');
 
     // Note: wallet_sendCalls returns a batch call ID, not a transaction hash
     // The transaction hash is available after the batch is mined
@@ -162,10 +219,17 @@ export async function executeBatchTransactions(
       txHash: batchCallId as string,
     };
   } catch (error: unknown) {
-    console.error('Batch execution failed:', error);
+    console.error('❌ [batchExecution] BATCH EXECUTION FAILED');
+    console.error('❌ [batchExecution] Error:', error);
+    console.error('❌ [batchExecution] Error type:', typeof error);
+    if (error instanceof Error) {
+      console.error('❌ [batchExecution] Error message:', error.message);
+      console.error('❌ [batchExecution] Error stack:', error.stack);
+    }
 
     // Enhanced error handling
     const errorMessage = handleBatchError(error);
+    console.error('❌ [batchExecution] Final error message:', errorMessage);
 
     return {
       success: false,

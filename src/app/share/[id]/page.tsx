@@ -126,7 +126,7 @@ export default function SharePage(): React.ReactElement {
         {/* Header */}
         <div className="mb-6 text-center">
           <h1 className="text-white text-3xl font-bold mb-2">Shared Prediction</h1>
-          <p className="text-slate-400">Make your prediction on Thetanuts</p>
+          <p className="text-slate-400">Make your prediction on Moonstack!</p>
         </div>
 
         {/* Card */}

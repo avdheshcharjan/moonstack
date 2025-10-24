@@ -53,5 +53,5 @@ export async function copyToClipboard(text: string): Promise<boolean> {
  * @returns Formatted share text
  */
 export function generateShareText(pair: BinaryPair, url: string): string {
-  return `${pair.question}\n\nMake your prediction on Thetanuts!\n${url}`;
+  return `${pair.question}\n\nMake your prediction on Moonstack!\n${url}`;
 }

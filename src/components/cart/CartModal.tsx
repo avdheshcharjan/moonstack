@@ -86,39 +86,59 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
   };
 
   const handleSwipeRight = async () => {
+    console.log('🔄 SWIPE RIGHT DETECTED - Starting transaction execution');
+    console.log('User address:', address);
+    console.log('Transactions in cart:', transactions.length);
+
     if (!address) {
+      console.error('❌ No address found');
       addToast('Please sign in with Base to execute transactions', 'error');
       return;
     }
 
     if (transactions.length === 0) {
-      console.error('No transactions found', { txCount: transactions.length });
+      console.error('❌ No transactions found', { txCount: transactions.length });
       addToast('Cart is empty', 'error');
       return;
     }
 
     // Check if Base Account is connected before attempting batch execution
-    const baseAccountConnected = await isBaseAccountConnected();
+    console.log('🔍 Checking Base Account connection...');
+    let baseAccountConnected = false;
+    try {
+      baseAccountConnected = await isBaseAccountConnected();
+      console.log('Base Account connected:', baseAccountConnected);
+    } catch (error) {
+      console.error('❌ Error checking Base Account connection:', error);
+      addToast('Failed to verify Base Account connection. Please try again.', 'error');
+      return;
+    }
+
     if (!baseAccountConnected) {
+      console.error('❌ Base Account not connected. User needs to sign in with Base Account.');
       addToast('Please connect with Base Account to execute batch transactions', 'error');
-      console.error('Base Account not connected. User needs to sign in with Base Account.');
       return;
     }
 
     console.log('========== BATCH EXECUTION STARTED ==========');
     console.log('Total transactions:', transactions.length);
     console.log('User address:', address);
+    console.log('Transactions details:', transactions.map(tx => ({
+      id: tx.id,
+      to: tx.to,
+      requiredUSDC: tx.requiredUSDC?.toString(),
+    })));
     console.log('==========================================');
 
     setIsProcessing(true);
 
     try {
-      console.log('🚀 Executing batch transactions...');
+      console.log('🚀 Calling executeBatchTransactions...');
       const result = await executeBatchTransactions(transactions, address);
-      console.log('✅ Batch execution result:', result);
+      console.log('✅ Batch execution completed, result:', result);
 
       if (result.success && result.txHash) {
-        console.log('✅ Batch execution successful');
+        console.log('✅ Transaction successful, hash:', result.txHash);
 
         // Clear cart
         cartStorage.clearCart();
@@ -135,7 +155,8 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
         setIsProcessing(false);
       }
     } catch (error) {
-      console.error('❌ Error executing batch:', error);
+      console.error('❌ Caught error executing batch:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       const errorMessage = error instanceof Error ? error.message : 'Failed to execute batch';
       addToast(errorMessage, 'error');
       setIsProcessing(false);
@@ -284,11 +305,10 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
                                 {tx.orderDetails.marketId}
                               </span>
                               <span
-                                className={`px-2 py-0.5 rounded text-xs font-bold ${
-                                  tx.orderDetails.side === 'YES'
+                                className={`px-2 py-0.5 rounded text-xs font-bold ${tx.orderDetails.side === 'YES'
                                     ? 'bg-green-600/20 text-green-400 border border-green-600/30'
                                     : 'bg-red-600/20 text-red-400 border border-red-600/30'
-                                }`}
+                                  }`}
                               >
                                 {tx.orderDetails.side}
                               </span>
