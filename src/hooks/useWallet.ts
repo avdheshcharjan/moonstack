@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserProvider } from 'ethers';
 import { BASE_CHAIN_ID } from '../utils/contracts';
-import { getBaseAccountProvider, isBaseAccountConnected } from '@/src/lib/smartAccount';
+import { getCryptoKeyAccount } from '@base-org/account';
 
 interface UseWalletReturn {
   walletAddress: string | null;
@@ -26,13 +26,13 @@ export function useWallet(): UseWalletReturn {
 
       // Try Base Account SDK first for smart wallet
       try {
-        const provider = getBaseAccountProvider();
-        const accounts = await provider.request({ method: 'wallet_connect' }) as string[];
+        const cryptoAccount = await getCryptoKeyAccount();
 
-        if (accounts && accounts.length > 0) {
-          setWalletAddress(accounts[0]);
+        if (cryptoAccount?.account?.address) {
+          const address = cryptoAccount.account.address;
+          setWalletAddress(address);
           setChainId(BASE_CHAIN_ID);
-          localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
+          localStorage.setItem(WALLET_STORAGE_KEY, address);
           localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
           return;
         }
@@ -115,11 +115,10 @@ export function useWallet(): UseWalletReturn {
       try {
         // Try Base Account SDK first
         try {
-          const provider = getBaseAccountProvider();
-          const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
+          const cryptoAccount = await getCryptoKeyAccount();
 
-          if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-            setWalletAddress(accounts[0]);
+          if (cryptoAccount?.account?.address && cryptoAccount.account.address.toLowerCase() === savedAddress.toLowerCase()) {
+            setWalletAddress(cryptoAccount.account.address);
             setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
             return;
           }

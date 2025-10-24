@@ -1,7 +1,8 @@
 import type { Address, Hex } from 'viem';
 import { numberToHex } from 'viem';
 import { base } from '@base-org/account';
-import { getBaseAccountProvider, getBaseAccountAddress, checkBatchCapabilities } from '@/src/lib/smartAccount';
+import { getBaseAccountProvider, checkBatchCapabilities } from '@/src/lib/smartAccount';
+import { getCryptoKeyAccount } from '@base-org/account';
 import { needsApproval, encodeUSDCApprove, getUSDCBalance, formatUSDC } from '@/src/utils/usdcApproval';
 import { OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import type { CartTransaction } from '@/src/types/cart';
@@ -72,7 +73,14 @@ export async function executeBatchTransactions(
 
     // Get Base Account provider and address
     const provider = getBaseAccountProvider();
-    const baseAccountAddress = await getBaseAccountAddress();
+
+    // Get the crypto account - this will prompt for connection if needed
+    const cryptoAccount = await getCryptoKeyAccount();
+    if (!cryptoAccount?.account?.address) {
+      throw new Error('Failed to get Base Account. Please try reconnecting your wallet.');
+    }
+
+    const baseAccountAddress = cryptoAccount.account.address as Address;
     console.log('Base Account address:', baseAccountAddress);
 
     // Check wallet capabilities
