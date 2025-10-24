@@ -2,6 +2,7 @@ import { createPublicClient, createWalletClient, custom, http, type Address } fr
 import { base } from 'viem/chains';
 import { createSmartAccountClient } from 'permissionless';
 import { toSimpleSmartAccount } from 'permissionless/accounts';
+import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 
 const BUNDLER_URL = process.env.NEXT_PUBLIC_BUNDLER_URL || '';
 const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
@@ -15,9 +16,12 @@ export const ENTRYPOINT_ADDRESS_V07 = '0x0000000071727De22E5E9d8BAf0edAc6f37da03
 export async function createSmartAccountWithPaymaster(
   owner: Address
 ) {
-  if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('Ethereum provider not found');
+  if (typeof window === 'undefined') {
+    throw new Error('Smart account can only be created on client side');
   }
+
+  // Use Base Account SDK provider
+  const provider = baseAccountSDK.getProvider();
 
   // Create public client for reading blockchain state
   const publicClient = createPublicClient({
@@ -25,10 +29,10 @@ export async function createSmartAccountWithPaymaster(
     transport: http(),
   });
 
-  // Create wallet client from browser provider
+  // Create wallet client from Base Account provider
   const walletClient = createWalletClient({
     chain: base,
-    transport: custom(window.ethereum),
+    transport: custom(provider),
     account: owner,
   });
 
@@ -57,9 +61,12 @@ export async function createSmartAccountWithPaymaster(
  * Get smart account address from owner address
  */
 export async function getSmartAccountAddress(owner: Address): Promise<Address> {
-  if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('Ethereum provider not found');
+  if (typeof window === 'undefined') {
+    throw new Error('Smart account can only be accessed on client side');
   }
+
+  // Use Base Account SDK provider
+  const provider = baseAccountSDK.getProvider();
 
   const publicClient = createPublicClient({
     chain: base,
@@ -68,7 +75,7 @@ export async function getSmartAccountAddress(owner: Address): Promise<Address> {
 
   const walletClient = createWalletClient({
     chain: base,
-    transport: custom(window.ethereum),
+    transport: custom(provider),
     account: owner,
   });
 

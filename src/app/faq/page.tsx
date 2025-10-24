@@ -22,9 +22,8 @@ const FAQPage = () => {
       answer: (
         <>
           <ol className="list-decimal list-inside space-y-2">
-            <li>Install MetaMask browser extension</li>
-            <li>Click "Connect Wallet" in the top right corner</li>
-            <li>Make sure you're on the Base network (Chain ID: 8453)</li>
+            <li>Click "Connect Wallet" or "Sign in with Base" in the top right corner</li>
+            <li>Follow the prompts to create or connect your Base Account (Smart Wallet)</li>
             <li>Ensure you have USDC in your wallet for trading</li>
             <li>Browse the market and select an option to trade</li>
           </ol>
@@ -34,7 +33,7 @@ const FAQPage = () => {
     {
       category: 'Getting Started',
       question: 'What wallet do I need?',
-      answer: 'You need MetaMask installed in your browser. The platform will automatically prompt you to switch to the Base network if you\'re on a different network.'
+      answer: 'You can sign in with Base Account (Smart Wallet). No browser extension needed! The platform uses Base\'s native Smart Wallet technology, which creates a secure wallet for you automatically when you sign in.'
     },
     {
       category: 'Trading Basics',
@@ -52,11 +51,11 @@ const FAQPage = () => {
       answer: (
         <>
           <ol className="list-decimal list-inside space-y-2">
-            <li>Connect your wallet and ensure you're on Base network</li>
+            <li>Sign in with Base Account (Smart Wallet)</li>
             <li>Browse available options using the filters</li>
             <li>Click on an option card to view details</li>
             <li>Select your bet size ($1, $5, $10, or $25)</li>
-            <li>Click "Buy Option" and approve the transaction in MetaMask</li>
+            <li>Click "Buy Option" and approve the transaction</li>
             <li>The platform will first approve USDC spending, then execute the trade</li>
           </ol>
         </>

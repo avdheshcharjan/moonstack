@@ -1,6 +1,4 @@
-/// <reference path="../global.d.ts" />
 import { useState, useEffect } from 'react';
-import { BrowserProvider } from 'ethers';
 import { BASE_CHAIN_ID } from '../utils/contracts';
 import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 
@@ -12,172 +10,110 @@ interface UseWalletReturn {
   disconnectWallet: () => void;
 }
 
-const WALLET_STORAGE_KEY = 'moonstack_wallet_address';
-const CHAIN_STORAGE_KEY = 'moonstack_chain_id';
-
 export function useWallet(): UseWalletReturn {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
 
+  // Clean up old localStorage on mount (one-time cleanup)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Remove old localStorage values from previous implementation
+    localStorage.removeItem('moonstack_wallet_address');
+    localStorage.removeItem('moonstack_chain_id');
+    console.log('🧹 Cleaned up old localStorage values');
+  }, []);
+
   const connectWallet = async (): Promise<void> => {
     try {
       setIsConnecting(true);
 
-      // Try Base Account SDK first for smart wallet
-      try {
-        const provider = baseAccountSDK.getProvider();
-        const accounts = await provider.request({ method: 'wallet_connect' }) as string[];
+      console.log('🔵 Requesting "Sign in with Base"...');
 
-        if (accounts && accounts.length > 0) {
-          setWalletAddress(accounts[0]);
-          setChainId(BASE_CHAIN_ID);
-          localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
-          localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
-          return;
-        }
-      } catch (baseAccountError) {
-        console.log('Base Account not available, falling back to injected wallet:', baseAccountError);
-      }
+      // Use Base Account SDK - Request accounts using standard Ethereum RPC
+      const provider = baseAccountSDK.getProvider();
 
-      // Fallback to traditional wallet connection
-      if (!window.ethereum) {
-        alert('Please install a Web3 wallet to continue.');
-        return;
-      }
+      // Use eth_requestAccounts to trigger the connection modal
+      const accounts = await provider.request({
+        method: 'eth_requestAccounts',
+        params: []
+      }) as string[];
 
-      const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-      const network = await provider.getNetwork();
+      console.log('📝 Accounts returned:', accounts);
 
-      setWalletAddress(accounts[0]);
-      setChainId(Number(network.chainId));
-      localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
-      localStorage.setItem(CHAIN_STORAGE_KEY, Number(network.chainId).toString());
+      if (accounts && accounts.length > 0) {
+        const address = accounts[0];
+        console.log('✅ Connected with Base Account:', address);
+        console.log('✅ Setting wallet state:', { address, chainId: BASE_CHAIN_ID });
+        setWalletAddress(address);
+        setChainId(BASE_CHAIN_ID);
 
-      if (Number(network.chainId) !== BASE_CHAIN_ID) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2105' }],
-          });
-          setChainId(BASE_CHAIN_ID);
-        } catch (switchError: unknown) {
-          const error = switchError as { code?: number };
-          if (error.code === 4902) {
-            try {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x2105',
-                  chainName: 'Base',
-                  nativeCurrency: {
-                    name: 'Ethereum',
-                    symbol: 'ETH',
-                    decimals: 18
-                  },
-                  rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://basescan.org']
-                }]
-              });
-              setChainId(BASE_CHAIN_ID);
-              localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
-            } catch (addError) {
-              console.error('Error adding Base network:', addError);
-            }
-          }
-        }
+        // Verify state was set
+        setTimeout(() => {
+          console.log('🔍 Wallet state after connection:', { walletAddress: address });
+        }, 100);
+      } else {
+        throw new Error('No accounts returned from Base Account');
       }
     } catch (error) {
-      console.error('Error connecting wallet:', error);
+      console.error('❌ Error connecting with Base Account:', error);
+      console.error('Error details:', error);
+      alert('Connection failed. Please try again.');
     } finally {
       setIsConnecting(false);
     }
   };
 
   const disconnectWallet = (): void => {
+    console.log('🔴 Disconnecting wallet');
     setWalletAddress(null);
     setChainId(null);
-    localStorage.removeItem(WALLET_STORAGE_KEY);
-    localStorage.removeItem(CHAIN_STORAGE_KEY);
   };
 
-  // Restore wallet connection on mount
+  // NO AUTO-RECONNECT - User must "Sign in with Base" on every page load
+  // This ensures a fresh session and prevents any cached wallet states
+
+  // Listen for Base Account disconnection events only
   useEffect(() => {
-    const restoreConnection = async (): Promise<void> => {
-      if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
 
-      const savedAddress = localStorage.getItem(WALLET_STORAGE_KEY);
-      const savedChainId = localStorage.getItem(CHAIN_STORAGE_KEY);
+    try {
+      const provider = baseAccountSDK.getProvider();
 
-      if (!savedAddress) return;
-
-      try {
-        // Try Base Account SDK first
-        try {
-          const provider = baseAccountSDK.getProvider();
-          const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
-
-          if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-            setWalletAddress(accounts[0]);
-            setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
-            return;
-          }
-        } catch (baseError) {
-          console.log('Base Account not available for auto-connect');
+      const handleAccountsChanged = (accounts: string[]): void => {
+        if (accounts.length === 0) {
+          console.log('🔴 Base Account disconnected');
+          disconnectWallet();
+        } else if (walletAddress && accounts[0].toLowerCase() !== walletAddress.toLowerCase()) {
+          console.log('🔄 Account changed to:', accounts[0]);
+          setWalletAddress(accounts[0]);
         }
+      };
 
-        // Fallback to injected wallet
-        if (window.ethereum) {
-          const provider = new BrowserProvider(window.ethereum);
-          const accounts = await provider.send('eth_accounts', []);
+      const handleChainChanged = (chainIdHex: string): void => {
+        const newChainId = parseInt(chainIdHex, 16);
+        console.log('🔄 Chain changed to:', newChainId);
+        setChainId(newChainId);
 
-          if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-            const network = await provider.getNetwork();
-            setWalletAddress(accounts[0]);
-            setChainId(Number(network.chainId));
-          } else {
-            // Clear storage if wallet is no longer connected
-            localStorage.removeItem(WALLET_STORAGE_KEY);
-            localStorage.removeItem(CHAIN_STORAGE_KEY);
-          }
+        // If switched away from Base, disconnect
+        if (newChainId !== BASE_CHAIN_ID) {
+          console.log('⚠️ Not on Base chain, disconnecting');
+          disconnectWallet();
         }
-      } catch (error) {
-        console.error('Error restoring wallet connection:', error);
-        localStorage.removeItem(WALLET_STORAGE_KEY);
-        localStorage.removeItem(CHAIN_STORAGE_KEY);
-      }
-    };
+      };
 
-    restoreConnection();
-  }, []);
+      provider.on('accountsChanged', handleAccountsChanged);
+      provider.on('chainChanged', handleChainChanged);
 
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleAccountsChanged = (accounts: string[]): void => {
-      if (accounts.length === 0) {
-        disconnectWallet();
-      } else {
-        setWalletAddress(accounts[0]);
-        localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
-      }
-    };
-
-    const handleChainChanged = (chainIdHex: string): void => {
-      const newChainId = parseInt(chainIdHex, 16);
-      setChainId(newChainId);
-      localStorage.setItem(CHAIN_STORAGE_KEY, newChainId.toString());
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
-
-    return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', handleChainChanged);
-    };
-  }, []);
+      return () => {
+        provider.removeListener('accountsChanged', handleAccountsChanged);
+        provider.removeListener('chainChanged', handleChainChanged);
+      };
+    } catch (error) {
+      console.log('Base Account event listeners not available:', error);
+    }
+  }, [walletAddress]);
 
   return {
     walletAddress,

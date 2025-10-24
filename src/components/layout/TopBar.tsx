@@ -5,10 +5,10 @@ import { cartStorage } from '@/src/utils/cartStorage';
 import React, { useEffect, useState } from 'react';
 
 interface TopBarProps {
-  // Removed onProfileClick prop
+  walletAddress: string | null;
 }
 
-const TopBar: React.FC<TopBarProps> = () => {
+const TopBar: React.FC<TopBarProps> = ({ walletAddress }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
@@ -86,11 +86,12 @@ const TopBar: React.FC<TopBarProps> = () => {
         </div>
       </div>
 
-      {/* Cart Modal */}
+      {/* Cart Modal - Pass wallet address */}
       <CartModal
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onCartUpdate={handleCartUpdate}
+        walletAddress={walletAddress}
       />
     </div>
   );

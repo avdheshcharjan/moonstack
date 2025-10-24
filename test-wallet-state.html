@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wallet State Tester</title>
+</head>
+<body>
+    <h1>Debug Wallet State</h1>
+    <button onclick="clearStorage()">Clear All Storage</button>
+    <button onclick="checkState()">Check State</button>
+    <pre id="output"></pre>
+    
+    <script>
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('output').textContent = '✅ Storage cleared!\nPlease refresh localhost:3000';
+        }
+        
+        function checkState() {
+            const output = {
+                localStorage_wallet: localStorage.getItem('moonstack_wallet_address'),
+                localStorage_chain: localStorage.getItem('moonstack_chain_id'),
+                allKeys: Object.keys(localStorage).filter(k => k.includes('moonstack'))
+            };
+            document.getElementById('output').textContent = JSON.stringify(output, null, 2);
+        }
+        
+        // Auto check on load
+        checkState();
+    </script>
+</body>
+</html>

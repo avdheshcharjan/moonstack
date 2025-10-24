@@ -15,6 +15,11 @@ const Moonstack = () => {
   // Wallet state - using hook
   const { walletAddress, connectWallet } = useWallet();
 
+  // Debug: Log wallet state changes
+  useEffect(() => {
+    console.log('🔍 Moonstack wallet state:', { walletAddress });
+  }, [walletAddress]);
+
   // Page navigation
   const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
 
@@ -97,8 +102,8 @@ const Moonstack = () => {
       {/* Bottom Navigation */}
       <BottomNav activeTab={currentView} onTabChange={(tab) => setCurrentView(tab as typeof currentView)} />
 
-      {/* Top Bar */}
-      <TopBar />
+      {/* Top Bar - Pass wallet address */}
+      <TopBar walletAddress={walletAddress} />
     </div>
   );
 };

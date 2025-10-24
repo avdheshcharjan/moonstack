@@ -6,6 +6,7 @@ import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
 import { cartStorage } from '@/src/utils/cartStorage';
 import type { CartTransaction } from '@/src/types/cart';
+import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 
 export interface DirectExecutionResult {
   success: boolean;
@@ -30,11 +31,6 @@ export async function executeDirectFillOrder(
   userAddress: Address
 ): Promise<DirectExecutionResult> {
   try {
-    // Validate wallet connection
-    if (!window.ethereum) {
-      throw new Error('No wallet provider found. Please install MetaMask or another Web3 wallet.');
-    }
-
     // Select the order based on action
     const order: RawOrderData = action === 'yes' ? pair.callOption : pair.putOption;
 
@@ -43,8 +39,11 @@ export async function executeDirectFillOrder(
       throw new Error('Invalid order data');
     }
 
+    // Use Base Account SDK provider
+    const baseProvider = baseAccountSDK.getProvider();
+
     // Create ethers provider for transaction execution
-    const provider = new BrowserProvider(window.ethereum);
+    const provider = new BrowserProvider(baseProvider);
     const signer = await provider.getSigner();
 
     const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
