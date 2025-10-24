@@ -10,7 +10,7 @@ import CartSwipeableCard from '@/src/components/cart/CartSwipeableCard';
 import { useToastManager } from '@/src/components/shared/ToastContainer';
 import ApprovalModal from '@/src/components/cart/ApprovalModal';
 import { checkUSDCAllowance } from '@/src/utils/usdcApproval';
-import { getBaseAccountAddress } from '@/src/lib/smartAccount';
+import { getBaseAccountAddress, isBaseAccountConnected } from '@/src/lib/smartAccount';
 import { OPTION_BOOK_ADDRESS } from '@/src/utils/contracts';
 
 interface CartModalProps {
@@ -94,6 +94,14 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
     if (transactions.length === 0) {
       console.error('No transactions found', { txCount: transactions.length });
       addToast('Cart is empty', 'error');
+      return;
+    }
+
+    // Check if Base Account is connected before attempting batch execution
+    const baseAccountConnected = await isBaseAccountConnected();
+    if (!baseAccountConnected) {
+      addToast('Please connect with Base Account to execute batch transactions', 'error');
+      console.error('Base Account not connected. User needs to sign in with Base Account.');
       return;
     }
 

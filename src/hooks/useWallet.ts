@@ -26,16 +26,22 @@ export function useWallet(): UseWalletReturn {
 
       // Try Base Account SDK first for smart wallet
       try {
-        const cryptoAccount = await getCryptoKeyAccount();
+        // First check if already connected
+        const existingAccount = await getCryptoKeyAccount();
 
-        if (cryptoAccount?.account?.address) {
-          const address = cryptoAccount.account.address;
+        if (existingAccount?.account?.address) {
+          const address = existingAccount.account.address;
           setWalletAddress(address);
           setChainId(BASE_CHAIN_ID);
           localStorage.setItem(WALLET_STORAGE_KEY, address);
           localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
           return;
         }
+
+        // If not connected, trigger wallet_connect to establish connection
+        // Note: The SignInWithBaseButton component should handle this flow
+        // This code path is mainly for programmatic checks
+        console.log('Base Account not connected. Please use Sign in with Base button.');
       } catch (baseAccountError) {
         console.log('Base Account not available, falling back to injected wallet:', baseAccountError);
       }

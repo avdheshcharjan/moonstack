@@ -17,7 +17,7 @@ const Moonstack = () => {
 
   // Page navigation
   const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
-  
+
   // Swipe instructions modal state (persists during session)
   const [hasSeenSwipeInstructions, setHasSeenSwipeInstructions] = useState(false);
 
@@ -26,6 +26,17 @@ const Moonstack = () => {
     setMounted(true);
     sdk.actions.ready();
   }, []);
+
+  // Check for Base Account connection periodically when wallet is not connected
+  useEffect(() => {
+    if (!walletAddress && mounted) {
+      const checkInterval = setInterval(() => {
+        connectWallet();
+      }, 2000);
+
+      return () => clearInterval(checkInterval);
+    }
+  }, [walletAddress, mounted, connectWallet]);
 
   // Prevent hydration mismatch - return null during SSR
   if (!mounted) {
@@ -52,7 +63,6 @@ const Moonstack = () => {
                     align="center"
                     variant="solid"
                     colorScheme="dark"
-                    onClick={connectWallet}
                   />
                 </div>
               </div>

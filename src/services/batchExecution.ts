@@ -1,12 +1,11 @@
+import type { BatchBet } from '@/src/hooks/useBatchTransactions';
+import { checkBatchCapabilities, getBaseAccountProvider } from '@/src/lib/smartAccount';
+import type { CartTransaction } from '@/src/types/cart';
+import { OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
+import { encodeUSDCApprove, formatUSDC, getUSDCBalance, needsApproval } from '@/src/utils/usdcApproval';
+import { base, getCryptoKeyAccount } from '@base-org/account';
 import type { Address, Hex } from 'viem';
 import { numberToHex } from 'viem';
-import { base } from '@base-org/account';
-import { getBaseAccountProvider, checkBatchCapabilities } from '@/src/lib/smartAccount';
-import { getCryptoKeyAccount } from '@base-org/account';
-import { needsApproval, encodeUSDCApprove, getUSDCBalance, formatUSDC } from '@/src/utils/usdcApproval';
-import { OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
-import type { CartTransaction } from '@/src/types/cart';
-import type { BatchBet } from '@/src/hooks/useBatchTransactions';
 
 export interface BatchExecutionResult {
   success: boolean;
@@ -74,10 +73,18 @@ export async function executeBatchTransactions(
     // Get Base Account provider and address
     const provider = getBaseAccountProvider();
 
-    // Get the crypto account - this will prompt for connection if needed
-    const cryptoAccount = await getCryptoKeyAccount();
+    // Get the crypto account - this requires the user to have signed in with Base Account
+    let cryptoAccount;
+    try {
+      cryptoAccount = await getCryptoKeyAccount();
+    } catch (error) {
+      console.error('Error getting crypto key account:', error);
+      throw new Error('Failed to access Base Account. Please sign in with Base Account.');
+    }
+
     if (!cryptoAccount?.account?.address) {
-      throw new Error('Failed to get Base Account. Please try reconnecting your wallet.');
+      console.error('getCryptoKeyAccount returned null or undefined');
+      throw new Error('Base Account not connected. Please sign in with "Sign in with Base" button and try again.');
     }
 
     const baseAccountAddress = cryptoAccount.account.address as Address;
