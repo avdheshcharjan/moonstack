@@ -9,7 +9,7 @@ export const metadata: Metadata = {
       version: '1',
       imageUrl: `${process.env.NEXT_PUBLIC_URL}/logo_embedded.png`,
       button: {
-        title: 'Launch Moonstack',
+        title: 'Predict on Moonstack',
         action: {
           type: 'launch_miniapp',
           name: 'Moonstack',
