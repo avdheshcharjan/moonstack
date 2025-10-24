@@ -24,13 +24,17 @@ export function useWallet(): UseWalletReturn {
     try {
       setIsConnecting(true);
 
-      // Try Base Account SDK first for smart wallet
+      // Only use Base Account SDK - no fallback to injected wallet
       try {
-        // First check if already connected
+        // Check if already connected
         const existingAccount = await getCryptoKeyAccount();
 
         if (existingAccount?.account?.address) {
           const address = existingAccount.account.address;
+          // Only log if this is a new connection (not already set)
+          if (!walletAddress || walletAddress.toLowerCase() !== address.toLowerCase()) {
+            console.log('Base Account connected:', address);
+          }
           setWalletAddress(address);
           setChainId(BASE_CHAIN_ID);
           localStorage.setItem(WALLET_STORAGE_KEY, address);
@@ -38,61 +42,10 @@ export function useWallet(): UseWalletReturn {
           return;
         }
 
-        // If not connected, trigger wallet_connect to establish connection
-        // Note: The SignInWithBaseButton component should handle this flow
-        // This code path is mainly for programmatic checks
-        console.log('Base Account not connected. Please use Sign in with Base button.');
+        // If not connected, silently return (user needs to click the SignInWithBaseButton)
+        // Don't log repeatedly to avoid console spam
       } catch (baseAccountError) {
-        console.log('Base Account not available, falling back to injected wallet:', baseAccountError);
-      }
-
-      // Fallback to traditional wallet connection
-      if (!window.ethereum) {
-        alert('Please install a Web3 wallet to continue.');
-        return;
-      }
-
-      const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-      const network = await provider.getNetwork();
-
-      setWalletAddress(accounts[0]);
-      setChainId(Number(network.chainId));
-      localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
-      localStorage.setItem(CHAIN_STORAGE_KEY, Number(network.chainId).toString());
-
-      if (Number(network.chainId) !== BASE_CHAIN_ID) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2105' }],
-          });
-          setChainId(BASE_CHAIN_ID);
-        } catch (switchError: unknown) {
-          const error = switchError as { code?: number };
-          if (error.code === 4902) {
-            try {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x2105',
-                  chainName: 'Base',
-                  nativeCurrency: {
-                    name: 'Ethereum',
-                    symbol: 'ETH',
-                    decimals: 18
-                  },
-                  rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://basescan.org']
-                }]
-              });
-              setChainId(BASE_CHAIN_ID);
-              localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
-            } catch (addError) {
-              console.error('Error adding Base network:', addError);
-            }
-          }
-        }
+        // Silently handle - Base Account not available yet
       }
     } catch (error) {
       console.error('Error connecting wallet:', error);
@@ -106,9 +59,14 @@ export function useWallet(): UseWalletReturn {
     setChainId(null);
     localStorage.removeItem(WALLET_STORAGE_KEY);
     localStorage.removeItem(CHAIN_STORAGE_KEY);
+
+    // Also clear Base Account session if exists
+    // Note: Base Account SDK doesn't have a direct logout method,
+    // but clearing localStorage prevents auto-reconnect
+    console.log('Wallet disconnected');
   };
 
-  // Restore wallet connection on mount
+  // Restore wallet connection on mount - but don't auto-reconnect Base Account
   useEffect(() => {
     const restoreConnection = async (): Promise<void> => {
       if (typeof window === 'undefined') return;
@@ -119,34 +77,34 @@ export function useWallet(): UseWalletReturn {
       if (!savedAddress) return;
 
       try {
-        // Try Base Account SDK first
+        // Try Base Account SDK first - only restore if ALREADY authenticated
         try {
           const cryptoAccount = await getCryptoKeyAccount();
 
-          if (cryptoAccount?.account?.address && cryptoAccount.account.address.toLowerCase() === savedAddress.toLowerCase()) {
-            setWalletAddress(cryptoAccount.account.address);
-            setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
-            return;
+          if (cryptoAccount?.account?.address) {
+            // Only restore if the saved address matches the current Base Account
+            if (cryptoAccount.account.address.toLowerCase() === savedAddress.toLowerCase()) {
+              console.log('Restoring Base Account connection');
+              setWalletAddress(cryptoAccount.account.address);
+              setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
+              return;
+            } else {
+              // Different account - clear saved data
+              console.log('Saved address does not match Base Account, clearing');
+              localStorage.removeItem(WALLET_STORAGE_KEY);
+              localStorage.removeItem(CHAIN_STORAGE_KEY);
+              return;
+            }
           }
         } catch (baseError) {
           console.log('Base Account not available for auto-connect');
         }
 
-        // Fallback to injected wallet
-        if (window.ethereum) {
-          const provider = new BrowserProvider(window.ethereum);
-          const accounts = await provider.send('eth_accounts', []);
-
-          if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-            const network = await provider.getNetwork();
-            setWalletAddress(accounts[0]);
-            setChainId(Number(network.chainId));
-          } else {
-            // Clear storage if wallet is no longer connected
-            localStorage.removeItem(WALLET_STORAGE_KEY);
-            localStorage.removeItem(CHAIN_STORAGE_KEY);
-          }
-        }
+        // If Base Account is not available, DON'T auto-restore
+        // User should explicitly click Sign in with Base button
+        console.log('Base Account not connected, clearing saved address');
+        localStorage.removeItem(WALLET_STORAGE_KEY);
+        localStorage.removeItem(CHAIN_STORAGE_KEY);
       } catch (error) {
         console.error('Error restoring wallet connection:', error);
         localStorage.removeItem(WALLET_STORAGE_KEY);
@@ -157,32 +115,32 @@ export function useWallet(): UseWalletReturn {
     restoreConnection();
   }, []);
 
+  // Listen for Base Account changes via polling (Base Account SDK doesn't have events)
   useEffect(() => {
-    if (!window.ethereum) return;
+    if (!walletAddress) return;
 
-    const handleAccountsChanged = (accounts: string[]): void => {
-      if (accounts.length === 0) {
-        disconnectWallet();
-      } else {
-        setWalletAddress(accounts[0]);
-        localStorage.setItem(WALLET_STORAGE_KEY, accounts[0]);
+    const checkInterval = setInterval(async () => {
+      try {
+        const cryptoAccount = await getCryptoKeyAccount();
+
+        // If Base Account is disconnected, clear the wallet state
+        if (!cryptoAccount?.account?.address) {
+          console.log('Base Account disconnected, clearing wallet state');
+          disconnectWallet();
+        }
+        // If different account, update the state
+        else if (cryptoAccount.account.address.toLowerCase() !== walletAddress.toLowerCase()) {
+          console.log('Base Account changed, updating wallet address');
+          setWalletAddress(cryptoAccount.account.address);
+          localStorage.setItem(WALLET_STORAGE_KEY, cryptoAccount.account.address);
+        }
+      } catch (error) {
+        console.log('Error checking Base Account status:', error);
       }
-    };
+    }, 3000); // Check every 3 seconds
 
-    const handleChainChanged = (chainIdHex: string): void => {
-      const newChainId = parseInt(chainIdHex, 16);
-      setChainId(newChainId);
-      localStorage.setItem(CHAIN_STORAGE_KEY, newChainId.toString());
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
-
-    return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', handleChainChanged);
-    };
-  }, []);
+    return () => clearInterval(checkInterval);
+  }, [walletAddress]);
 
   return {
     walletAddress,

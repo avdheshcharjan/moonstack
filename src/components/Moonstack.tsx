@@ -6,6 +6,7 @@ import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
 import { useWallet } from '@/src/hooks/useWallet';
 import { SignInWithBaseButton } from '@base-org/account-ui/react';
+import { getBaseAccountSDK } from '@/src/lib/smartAccount';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect, useState } from 'react';
 
@@ -27,16 +28,39 @@ const Moonstack = () => {
     sdk.actions.ready();
   }, []);
 
-  // Check for Base Account connection periodically when wallet is not connected
-  useEffect(() => {
-    if (!walletAddress && mounted) {
-      const checkInterval = setInterval(() => {
-        connectWallet();
-      }, 2000);
+  const handleSignIn = async () => {
+    console.log('Main page sign in clicked');
 
-      return () => clearInterval(checkInterval);
+    try {
+      // Initialize SDK and trigger wallet connection
+      const baseSDK = getBaseAccountSDK();
+      const provider = baseSDK.getProvider();
+
+      // Generate a unique nonce for security
+      const nonce = Math.random().toString(36).substring(2, 15);
+
+      // Request account connection via wallet_connect with SIWE
+      const response = await provider.request({
+        method: 'wallet_connect',
+        params: [{
+          version: '1',
+          capabilities: {
+            signInWithEthereum: {
+              nonce: nonce,
+              chainId: '0x2105', // Base Mainnet
+            }
+          }
+        }],
+      });
+
+      console.log('Base Account connection response:', response);
+
+      // After connection, check for the account
+      await connectWallet();
+    } catch (error) {
+      console.error('Sign in failed:', error);
     }
-  }, [walletAddress, mounted, connectWallet]);
+  };
 
   // Prevent hydration mismatch - return null during SSR
   if (!mounted) {
@@ -63,6 +87,7 @@ const Moonstack = () => {
                     align="center"
                     variant="solid"
                     colorScheme="dark"
+                    onClick={handleSignIn}
                   />
                 </div>
               </div>
