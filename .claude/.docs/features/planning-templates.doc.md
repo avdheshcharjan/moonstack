@@ -30,7 +30,7 @@ When users run planning commands (`/shared`, `/requirements`, `/parallel`), the 
 
 ## Configuration
 - Templates located in: `/file-templates/[template-type].template.md`
-- Commands reference templates using absolute paths: `/Users/silasrhyneer/.claude/file-templates/`
+- Commands reference templates using absolute paths: `/Users/avuthegreat/.claude/file-templates/`
 
 ## Usage Example
 ```bash
@@ -39,7 +39,7 @@ When users run planning commands (`/shared`, `/requirements`, `/parallel`), the 
 
 # Command reads template and instructs:
 # "make a .docs/plans/[plan-dir]/shared.md document...
-# using the template /Users/silasrhyneer/.claude/file-templates/shared.template.md"
+# using the template /Users/avuthegreat/.claude/file-templates/shared.template.md"
 ```
 
 ## Testing

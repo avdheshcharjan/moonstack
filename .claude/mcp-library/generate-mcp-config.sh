@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Path to the master MCP configuration
-MASTER_CONFIG="/Users/silasrhyneer/.claude/mcp-library/.mcp.json"
+MASTER_CONFIG="/Users/avuthegreat/.claude/mcp-library/.mcp.json"
 
 # Check if master config exists
 if [ ! -f "$MASTER_CONFIG" ]; then

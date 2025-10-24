@@ -12,7 +12,7 @@ export async function checkUSDCAllowance(
 ): Promise<bigint> {
   const publicClient = createPublicClient({
     chain: base,
-    transport: http(),
+    transport: http(process.env.NEXT_PUBLIC_BUNDLER_URL?.replace('/YOUR_PROJECT_ID', '') || undefined),
   });
 
   // @ts-expect-error - viem v2 type issue with authorizationList
@@ -68,7 +68,7 @@ export async function needsApproval(
 export async function getUSDCBalance(address: Address): Promise<bigint> {
   const publicClient = createPublicClient({
     chain: base,
-    transport: http(),
+    transport: http(process.env.NEXT_PUBLIC_BUNDLER_URL?.replace('/YOUR_PROJECT_ID', '') || undefined),
   });
 
   // @ts-expect-error - viem v2 type issue with authorizationList
