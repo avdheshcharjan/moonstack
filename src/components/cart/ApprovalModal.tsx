@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Address } from 'viem';
 import { getAdaptiveApprovalAmount, storeApprovalState } from '@/src/utils/approvalTracking';
-import { createSmartAccountWithPaymaster, getSmartAccountAddress } from '@/src/lib/smartAccount';
+import { getBaseAccountProvider, getBaseAccountAddress } from '@/src/lib/smartAccount';
 import { encodeUSDCApprove, formatUSDC } from '@/src/utils/usdcApproval';
 import { USDC_ADDRESS, OPTION_BOOK_ADDRESS } from '@/src/utils/contracts';
 import { useToastManager } from '@/src/components/shared/ToastContainer';
@@ -73,11 +73,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     setError(null);
 
     try {
-      // Get smart account address
-      const smartAccountAddress = await getSmartAccountAddress(walletAddress);
-
-      // Create smart account client with paymaster
-      const smartAccountClient = await createSmartAccountWithPaymaster(walletAddress);
+      // Get Base Account address and provider
+      const baseAccountAddress = await getBaseAccountAddress();
+      const provider = getBaseAccountProvider();
 
       // Encode approval call
       const approveCallData = encodeUSDCApprove(
@@ -85,23 +83,25 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         OPTION_BOOK_ADDRESS as Address
       );
 
-      // Execute approval via smart account (gasless)
-      const userOpHash = await (smartAccountClient as any).sendUserOperation({
-        calls: [
-          {
-            to: USDC_ADDRESS as Address,
-            data: approveCallData,
-            value: 0n,
-          },
-        ],
+      // Execute approval via wallet_sendCalls (gasless)
+      const batchCallId = await provider.request({
+        method: 'wallet_sendCalls',
+        params: [{
+          version: '2.0.0',
+          from: baseAccountAddress,
+          chainId: '0x2105', // Base mainnet
+          atomicRequired: true,
+          calls: [
+            {
+              to: USDC_ADDRESS,
+              value: '0x0',
+              data: approveCallData,
+            },
+          ],
+        }],
       });
 
-      // Wait for transaction receipt
-      const receipt = await (smartAccountClient as any).waitForUserOperationReceipt({
-        hash: userOpHash,
-      });
-
-      const txHash = receipt.receipt.transactionHash;
+      const txHash = batchCallId as string;
 
       // Store approval state in localStorage
       storeApprovalState(walletAddress, approvalAmount);

@@ -10,7 +10,7 @@ import CartSwipeableCard from '@/src/components/cart/CartSwipeableCard';
 import { useToastManager } from '@/src/components/shared/ToastContainer';
 import ApprovalModal from '@/src/components/cart/ApprovalModal';
 import { checkUSDCAllowance } from '@/src/utils/usdcApproval';
-import { getSmartAccountAddress } from '@/src/lib/smartAccount';
+import { getBaseAccountAddress } from '@/src/lib/smartAccount';
 import { OPTION_BOOK_ADDRESS } from '@/src/utils/contracts';
 
 interface CartModalProps {
@@ -58,9 +58,9 @@ export function CartModal({ isOpen, onClose, onCartUpdate }: CartModalProps) {
     setIsCheckingAllowance(true);
     try {
       const totalNeeded = getTotalUSDC();
-      const smartAccountAddress = await getSmartAccountAddress(address);
+      const baseAccountAddress = await getBaseAccountAddress();
       const currentAllowance = await checkUSDCAllowance(
-        smartAccountAddress,
+        baseAccountAddress,
         OPTION_BOOK_ADDRESS as Address
       );
 

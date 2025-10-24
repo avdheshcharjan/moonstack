@@ -1,6 +1,7 @@
 import type { Address, Hex } from 'viem';
-import { encodeFunctionData } from 'viem';
-import { createSmartAccountWithPaymaster } from '@/src/lib/smartAccount';
+import { encodeFunctionData, numberToHex } from 'viem';
+import { base } from '@base-org/account';
+import { getBaseAccountProvider, getBaseAccountAddress, checkBatchCapabilities } from '@/src/lib/smartAccount';
 import { needsApproval, encodeUSDCApprove, getUSDCBalance } from '@/src/utils/usdcApproval';
 import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import type { RawOrderData } from '@/src/types/orders';
@@ -30,9 +31,15 @@ export async function executeImmediateFillOrder(
       throw new Error('Invalid order data');
     }
 
-    // Create smart account client with paymaster support
-    const smartAccountClient = await createSmartAccountWithPaymaster(ownerAddress);
-    const smartAccountAddress = smartAccountClient.account.address;
+    // Get Base Account provider and address
+    const provider = getBaseAccountProvider();
+    const baseAccountAddress = await getBaseAccountAddress();
+
+    // Check wallet capabilities
+    const capabilities = await checkBatchCapabilities(baseAccountAddress);
+    if (!capabilities.atomicBatchSupported) {
+      throw new Error('Wallet does not support atomic batching');
+    }
 
     // Calculate number of contracts based on bet size and price
     // Per OptionBook.md section 2.4:
@@ -47,7 +54,7 @@ export async function executeImmediateFillOrder(
     const betSizeInUSDC = BigInt(Math.floor(betSize * 1_000_000)); // Convert betSize to USDC (6 decimals)
     const totalNeeded = betSizeInUSDC;
 
-    // Check USDC balance of the owner wallet (not the smart account)
+    // Check USDC balance of the owner wallet (not the Base Account)
     const balance = await getUSDCBalance(ownerAddress);
     if (balance < totalNeeded) {
       throw new Error(
@@ -57,21 +64,21 @@ export async function executeImmediateFillOrder(
 
     // Check if we need approval
     const approvalNeeded = await needsApproval(
-      smartAccountAddress,
+      baseAccountAddress,
       totalNeeded,
       OPTION_BOOK_ADDRESS as Address
     );
 
-    // Prepare calls array with proper typing
-    const calls: { to: Address; data: Hex; value?: bigint }[] = [];
+    // Prepare calls array for wallet_sendCalls
+    const calls: { to: string; value: string; data: string }[] = [];
 
     // Add approval call if needed
     if (approvalNeeded) {
       const approveCallData = encodeUSDCApprove(totalNeeded);
       calls.push({
-        to: USDC_ADDRESS as Address,
-        data: approveCallData as Hex,
-        value: 0n,
+        to: USDC_ADDRESS,
+        value: numberToHex(0n),
+        data: approveCallData,
       });
     }
 
@@ -104,25 +111,33 @@ export async function executeImmediateFillOrder(
     });
 
     calls.push({
-      to: OPTION_BOOK_ADDRESS as Address,
-      data: fillOrderData as Hex,
-      value: 0n,
+      to: OPTION_BOOK_ADDRESS,
+      value: numberToHex(0n),
+      data: fillOrderData,
     });
 
-    // Execute transaction using sendUserOperation
-    // Cast to any to avoid deep type instantiation error in permissionless library
-    const txHash: Hex = await (smartAccountClient as any).sendUserOperation({
-      calls,
+    console.log('Executing immediate transaction via wallet_sendCalls (gasless)');
+
+    // Execute via wallet_sendCalls RPC method (EIP-5792)
+    const batchCallId = await provider.request({
+      method: 'wallet_sendCalls',
+      params: [{
+        version: '2.0.0',
+        from: baseAccountAddress,
+        chainId: numberToHex(base.constants.CHAIN_IDS.base),
+        atomicRequired: true,
+        calls: calls,
+      }],
     });
 
-    console.log('Transaction submitted:', txHash);
+    console.log('Transaction submitted:', batchCallId);
 
     // Store position in database
-    await storePosition(pair, action, order, txHash, ownerAddress);
+    await storePosition(pair, action, order, batchCallId as Hex, ownerAddress);
 
     return {
       success: true,
-      txHash,
+      txHash: batchCallId as Hex,
     };
   } catch (error) {
     console.error('Immediate execution failed:', error);
