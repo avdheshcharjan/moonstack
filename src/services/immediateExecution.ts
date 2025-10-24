@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData, numberToHex } from 'viem';
 import { base } from '@base-org/account';
-import { getBaseAccountProvider, getBaseAccountAddress, checkBatchCapabilities } from '@/src/lib/smartAccount';
+import { getBaseAccountProvider, getBaseAccountAddress } from '@/src/lib/smartAccount';
 import { needsApproval, encodeUSDCApprove, getUSDCBalance } from '@/src/utils/usdcApproval';
 import { OPTION_BOOK_ADDRESS, OPTION_BOOK_ABI, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import type { RawOrderData } from '@/src/types/orders';
@@ -34,12 +34,6 @@ export async function executeImmediateFillOrder(
     // Get Base Account provider and address
     const provider = getBaseAccountProvider();
     const baseAccountAddress = await getBaseAccountAddress();
-
-    // Check wallet capabilities
-    const capabilities = await checkBatchCapabilities(baseAccountAddress);
-    if (!capabilities.atomicBatchSupported) {
-      throw new Error('Wallet does not support atomic batching');
-    }
 
     // Calculate number of contracts based on bet size and price
     // Per OptionBook.md section 2.4:

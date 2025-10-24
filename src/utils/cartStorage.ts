@@ -75,6 +75,13 @@ export const cartStorage = {
   },
 
   /**
+   * Remove a single transaction by ID
+   */
+  removeTransaction(id: string): void {
+    this.removeTransactions([id]);
+  },
+
+  /**
    * Remove transactions by IDs
    * @param ids - Array of transaction IDs to remove
    */

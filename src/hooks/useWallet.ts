@@ -1,8 +1,8 @@
 /// <reference path="../global.d.ts" />
 import { useState, useEffect } from 'react';
-import { BrowserProvider } from 'ethers';
 import { BASE_CHAIN_ID } from '../utils/contracts';
 import { getCryptoKeyAccount } from '@base-org/account';
+import { baseAccountSDK } from '../providers/BaseAccountProvider';
 
 interface UseWalletReturn {
   walletAddress: string | null;
@@ -22,33 +22,37 @@ export function useWallet(): UseWalletReturn {
 
   const connectWallet = async (): Promise<void> => {
     try {
+      console.log('[useWallet] Connecting to Base Account...');
       setIsConnecting(true);
 
-      // Only use Base Account SDK - no fallback to injected wallet
-      try {
-        // Check if already connected
-        const existingAccount = await getCryptoKeyAccount();
+      // Use Base Account SDK exclusively - no fallback to MetaMask/Coinbase Wallet
+      const provider = baseAccountSDK.getProvider();
+      console.log('[useWallet] Base Account provider initialized');
 
-        if (existingAccount?.account?.address) {
-          const address = existingAccount.account.address;
-          // Only log if this is a new connection (not already set)
-          if (!walletAddress || walletAddress.toLowerCase() !== address.toLowerCase()) {
-            console.log('Base Account connected:', address);
-          }
-          setWalletAddress(address);
-          setChainId(BASE_CHAIN_ID);
-          localStorage.setItem(WALLET_STORAGE_KEY, address);
-          localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
-          return;
-        }
+      // Request connection via wallet_connect
+      const response = await provider.request({ method: 'wallet_connect' }) as any;
+      console.log('[useWallet] wallet_connect response:', response);
 
-        // If not connected, silently return (user needs to click the SignInWithBaseButton)
-        // Don't log repeatedly to avoid console spam
-      } catch (baseAccountError) {
-        // Silently handle - Base Account not available yet
+      // Handle the response structure: { accounts: [{ address: '0x...' }], chainIds: [...] }
+      if (response?.accounts && response.accounts.length > 0) {
+        // Extract the smart account address from the first account object
+        const smartAccountAddress = response.accounts[0].address;
+        console.log('[useWallet] Base Account connection response:', response);
+        console.log('[useWallet] Base Account address:', smartAccountAddress);
+        console.log('[useWallet] Full account object:', response.accounts[0]);
+
+        // Save and set the smart account address
+        setWalletAddress(smartAccountAddress);
+        setChainId(BASE_CHAIN_ID);
+        localStorage.setItem(WALLET_STORAGE_KEY, smartAccountAddress);
+        localStorage.setItem(CHAIN_STORAGE_KEY, BASE_CHAIN_ID.toString());
+      } else {
+        console.error('[useWallet] No accounts returned from Base Account');
+        throw new Error('Failed to connect to Base Account. Please try again.');
       }
     } catch (error) {
-      console.error('Error connecting wallet:', error);
+      console.error('[useWallet] Error connecting to Base Account:', error);
+      alert('Failed to connect to Base Account. Please try again.');
     } finally {
       setIsConnecting(false);
     }
@@ -66,7 +70,7 @@ export function useWallet(): UseWalletReturn {
     console.log('Wallet disconnected');
   };
 
-  // Restore wallet connection on mount - but don't auto-reconnect Base Account
+  // Restore wallet connection on mount - only run once
   useEffect(() => {
     const restoreConnection = async (): Promise<void> => {
       if (typeof window === 'undefined') return;
@@ -76,71 +80,61 @@ export function useWallet(): UseWalletReturn {
 
       if (!savedAddress) return;
 
-      try {
-        // Try Base Account SDK first - only restore if ALREADY authenticated
-        try {
-          const cryptoAccount = await getCryptoKeyAccount();
+      console.log('[useWallet] Restore: Attempting to restore saved address:', savedAddress);
 
-          if (cryptoAccount?.account?.address) {
-            // Only restore if the saved address matches the current Base Account
-            if (cryptoAccount.account.address.toLowerCase() === savedAddress.toLowerCase()) {
-              console.log('Restoring Base Account connection');
-              setWalletAddress(cryptoAccount.account.address);
-              setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
-              return;
-            } else {
-              // Different account - clear saved data
-              console.log('Saved address does not match Base Account, clearing');
-              localStorage.removeItem(WALLET_STORAGE_KEY);
-              localStorage.removeItem(CHAIN_STORAGE_KEY);
-              return;
-            }
-          }
-        } catch (baseError) {
-          console.log('Base Account not available for auto-connect');
+      try {
+        // Use Base Account SDK exclusively
+        const provider = baseAccountSDK.getProvider();
+        const response = await provider.request({ method: 'eth_accounts' }) as any;
+        console.log('[useWallet] Restore: eth_accounts response:', response);
+
+        // Handle both response formats: string[] or { accounts: [{ address: '0x...' }] }
+        let smartAccountAddress: string | null = null;
+
+        if (Array.isArray(response) && response.length > 0) {
+          // Old format: string array
+          smartAccountAddress = response[0];
+        } else if (response?.accounts && response.accounts.length > 0) {
+          // New format: object with accounts array
+          smartAccountAddress = response.accounts[0].address;
         }
 
-        // If Base Account is not available, DON'T auto-restore
-        // User should explicitly click Sign in with Base button
-        console.log('Base Account not connected, clearing saved address');
-        localStorage.removeItem(WALLET_STORAGE_KEY);
-        localStorage.removeItem(CHAIN_STORAGE_KEY);
+        if (smartAccountAddress) {
+          console.log('[useWallet] Restore: Base Account smart wallet found:', smartAccountAddress);
+
+          // Check if this matches the saved address
+          if (smartAccountAddress.toLowerCase() === savedAddress.toLowerCase()) {
+            setWalletAddress(smartAccountAddress);
+            setChainId(savedChainId ? parseInt(savedChainId) : BASE_CHAIN_ID);
+            console.log('[useWallet] Restore: Base Account restored successfully');
+            return;
+          } else {
+            console.log('[useWallet] Restore: Base Account address mismatch - different account connected');
+            console.log('[useWallet] Expected:', savedAddress);
+            console.log('[useWallet] Got:', smartAccountAddress);
+            console.log('[useWallet] Clearing old address. User needs to reconnect.');
+            // Clear silently - don't set state, just clean localStorage
+            localStorage.removeItem(WALLET_STORAGE_KEY);
+            localStorage.removeItem(CHAIN_STORAGE_KEY);
+          }
+        } else {
+          console.log('[useWallet] Restore: No Base Account connected');
+          // Clear saved address if no account is connected
+          localStorage.removeItem(WALLET_STORAGE_KEY);
+          localStorage.removeItem(CHAIN_STORAGE_KEY);
+        }
       } catch (error) {
-        console.error('Error restoring wallet connection:', error);
-        localStorage.removeItem(WALLET_STORAGE_KEY);
-        localStorage.removeItem(CHAIN_STORAGE_KEY);
+        console.log('[useWallet] Restore: Error checking Base Account:', error);
+        // Don't clear storage on error - user might just need to reconnect
       }
     };
 
     restoreConnection();
   }, []);
 
-  // Listen for Base Account changes via polling (Base Account SDK doesn't have events)
-  useEffect(() => {
-    if (!walletAddress) return;
-
-    const checkInterval = setInterval(async () => {
-      try {
-        const cryptoAccount = await getCryptoKeyAccount();
-
-        // If Base Account is disconnected, clear the wallet state
-        if (!cryptoAccount?.account?.address) {
-          console.log('Base Account disconnected, clearing wallet state');
-          disconnectWallet();
-        }
-        // If different account, update the state
-        else if (cryptoAccount.account.address.toLowerCase() !== walletAddress.toLowerCase()) {
-          console.log('Base Account changed, updating wallet address');
-          setWalletAddress(cryptoAccount.account.address);
-          localStorage.setItem(WALLET_STORAGE_KEY, cryptoAccount.account.address);
-        }
-      } catch (error) {
-        console.log('Error checking Base Account status:', error);
-      }
-    }, 3000); // Check every 3 seconds
-
-    return () => clearInterval(checkInterval);
-  }, [walletAddress]);
+  // Base Account SDK doesn't emit accountsChanged/chainChanged events like window.ethereum
+  // Account changes are handled through the Base Account SDK modal/UI
+  // No event listeners needed
 
   return {
     walletAddress,

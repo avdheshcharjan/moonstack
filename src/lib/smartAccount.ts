@@ -1,9 +1,15 @@
-import type { Address } from 'viem';
-import { createBaseAccountSDK, getCryptoKeyAccount, base } from '@base-org/account';
+import { toSimpleSmartAccount } from 'permissionless/accounts';
+import { createPublicClient, createWalletClient, custom, http, type Address } from 'viem';
+import { base } from 'viem/chains';
+import { createBaseAccountSDK, getCryptoKeyAccount } from '@base-org/account';
 
-/**
- * Base Account SDK instance (singleton)
- */
+const BUNDLER_URL = process.env.NEXT_PUBLIC_BUNDLER_URL || '';
+const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
+
+// EntryPoint v0.7 address
+export const ENTRYPOINT_ADDRESS_V07 = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as const;
+
+// SDK instance singleton
 let sdkInstance: ReturnType<typeof createBaseAccountSDK> | null = null;
 
 /**
@@ -14,7 +20,7 @@ export function getBaseAccountSDK() {
     sdkInstance = createBaseAccountSDK({
       appName: 'OptionBook',
       appLogoUrl: 'https://optionbook.xyz/logo.png',
-      appChainIds: [base.constants.CHAIN_IDS.base],
+      appChainIds: [base.id], // Base mainnet chain ID (8453)
     });
   }
   return sdkInstance;
@@ -62,48 +68,32 @@ export async function isBaseAccountConnected(): Promise<boolean> {
 /**
  * Check wallet capabilities for atomic batching
  */
-export async function checkBatchCapabilities(address: Address): Promise<{
-  atomicBatchSupported: boolean;
-  paymasterSupported: boolean;
-}> {
-  try {
-    const provider = getBaseAccountProvider();
-    const capabilities = await provider.request({
-      method: 'wallet_getCapabilities',
-      params: [address],
-    });
-
-    const baseCapabilities = capabilities[base.constants.CHAIN_IDS.base];
-
-    return {
-      atomicBatchSupported: Boolean(baseCapabilities?.atomicBatch?.supported),
-      paymasterSupported: Boolean(baseCapabilities?.paymasterService?.supported),
-    };
-  } catch (error) {
-    console.error('Failed to check capabilities:', error);
-    return {
-      atomicBatchSupported: false,
-      paymasterSupported: false,
-    };
+export async function getSmartAccountAddress(owner: Address): Promise<Address> {
+  if (typeof window === 'undefined' || !window.ethereum) {
+    throw new Error('Ethereum provider not found');
   }
-}
 
-// Legacy exports for backward compatibility
-/**
- * @deprecated Use getBaseAccountAddress instead
- */
-export const getSmartAccountAddress = getBaseAccountAddress;
+  const publicClient = createPublicClient({
+    chain: base,
+    transport: http(),
+  });
 
-/**
- * @deprecated Use getBaseAccountProvider instead - no need for separate client creation
- */
-export async function createSmartAccountWithPaymaster(_owner: Address) {
-  // For backward compatibility, return an object with provider methods
-  const provider = getBaseAccountProvider();
-  const address = await getBaseAccountAddress();
+  const walletClient = createWalletClient({
+    chain: base,
+    transport: custom(window.ethereum),
+    account: owner,
+  });
 
-  return {
-    account: { address },
-    provider,
-  };
+  const simpleAccount = await (toSimpleSmartAccount as any)({
+    client: publicClient,
+    entryPoint: {
+      address: ENTRYPOINT_ADDRESS_V07,
+      version: '0.7' as const,
+    },
+    owner: walletClient,
+  });
+
+  console.log('Smart Account Address:', simpleAccount.address);
+
+  return simpleAccount.address;
 }

@@ -25,7 +25,7 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
   const [filterKey, setFilterKey] = useState(0);
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
-  const [betSize] = useLocalStorage<number>(storageKey, 5);
+  const [betSize] = useLocalStorage<number>(storageKey, 0.1);
 
   // Approval modal state
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -104,32 +104,27 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
       throw new Error('Wallet not connected');
     }
 
-    // Show loading toast
-    addToast(
-      `Executing ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}...`,
-      'info'
-    );
-
     try {
-      // Use direct execution with user's wallet (no smart account)
-      const { executeDirectFillOrder } = await import('@/src/services/directExecution');
-      const result = await executeDirectFillOrder(pair, action, betSize, walletAddress as Address);
+      // Add to cart instead of executing immediately
+      const { addToCart } = await import('@/src/services/cartService');
+      const result = await addToCart(pair, action, betSize, walletAddress as Address);
 
       if (result.success) {
         addToast(
-          `Successfully executed ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}!`,
-          'success',
-          result.txHash
+          `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to cart!`,
+          'success'
         );
+        // Dispatch cart update event so the cart icon updates
+        window.dispatchEvent(new Event('cartUpdated'));
       } else {
         addToast(
-          result.error || 'Failed to execute bet',
+          result.error || 'Failed to add to cart',
           'error'
         );
       }
     } catch (error) {
       addToast(
-        error instanceof Error ? error.message : 'Failed to execute bet',
+        error instanceof Error ? error.message : 'Failed to add to cart',
         'error'
       );
     }
