@@ -28,7 +28,7 @@ export async function GET() {
       primaryCategory: 'finance',
       tags: ['trading', 'defi', 'options', 'socials', 'predictions'],
       heroImageUrl: `${URL}/logo_hero.png`,
-      tagline: 'Swipe To Predict',
+      tagline: 'Predict Like Tinder',
       ogTitle: 'Moonstack',
       ogDescription: 'Swipe to Predict',
       ogImageUrl: `${URL}/logo.png`,

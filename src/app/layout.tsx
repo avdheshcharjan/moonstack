@@ -14,7 +14,7 @@ export const metadata: Metadata = {
           type: 'launch_miniapp',
           name: 'Moonstack',
           url: process.env.NEXT_PUBLIC_URL || 'https://moonstack.fun',
-          splashImageUrl: `${process.env.NEXT_PUBLIC_URL}/logo_splash.png`,
+          splashImageUrl: `${process.env.NEXT_PUBLIC_URL}/logo_hero.png`,
           splashBackgroundColor: '#000d1d',
         },
       },
