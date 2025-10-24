@@ -66,7 +66,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   // Create reactive opacity transforms for progressive color intensity
   // These will update in real-time as the user drags
-  const pumpOpacity = useTransform(x, (latest) => {
+  const yesOpacity = useTransform(x, (latest) => {
     if (latest < VISUAL_FEEDBACK_THRESHOLD) return 0;
     const progressDistance = latest - VISUAL_FEEDBACK_THRESHOLD;
     const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD - 20; // Changed from +30 to -20 for faster ramp
@@ -75,7 +75,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     return baseOpacity > 0 ? Math.min(baseOpacity + 0.2, 1) : 0;
   });
 
-  const dumpOpacity = useTransform(x, (latest) => {
+  const noOpacity = useTransform(x, (latest) => {
     if (latest > -VISUAL_FEEDBACK_THRESHOLD) return 0;
     const progressDistance = Math.abs(latest) - VISUAL_FEEDBACK_THRESHOLD;
     const maxProgressDistance = HORIZONTAL_SWIPE_THRESHOLD - 20; // Changed from +30 to -20 for faster ramp
@@ -94,8 +94,8 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   });
 
   // Background opacity for overlay (scales with drag distance) - increased intensity
-  const pumpBgOpacity = useTransform(pumpOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
-  const dumpBgOpacity = useTransform(dumpOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
+  const yesBgOpacity = useTransform(yesOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
+  const noBgOpacity = useTransform(noOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
   const skipBgOpacity = useTransform(skipOpacity, (latest) => latest * 0.7); // Increased from 0.5 to 0.7
 
   return (
@@ -123,44 +123,44 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       <div className="relative w-full max-w-md mx-auto h-full rounded-3xl overflow-hidden">
         {children}
 
-        {/* PUMP Overlay (Swipe Right) */}
+        {/* YES Overlay (Swipe Right) */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundColor: 'rgba(16, 185, 129, 1)',
-            opacity: pumpBgOpacity,
+            opacity: yesBgOpacity,
           }}
         >
           <motion.div
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            style={{ opacity: pumpOpacity }}
+            style={{ opacity: yesOpacity }}
           >
             <div
               className="text-6xl font-bold transform rotate-12 border-4 px-8 py-4 rounded-xl tracking-wider"
               style={{ color: '#FFFFFF', borderColor: '#10B981', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
             >
-              PUMP
+              YES
             </div>
           </motion.div>
         </motion.div>
 
-        {/* DUMP Overlay (Swipe Left) */}
+        {/* NO Overlay (Swipe Left) */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundColor: 'rgba(239, 68, 68, 1)',
-            opacity: dumpBgOpacity,
+            opacity: noBgOpacity,
           }}
         >
           <motion.div
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            style={{ opacity: dumpOpacity }}
+            style={{ opacity: noOpacity }}
           >
             <div
               className="text-6xl font-bold transform -rotate-12 border-4 px-8 py-4 rounded-xl tracking-wider"
               style={{ color: '#FFFFFF', borderColor: '#EF4444', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
             >
-              DUMP
+              NO
             </div>
           </motion.div>
         </motion.div>

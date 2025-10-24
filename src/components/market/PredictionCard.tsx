@@ -10,8 +10,8 @@ interface PredictionCardProps {
   pair: BinaryPair;
   marketData: MarketData;
   betSize: number;
-  onDump?: () => void;
-  onPump?: () => void;
+  onNo?: () => void;
+  onYes?: () => void;
   onSkip?: () => void;
   isProcessing?: boolean;
   currentIndex?: number;
@@ -22,8 +22,8 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
   pair,
   marketData,
   betSize,
-  onDump,
-  onPump,
+  onNo,
+  onYes,
   onSkip,
   isProcessing = false,
   currentIndex,
@@ -62,14 +62,14 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     }
   })();
 
-  // Calculate expected total payout for UP (PUMP) bet (includes bet amount + profit)
+  // Calculate expected total payout for UP (YES) bet (includes bet amount + profit)
   const upContracts = pair.callParsed.pricePerContract > 0
     ? betSize / pair.callParsed.pricePerContract
     : 0;
   const upProfit = upContracts * pair.callParsed.strikeWidth;
   const upPayout = betSize + upProfit;
 
-  // Calculate expected total payout for DOWN (DUMP) bet (includes bet amount + profit)
+  // Calculate expected total payout for DOWN (NO) bet (includes bet amount + profit)
   const downContracts = pair.putParsed.pricePerContract > 0
     ? betSize / pair.putParsed.pricePerContract
     : 0;
@@ -231,12 +231,12 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
         <div className="px-4 pb-4 pt-2">
           <div className="flex items-stretch justify-center gap-2">
             <button
-              onClick={onDump}
-              disabled={isProcessing || !onDump}
+              onClick={onNo}
+              disabled={isProcessing || !onNo}
               className="flex-1 relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg tracking-wider">DUMP!</span>
+                <span className="text-lg tracking-wider">NO!</span>
                 <span className="text-xs font-normal opacity-90">
                   ${downPayout.toFixed(2)} ({downMultiplier}x)
                 </span>
@@ -252,12 +252,12 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
             </button>
 
             <button
-              onClick={onPump}
-              disabled={isProcessing || !onPump}
+              onClick={onYes}
+              disabled={isProcessing || !onYes}
               className="flex-1 relative bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:active:scale-100"
             >
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg tracking-wider">PUMP!</span>
+                <span className="text-lg tracking-wider">YES!</span>
                 <span className="text-xs font-normal opacity-90">
                   ${upPayout.toFixed(2)} ({upMultiplier}x)
                 </span>

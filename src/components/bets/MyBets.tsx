@@ -185,8 +185,8 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
           </div>
         ) : (
           displayPositions.slice().reverse().map((position) => {
-            const isPump = position.is_call;
-            const borderColor = isPump ? 'border-green-500/50' : 'border-red-500/50';
+            const isYes = position.is_call;
+            const borderColor = isYes ? 'border-green-500/50' : 'border-red-500/50';
 
             return (
               <div
@@ -214,7 +214,7 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                       </span>
                     </div>
                     <div className="text-slate-400 text-sm mb-3">
-                      Predicted {isPump ? 'Pump' : 'Dump'}
+                      Predicted {isYes ? 'Yes' : 'No'}
                     </div>
 
                     {/* Stats Grid */}
