@@ -10,7 +10,7 @@ import { BinaryPair, ExpiryFilter as ExpiryFilterType } from '@/src/types/predic
 import type { Address } from 'viem';
 import ApprovalModal from '@/src/components/cart/ApprovalModal';
 import { needsInitialApproval } from '@/src/utils/approvalTracking';
-import { getSmartAccountAddress } from '@/src/lib/smartAccount';
+import { getBaseAccountAddress } from '@/src/lib/smartAccount';
 
 interface SwipeViewProps {
   walletAddress: string | null;
@@ -58,8 +58,8 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress, hasSeenSwipeInstru
 
     setIsCheckingApproval(true);
     try {
-      const smartAccountAddress = await getSmartAccountAddress(walletAddress as Address);
-      const needed = await needsInitialApproval(walletAddress as Address, smartAccountAddress);
+      const baseAccountAddress = await getBaseAccountAddress();
+      const needed = await needsInitialApproval(walletAddress as Address, baseAccountAddress);
 
       if (needed) {
         setShowApprovalModal(true);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode, useEffect, useState } from 'react';
-import { createBaseAccountSDK } from '@base-org/account';
+import { createBaseAccountSDK, base as baseAccount } from '@base-org/account';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,8 +21,9 @@ export const getBaseAccountSDK = () => {
 
   if (!baseAccountSDKInstance) {
     baseAccountSDKInstance = createBaseAccountSDK({
-      appName: 'Moonstack',
-      appLogoUrl: `${process.env.NEXT_PUBLIC_URL}/logo.png` || 'https://moonstack.fun/logo.png',
+      appName: 'OptionBook',
+      appLogoUrl: 'https://optionbook.xyz/logo.png',
+      appChainIds: [baseAccount.constants.CHAIN_IDS.base], // Chain ID 8453 for Base mainnet
     });
   }
 

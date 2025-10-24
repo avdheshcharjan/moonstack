@@ -1,5 +1,7 @@
 import type { Address, Hex } from 'viem';
-import { createSmartAccountWithPaymaster } from '@/src/lib/smartAccount';
+import { numberToHex } from 'viem';
+import { base } from '@base-org/account';
+import { getBaseAccountProvider, getBaseAccountAddress, checkBatchCapabilities } from '@/src/lib/smartAccount';
 import { needsApproval, encodeUSDCApprove, getUSDCBalance, formatUSDC } from '@/src/utils/usdcApproval';
 import { OPTION_BOOK_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import type { CartTransaction } from '@/src/types/cart';
@@ -68,25 +70,33 @@ export async function executeBatchTransactions(
     const totalUSDC = transactions.reduce((sum, tx) => sum + (tx.requiredUSDC || 0n), 0n);
     console.log('Total USDC needed:', formatUSDC(totalUSDC), 'USDC');
 
-    // Create smart account client with paymaster
-    const smartAccountClient = await createSmartAccountWithPaymaster(userAddress);
-    const smartAccountAddress = smartAccountClient.account.address;
-    console.log('Smart account address:', smartAccountAddress);
+    // Get Base Account provider and address
+    const provider = getBaseAccountProvider();
+    const baseAccountAddress = await getBaseAccountAddress();
+    console.log('Base Account address:', baseAccountAddress);
 
-    // Check balance on EOA wallet (not smart account)
+    // Check wallet capabilities
+    const capabilities = await checkBatchCapabilities(baseAccountAddress);
+    console.log('Wallet capabilities:', capabilities);
+
+    if (!capabilities.atomicBatchSupported) {
+      throw new Error('Wallet does not support atomic batching');
+    }
+
+    // Check balance on EOA wallet
     const balance = await getUSDCBalance(userAddress);
     console.log('User USDC balance:', formatUSDC(balance), 'USDC');
 
     if (balance < totalUSDC) {
-      throw new Error(`Insufficient USDC balance. Need ${formatUSDC(totalUSDC)} USDC`);
+      throw new Error(`Insufficient USDC balance. Need ${formatUSDC(totalUSDC)} USDC, have ${formatUSDC(balance)} USDC`);
     }
 
-    // Build calls array
-    const calls: { to: Address; data: Hex; value?: bigint }[] = [];
+    // Build calls array for wallet_sendCalls
+    const calls: { to: string; value: string; data: string }[] = [];
 
-    // Check if approval needed for smart account (not EOA)
+    // Check if approval needed for Base Account
     const approvalNeeded = await needsApproval(
-      smartAccountAddress,
+      baseAccountAddress,
       totalUSDC,
       OPTION_BOOK_ADDRESS as Address
     );
@@ -96,9 +106,9 @@ export async function executeBatchTransactions(
       console.log('Adding approval call for', formatUSDC(totalUSDC), 'USDC');
       const approveCallData = encodeUSDCApprove(totalUSDC);
       calls.push({
-        to: USDC_ADDRESS as Address,
-        data: approveCallData as Hex,
-        value: 0n,
+        to: USDC_ADDRESS,
+        value: numberToHex(0n),
+        data: approveCallData,
       });
     } else {
       console.log('Approval not needed - sufficient allowance');
@@ -108,43 +118,74 @@ export async function executeBatchTransactions(
     for (const tx of transactions) {
       calls.push({
         to: tx.to,
+        value: numberToHex(tx.value || 0n),
         data: tx.data,
-        value: tx.value || 0n,
       });
     }
 
-    console.log('Executing batch with', calls.length, 'calls via smart account + paymaster (gasless)');
+    console.log('Executing batch with', calls.length, 'calls via wallet_sendCalls (gasless)');
 
-    // Execute via smart account with paymaster (gasless)
-    // Cast to any to avoid permissionless type errors
-    const userOpHash: Hex = await (smartAccountClient as any).sendUserOperation({
-      calls,
+    // Execute via wallet_sendCalls RPC method (EIP-5792)
+    const batchCallId = await provider.request({
+      method: 'wallet_sendCalls',
+      params: [{
+        version: '2.0.0',
+        from: baseAccountAddress,
+        chainId: numberToHex(base.constants.CHAIN_IDS.base),
+        atomicRequired: true, // All calls must succeed or all fail
+        calls: calls,
+      }],
     });
 
-    console.log('UserOperation submitted:', userOpHash);
-    console.log('Waiting for transaction receipt...');
+    console.log('Batch call submitted:', batchCallId);
+    console.log('Transaction will be processed by the network...');
 
-    // Wait for receipt to get transaction hash
-    const receipt = await (smartAccountClient as any).waitForUserOperationReceipt({
-      hash: userOpHash,
-    });
-
-    const txHash = receipt.receipt.transactionHash;
-    console.log('Transaction confirmed:', txHash);
-
+    // Note: wallet_sendCalls returns a batch call ID, not a transaction hash
+    // The transaction hash is available after the batch is mined
     return {
       success: true,
-      txHash,
+      txHash: batchCallId as string,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Batch execution failed:', error);
 
-    // TODO: Detect paymaster error (AA31) and offer user-paid fallback
-    // For now, return error
+    // Enhanced error handling
+    const errorMessage = handleBatchError(error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: errorMessage,
     };
   }
 }
 
+/**
+ * Handle batch execution errors with specific error codes
+ */
+function handleBatchError(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const errorCode = (error as { code: number }).code;
+
+    switch (errorCode) {
+      case 4001:
+        return 'User rejected the transaction';
+      case 5740:
+        return 'Batch too large for wallet to process. Try reducing the number of transactions.';
+      case -32602:
+        return 'Invalid request format. Please try again.';
+      default:
+        break;
+    }
+  }
+
+  if (error instanceof Error) {
+    // Check for paymaster errors (AA31)
+    if (error.message.includes('AA31') || error.message.includes('paymaster')) {
+      return 'Paymaster service unavailable. Please try again or contact support.';
+    }
+
+    return error.message;
+  }
+
+  return 'Unknown error occurred during batch execution';
+}

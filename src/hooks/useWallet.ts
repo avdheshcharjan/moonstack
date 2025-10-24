@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserProvider } from 'ethers';
 import { BASE_CHAIN_ID } from '../utils/contracts';
-import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
+import { getBaseAccountProvider, isBaseAccountConnected } from '@/src/lib/smartAccount';
 
 interface UseWalletReturn {
   walletAddress: string | null;
@@ -26,7 +26,7 @@ export function useWallet(): UseWalletReturn {
 
       // Try Base Account SDK first for smart wallet
       try {
-        const provider = baseAccountSDK.getProvider();
+        const provider = getBaseAccountProvider();
         const accounts = await provider.request({ method: 'wallet_connect' }) as string[];
 
         if (accounts && accounts.length > 0) {
@@ -115,7 +115,7 @@ export function useWallet(): UseWalletReturn {
       try {
         // Try Base Account SDK first
         try {
-          const provider = baseAccountSDK.getProvider();
+          const provider = getBaseAccountProvider();
           const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
 
           if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
