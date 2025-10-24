@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   other: {
     'fc:miniapp': JSON.stringify({
       version: '1',
-      imageUrl: `${process.env.NEXT_PUBLIC_URL}/logo.png`,
+      imageUrl: `${process.env.NEXT_PUBLIC_URL}/logo_hero.png`,
       button: {
         title: 'Launch Moonstack',
         action: {
