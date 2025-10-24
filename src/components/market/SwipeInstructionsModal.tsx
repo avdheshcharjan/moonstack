@@ -183,6 +183,19 @@ const SwipeInstructionsModal: React.FC<SwipeInstructionsModalProps> = ({ isOpen,
                   </motion.div>
                 </div>
 
+                {/* Progress Bar Info */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55, type: 'spring', stiffness: 200 }}
+                  className="flex items-center justify-center gap-2 mb-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50"
+                >
+                  <div className="text-2xl">📊</div>
+                  <div className="text-slate-300 text-sm font-medium">
+                    Track your progress at the top of each card
+                  </div>
+                </motion.div>
+
                 {/* Progress Bar */}
                 <motion.div
                   initial={{ opacity: 0 }}
