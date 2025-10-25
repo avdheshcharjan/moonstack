@@ -122,7 +122,7 @@ const SwipeInstructionsModal: React.FC<SwipeInstructionsModalProps> = ({ isOpen,
 
                 {/* Instructions Grid */}
                 <div className="grid grid-cols-3 gap-2.5 mb-5">
-                  {/* DUMP */}
+                  {/* NO */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -137,7 +137,7 @@ const SwipeInstructionsModal: React.FC<SwipeInstructionsModalProps> = ({ isOpen,
                       ←
                     </motion.div>
                     <div className="text-center">
-                      <div className="text-red-400 font-bold text-xs">DUMP</div>
+                      <div className="text-red-400 font-bold text-xs">NO</div>
                       <div className="text-slate-500 text-[10px] mt-0.5">Swipe left</div>
                     </div>
                   </motion.div>
@@ -162,7 +162,7 @@ const SwipeInstructionsModal: React.FC<SwipeInstructionsModalProps> = ({ isOpen,
                     </div>
                   </motion.div>
 
-                  {/* PUMP */}
+                  {/* YES */}
                   <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -177,7 +177,7 @@ const SwipeInstructionsModal: React.FC<SwipeInstructionsModalProps> = ({ isOpen,
                       →
                     </motion.div>
                     <div className="text-center">
-                      <div className="text-green-400 font-bold text-xs">PUMP</div>
+                      <div className="text-green-400 font-bold text-xs">YES</div>
                       <div className="text-slate-500 text-[10px] mt-0.5">Swipe right</div>
                     </div>
                   </motion.div>

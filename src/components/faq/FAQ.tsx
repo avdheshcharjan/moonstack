@@ -11,11 +11,11 @@ const FAQ: React.FC = () => {
   const faqItems: FAQItem[] = [
     {
       question: 'What is this prediction platform?',
-      answer: 'This is a binary options trading platform where you can predict whether cryptocurrency prices will go up (PUMP) or down (DUMP) by a specific expiry time. You bet with USDC and earn rewards based on market probabilities.',
+      answer: 'This is a binary options trading platform where you can predict whether cryptocurrency prices will go up (YES) or down (NO) by a specific expiry time. You bet with USDC and earn rewards based on market probabilities.',
     },
     {
       question: 'How do I place a prediction?',
-      answer: 'Connect your wallet, select your default bet size in settings, then swipe right for PUMP (price goes up), swipe left for DUMP (price goes down), or swipe up to SKIP. Each prediction executes immediately.',
+      answer: 'Connect your wallet, select your default bet size in settings, then swipe right for YES (price goes up), swipe left for NO (price goes down), or swipe up to SKIP. Each prediction executes immediately.',
     },
     {
       question: 'What does the payout calculation mean?',

@@ -123,7 +123,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       <div className="relative w-full max-w-md mx-auto h-full rounded-3xl overflow-hidden">
         {children}
 
-        {/* PUMP Overlay (Swipe Right) */}
+        {/* YES Overlay (Swipe Right) */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -139,12 +139,12 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               className="text-6xl font-bold transform rotate-12 border-4 px-8 py-4 rounded-xl tracking-wider"
               style={{ color: '#FFFFFF', borderColor: '#10B981', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
             >
-              PUMP
+              YES
             </div>
           </motion.div>
         </motion.div>
 
-        {/* DUMP Overlay (Swipe Left) */}
+        {/* NO Overlay (Swipe Left) */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -160,7 +160,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               className="text-6xl font-bold transform -rotate-12 border-4 px-8 py-4 rounded-xl tracking-wider"
               style={{ color: '#FFFFFF', borderColor: '#EF4444', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
             >
-              DUMP
+              NO
             </div>
           </motion.div>
         </motion.div>
