@@ -200,6 +200,7 @@ async function executeTransactionWithPaymaster(
     }] as const,
     functionName: 'balanceOf',
     args: [userAddress],
+    authorizationList: undefined,
   }) as bigint;
 
   console.log('💰 Your USDC balance:', (Number(balance) / 1_000_000).toFixed(2), 'USDC');
@@ -227,6 +228,7 @@ async function executeTransactionWithPaymaster(
     }] as const,
     functionName: 'allowance',
     args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+    authorizationList: undefined,
   }) as bigint;
 
   console.log('📝 Current USDC allowance:', (Number(allowance) / 1_000_000).toFixed(2), 'USDC');
