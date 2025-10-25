@@ -6,8 +6,8 @@ interface BetSettingsProps {
 }
 
 const BetSettings: React.FC<BetSettingsProps> = ({ walletAddress }) => {
-  const defaultBetSize = 5;
-  const minBet = 1;
+  const defaultBetSize = 1;
+  const minBet = 0.1;
   const maxBet = 100;
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
 
@@ -21,11 +21,11 @@ const BetSettings: React.FC<BetSettingsProps> = ({ walletAddress }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value) && value >= minBet && value <= maxBet) {
-      setBetSize(Math.round(value * 10) / 10);
+      setBetSize(Math.round(value * 100) / 100);
     }
   };
 
-  const betOptions = [1, 5, 10];
+  const betOptions = [0.5, 1, 5];
 
   const handleBetSizeChange = (amount: number) => {
     setBetSize(amount);
@@ -81,7 +81,7 @@ const BetSettings: React.FC<BetSettingsProps> = ({ walletAddress }) => {
         </div>
 
         <div className="flex justify-between text-xs text-slate-400">
-          <span>${minBet} USDC</span>
+          <span>${minBet.toFixed(1)} USDC</span>
           <span>${maxBet} USDC</span>
         </div>
 

@@ -10,6 +10,81 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    // Check if this is a direct format (from storePosition) or wrapped format (legacy)
+    const isDirect = body.wallet_address && body.tx_hash && !body.position;
+
+    if (isDirect) {
+      // Direct format from storePosition function
+      if (!body.wallet_address || !body.tx_hash) {
+        return NextResponse.json(
+          { error: 'wallet_address and tx_hash are required' },
+          { status: 400 }
+        );
+      }
+
+      // Generate unique ID from tx_hash
+      const id = body.tx_hash.substring(0, 66); // Use first 66 chars as ID
+
+      // Convert strikes from strings to numbers
+      const strikes = body.strikes.map((s: string) => parseFloat(s) / 1e8);
+
+      const dbPosition = {
+        id,
+        wallet_address: body.wallet_address.toLowerCase(),
+        timestamp: Date.now(),
+        tx_hash: body.tx_hash,
+        status: 'success',
+
+        // Order details
+        strategy_type: body.strategy_type,
+        underlying: body.underlying,
+        is_call: body.is_call,
+        strikes,
+        strike_width: body.strike_width,
+        expiry: body.expiry,
+        price_per_contract: parseFloat(body.price_per_contract) / 1e8,
+        max_size: parseFloat(body.max_size) / 1e6,
+        collateral_used: parseFloat(body.collateral_used) / 1e6,
+        num_contracts: body.num_contracts,
+
+        // Bet details
+        decision: body.decision,
+        question: body.question,
+        threshold: body.threshold,
+        bet_size: body.betSize,
+
+        // PnL tracking
+        entry_price: strikes[0] || null,
+        current_price: null,
+        pnl: 0,
+        pnl_percentage: 0,
+        is_settled: false,
+        settlement_price: null,
+        settlement_timestamp: null,
+
+        // Store raw order
+        raw_order: body.raw_order,
+      };
+
+      const { data, error } = await supabase
+        .from('user_positions')
+        .insert([dbPosition])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        return NextResponse.json(
+          { error: 'Failed to save position', details: error.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, data });
+    }
+
+    // Legacy wrapped format
     const position: UserPosition = body.position;
 
     if (!position || !position.id || !position.txHash) {
@@ -50,6 +125,12 @@ export async function POST(request: NextRequest) {
       // Position details
       collateral_used: position.collateralUsed,
       num_contracts: position.order.rawOrder.order.numContracts,
+
+      // Bet details (new fields)
+      decision: body.decision || (position.order.isCall ? 'YES' : 'NO'),
+      question: body.question || null,
+      threshold: body.threshold || null,
+      bet_size: body.betSize || position.collateralUsed,
 
       // PnL tracking (will be updated later)
       entry_price: position.order.strikes[0] || null,

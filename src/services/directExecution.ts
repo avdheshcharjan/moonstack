@@ -33,7 +33,32 @@ export async function executeDirectFillOrder(
 
     // Validate order data
     if (!order || !order.order) {
-      throw new Error('Invalid order data');
+      console.error('Order validation failed:', {
+        action,
+        hasCallOption: !!pair.callOption,
+        hasPutOption: !!pair.putOption,
+        order: order
+      });
+      throw new Error(`Invalid order data for ${action.toUpperCase()} bet. ${action === 'no' ? 'Put option' : 'Call option'} not found.`);
+    }
+
+    console.log(`\n🎯 Executing ${action.toUpperCase()} bet on ${pair.underlying}`);
+    console.log('Expected order type for action:', action === 'yes' ? 'CALL (isCall: true)' : 'PUT (isCall: false)');
+    console.log('Actual order type:', order.order.isCall ? 'CALL' : 'PUT');
+    console.log('Order isCall:', order.order.isCall);
+    console.log('Order isLong:', order.order.isLong);
+    console.log('Strike:', order.order.strikes.map(s => Number(s) / 1e8).join(', '));
+    console.log('Price:', Number(order.order.price) / 1e8);
+    console.log('Max collateral:', Number(order.order.maxCollateralUsable) / 1e6);
+
+    // Validate we selected the correct order type
+    if (action === 'yes' && !order.order.isCall) {
+      console.error('❌ ERROR: Selected PUT option for YES bet!');
+      throw new Error('Wrong order type selected. YES bets should use CALL options.');
+    }
+    if (action === 'no' && order.order.isCall) {
+      console.error('❌ ERROR: Selected CALL option for NO bet!');
+      throw new Error('Wrong order type selected. NO bets should use PUT options.');
     }
 
     // Use Base Account SDK provider
@@ -54,11 +79,37 @@ export async function executeDirectFillOrder(
     // - betSize is in dollars
     // - numContracts should be scaled to 6 decimals (USDC)
     const pricePerContract = Number(order.order.price) / 1e8; // Convert from 8 decimals to USDC
-    const contractsToBuy = betSize / pricePerContract;
+
+    // Ensure minimum contract size to avoid smart contract reverts
+    // Minimum of 0.001 contracts (1000 in scaled units)
+    const minContracts = 0.001;
+    const minBetSize = pricePerContract * minContracts;
+
+    let actualBetSize = betSize;
+    if (betSize < minBetSize) {
+      console.warn(`⚠️ Bet size $${betSize} is too small for this option price.`);
+      console.warn(`Minimum bet size: $${minBetSize.toFixed(4)} (${minContracts} contracts)`);
+      actualBetSize = minBetSize;
+      console.warn(`Automatically adjusting bet size to: $${actualBetSize.toFixed(4)}`);
+    }
+
+    const contractsToBuy = actualBetSize / pricePerContract;
     const numContracts = BigInt(Math.floor(contractsToBuy * 1e6)); // Scale to 6 decimals and round down
 
-    // Calculate total USDC needed
-    const requiredAmount = BigInt(Math.floor(betSize * 1_000_000)); // Convert betSize to USDC (6 decimals)
+    console.log('\n💰 Contract Calculation:');
+    console.log('Original bet size (USDC):', betSize);
+    console.log('Actual bet size (USDC):', actualBetSize);
+    console.log('Price per contract (USDC):', pricePerContract);
+    console.log('Contracts to buy:', contractsToBuy);
+    console.log('Num contracts (scaled):', numContracts.toString());
+    console.log('Num contracts (actual):', Number(numContracts) / 1e6);
+
+    // Calculate total USDC needed (use actualBetSize not original betSize)
+    const requiredAmount = BigInt(Math.floor(actualBetSize * 1_000_000)); // Convert betSize to USDC (6 decimals)
+
+    console.log('Required amount (raw):', requiredAmount.toString());
+    console.log('Required amount (USDC):', Number(requiredAmount) / 1_000_000);
+    console.log('Balance (USDC):', Number(balance) / 1_000_000);
 
     // Validate balance
     if (balance < requiredAmount) {
@@ -83,6 +134,38 @@ export async function executeDirectFillOrder(
       console.log('USDC already approved, current allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
     }
 
+    // Check order expiry
+    const currentTime = Math.floor(Date.now() / 1000);
+    const orderExpiry = Number(order.order.orderExpiryTimestamp);
+    const optionExpiry = Number(order.order.expiry);
+
+    console.log('\n⏰ Expiry Check:');
+    console.log('Current timestamp:', currentTime);
+    console.log('Order expiry timestamp:', orderExpiry);
+    console.log('Option expiry timestamp:', optionExpiry);
+    console.log('Order expired:', currentTime > orderExpiry);
+    console.log('Option expired:', currentTime > optionExpiry);
+
+    if (currentTime > orderExpiry) {
+      throw new Error(`Order has expired. Order expiry was ${new Date(orderExpiry * 1000).toLocaleString()}`);
+    }
+
+    // Validate numContracts doesn't exceed maxCollateralUsable
+    const maxCollateral = BigInt(order.order.maxCollateralUsable);
+    const collateralNeeded = (numContracts * BigInt(order.order.price)) / BigInt(1e8);
+
+    console.log('\n🔍 Validation:');
+    console.log('Max collateral allowed:', maxCollateral.toString(), `(${Number(maxCollateral) / 1e6} USDC)`);
+    console.log('Collateral needed:', collateralNeeded.toString(), `(${Number(collateralNeeded) / 1e6} USDC)`);
+    console.log('Within limit:', collateralNeeded <= maxCollateral);
+
+    if (collateralNeeded > maxCollateral) {
+      throw new Error(
+        `Order size too large. Need ${Number(collateralNeeded) / 1e6} USDC but max allowed is ${Number(maxCollateral) / 1e6} USDC. ` +
+        `Try reducing your bet size to ${(betSize * Number(maxCollateral)) / Number(collateralNeeded)} USDC or less.`
+      );
+    }
+
     // Step 4: Prepare fillOrder call
     // Per OptionBook.md section 2.4: DO NOT modify order fields except numContracts
     const orderParams = {
@@ -101,10 +184,16 @@ export async function executeDirectFillOrder(
       extraOptionData: (order.order.extraOptionData || '0x') as Hex,
     };
 
-    console.log('Executing fillOrder...');
-    console.log('Order params:', orderParams);
-    console.log('Bet size:', betSize, 'USDC');
-    console.log('Num contracts:', numContracts.toString());
+    console.log('\n📋 Executing fillOrder...');
+    console.log('Order params:', {
+      ...orderParams,
+      strikes: orderParams.strikes.map(s => s.toString()),
+      maxCollateralUsable: orderParams.maxCollateralUsable.toString(),
+      price: orderParams.price.toString(),
+      numContracts: orderParams.numContracts.toString(),
+      orderExpiryTimestamp: orderParams.orderExpiryTimestamp.toString(),
+      expiry: orderParams.expiry.toString(),
+    });
 
     // Step 4: Execute fillOrder transaction with paymaster (gasless)
     const fillOrderData = encodeFunctionData({
@@ -128,15 +217,22 @@ export async function executeDirectFillOrder(
 
     console.log('Transaction executed successfully:', txHash);
 
-    // Store position in database
-    await storePosition(pair, action, order, txHash, userAddress, betSize);
+    // Store position in database with bet details
+    await storePosition(pair, action, order, txHash, userAddress, betSize, numContracts);
 
     return {
       success: true,
       txHash,
     };
   } catch (error) {
-    console.error('Direct execution failed:', error);
+    console.error('❌ Direct execution failed:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      action,
+      betSize,
+      userAddress
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -212,6 +308,46 @@ async function executeApprovalTransaction(
 
   console.log('✅ Approval transaction submitted!');
   console.log('========================================\n');
+}
+
+/**
+ * Poll for transaction hash from bundle ID
+ */
+async function pollForTransactionHash(
+  provider: any,
+  bundleId: string,
+  maxAttempts = 60,
+  interval = 1000
+): Promise<Hex> {
+  console.log('📡 Polling for transaction hash...');
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const status = await provider.request({
+        method: 'wallet_getCallsStatus',
+        params: [bundleId]
+      });
+
+      console.log(`Attempt ${attempt + 1}/${maxAttempts} - Status:`, status?.status);
+
+      // Check if transaction is confirmed and has receipts
+      if (status?.status === 'CONFIRMED' && status?.receipts && status.receipts.length > 0) {
+        const txHash = status.receipts[0].transactionHash;
+        if (txHash) {
+          console.log('✅ Found transaction hash:', txHash);
+          return txHash as Hex;
+        }
+      }
+
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, interval));
+    } catch (error) {
+      console.error('Error polling for tx hash:', error);
+      // Continue polling even on error
+    }
+  }
+
+  throw new Error('Timeout waiting for transaction hash');
 }
 
 /**
@@ -294,25 +430,40 @@ async function executeTransactionWithPaymaster(
   }
 
   // Send transaction using EIP-5792 wallet_sendCalls
-  const result = await baseProvider.request({
-    method: 'wallet_sendCalls',
-    params: [{
-      version: '1.0',
-      from: userAddress,
-      chainId: `0x${base.id.toString(16)}`,
-      calls,
-      capabilities: PAYMASTER_RPC_URL ? {
-        paymasterService: {
-          url: PAYMASTER_RPC_URL,
-        },
-      } : undefined,
-    }]
-  });
+  let bundleId;
+  try {
+    bundleId = await baseProvider.request({
+      method: 'wallet_sendCalls',
+      params: [{
+        version: '1.0',
+        from: userAddress,
+        chainId: `0x${base.id.toString(16)}`,
+        calls,
+        capabilities: PAYMASTER_RPC_URL ? {
+          paymasterService: {
+            url: PAYMASTER_RPC_URL,
+          },
+        } : undefined,
+      }]
+    });
+  } catch (sendError) {
+    console.error('❌ wallet_sendCalls error:', sendError);
+    console.error('Error details:', {
+      message: sendError instanceof Error ? sendError.message : 'Unknown',
+      name: sendError instanceof Error ? sendError.name : 'Unknown',
+      code: (sendError as any)?.code,
+      data: (sendError as any)?.data,
+    });
+    throw sendError;
+  }
 
-  // wallet_sendCalls returns a call bundle ID
-  const txHash = typeof result === 'string' ? result : JSON.stringify(result);
+  console.log('✅ Transaction bundle submitted!');
+  console.log('🔗 Bundle ID:', bundleId);
 
-  console.log('✅ Transaction submitted!');
+  // Poll for the actual transaction hash
+  const txHash = await pollForTransactionHash(baseProvider, bundleId as string);
+
+  console.log('✅ Transaction confirmed!');
   console.log('🔗 Transaction Hash:', txHash);
   console.log('⚡ Gas fees sponsored by Paymaster');
   console.log('========================================\n');
@@ -321,7 +472,7 @@ async function executeTransactionWithPaymaster(
 }
 
 /**
- * Store position in Supabase database
+ * Store position in Supabase database with bet details
  */
 async function storePosition(
   pair: BinaryPair,
@@ -329,7 +480,8 @@ async function storePosition(
   order: RawOrderData,
   txHash: Hex,
   walletAddress: Address,
-  betSize: number
+  betSize: number,
+  numContracts: bigint
 ): Promise<void> {
   try {
     const parsed = action === 'yes' ? pair.callParsed : pair.putParsed;
@@ -354,16 +506,24 @@ async function storePosition(
         price_per_contract: order.order.price.toString(),
         max_size: order.order.maxCollateralUsable.toString(),
         collateral_used: collateralUsed.toString(),
-        num_contracts: order.order.numContracts.toString(),
+        num_contracts: numContracts.toString(),
         raw_order: order,
+        // Bet-specific fields
+        decision: action.toUpperCase(),
+        question: pair.question,
+        threshold: pair.threshold,
+        betSize: betSize,
       }),
     });
 
     if (!response.ok) {
       console.error('Failed to store position:', await response.text());
+    } else {
+      console.log('✅ Position and bet stored successfully');
     }
   } catch (error) {
     console.error('Error storing position:', error);
     // Don't throw - we don't want to fail the transaction if storage fails
   }
 }
+

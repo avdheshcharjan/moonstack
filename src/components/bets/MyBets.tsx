@@ -212,17 +212,30 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                       <span className="text-slate-400 text-sm font-medium">
                         {position.underlying}
                       </span>
+                      {position.decision && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                          position.decision === 'YES' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                        }`}>
+                          {position.decision}
+                        </span>
+                      )}
                     </div>
                     <div className="text-slate-400 text-sm mb-3">
-                      Predicted {isPump ? 'Pump' : 'Dump'}
+                      {position.question || `Predicted ${isPump ? 'Pump' : 'Dump'}`}
                     </div>
 
                     {/* Stats Grid */}
-                    <div className="grid grid-cols-3 gap-4 bg-slate-900/50 rounded-xl p-3">
+                    <div className="grid grid-cols-4 gap-4 bg-slate-900/50 rounded-xl p-3">
                       <div>
-                        <div className="text-slate-500 text-xs mb-1">Entry</div>
+                        <div className="text-slate-500 text-xs mb-1">Bet Size</div>
                         <div className="text-white font-semibold text-sm">
-                          ${position.strikes[0]?.toLocaleString() || 'N/A'}
+                          ${(position.bet_size || position.collateral_used)?.toFixed(2) || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500 text-xs mb-1">Strike</div>
+                        <div className="text-white font-semibold text-sm">
+                          ${(position.threshold || position.strikes[0])?.toLocaleString() || 'N/A'}
                         </div>
                       </div>
                       <div>

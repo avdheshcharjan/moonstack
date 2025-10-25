@@ -36,6 +36,10 @@ export interface DbUserPosition {
   raw_order: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  decision: 'YES' | 'NO';
+  question: string | null;
+  threshold: number | null;
+  bet_size: number | null;
 }
 
 export interface LeaderboardEntry {

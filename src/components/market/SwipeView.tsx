@@ -20,7 +20,7 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const [filterKey, setFilterKey] = useState(0);
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
-  const [betSize] = useLocalStorage<number>(storageKey, 5);
+  const [betSize] = useLocalStorage<number>(storageKey, 1);
 
   const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
     setExpiryFilter(newFilter);
