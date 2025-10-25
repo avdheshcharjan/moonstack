@@ -1,24 +1,30 @@
-# Thetanuts Options Trading Demo
+# Moonstack
 
-A React-based web application for viewing and filtering live options orders from the Thetanuts Finance API on Base blockchain.
+A Next.js-based binary options trading platform built on Base blockchain. Swipe to predict crypto price movements (UP/DOWN) with instant gasless execution powered by Coinbase Paymaster.
 
 ![Demo Screenshot](https://img.shields.io/badge/status-live-brightgreen)
 
 ## Features
 
-- 🔴 **Live Data** - Real-time options orders from Thetanuts API
-- 📊 **Multiple Strategies** - View Spreads, Butterflies, and Condors
-- 🎯 **Smart Filters** - Filter by strategy type and underlying asset (BTC/ETH)
-- 📄 **Pagination** - 10 orders per page with easy navigation
-- 💰 **Detailed Views** - Click any order to see strike prices, premiums, expiry, and max payout
-- ⚡ **CORS Bypass** - Local proxy server to fetch data without CORS restrictions
+- 📱 **Swipe Interface** - Tinder-style card swipe for placing binary options bets
+- ⚡ **Gasless Trading** - All transactions sponsored by Coinbase Paymaster (zero gas fees)
+- 🔐 **Base Account** - One-click wallet creation via Base Account SDK
+- 🎯 **Binary Options** - Simple UP/DOWN predictions on crypto prices
+- 💰 **Multi-Asset** - Trade BTC, ETH, SOL, XRP, BNB, DOGE, PAXG
+- ⏰ **Time Filters** - Filter by expiry: 24h, 7d, 30d, or all
+- 📊 **Portfolio Tracking** - View your active positions and transaction history
+- 🌐 **Farcaster Integration** - Works as a Farcaster miniapp
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS (via CDN)
-- **Backend Proxy**: Express.js + Node.js
-- **API**: Thetanuts Finance Options API
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Blockchain**: Base (Ethereum L2)
+- **Wallet**: Base Account SDK (@base-org/account)
+- **Smart Accounts**: ERC-4337 with Coinbase Paymaster
+- **Database**: Supabase (position tracking)
+- **UI Library**: OnchainKit, Framer Motion
 
 ## Prerequisites
 
@@ -29,8 +35,8 @@ A React-based web application for viewing and filtering live options orders from
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/thetanuts-demo.git
-cd thetanuts-demo
+git clone https://github.com/yourusername/moonstack.git
+cd moonstack
 ```
 
 2. Install dependencies:
@@ -38,172 +44,238 @@ cd thetanuts-demo
 npm install
 ```
 
+3. Configure environment variables:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your credentials:
+- `NEXT_PUBLIC_PAYMASTER_URL` - Coinbase Developer Platform Paymaster URL
+- `NEXT_PUBLIC_BUNDLER_URL` - Coinbase Developer Platform Bundler URL
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+- `CDP_PROJECT_ID` - Coinbase Developer Platform project ID
+- `CDP_API_KEY` - Coinbase Developer Platform API key
+
 ## Running the App
 
 ### Development Mode
 
-You need to run **two servers** simultaneously:
+```bash
+npm run dev
+```
 
-1. **Start the CORS Proxy Server**
-   ```bash
-   npm run proxy
-   ```
-   This starts the proxy server on `http://localhost:3001`
-
-2. **Start the Frontend Development Server**
-   ```bash
-   npm run dev
-   ```
-   This starts the Vite dev server on `http://localhost:3000`
-
-3. **Open in Browser**
-   Navigate to `http://localhost:3000`
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Production Mode
 
-Build and run the production server:
-
 ```bash
-# Build and start in one command
-npm run serve
-
-# Or run separately
 npm run build
 npm start
 ```
 
-This will:
-- Build the React app to `/dist`
-- Start the Express server on port 3001
-- Serve the frontend and API routes from the same server
-
 ## How It Works
 
-### CORS Bypass Solution
-The Thetanuts API doesn't allow direct browser requests due to CORS restrictions. This app uses a local Node.js proxy server that:
-1. Receives requests from the React frontend
-2. Fetches data from the Thetanuts API (server-to-server, no CORS)
-3. Returns the data to the frontend
+### Gasless Transactions
+Moonstack uses Coinbase Paymaster to sponsor all gas fees for users:
+1. User connects wallet via Base Account (instant smart wallet)
+2. User swipes to place a bet (UP or DOWN)
+3. App prepares two transactions: USDC approval + fillOrder
+4. Transactions sent via EIP-5792 `wallet_sendCalls` with paymaster capability
+5. Paymaster sponsors gas - user pays zero fees
+6. Position stored in Supabase for portfolio tracking
 
-### Data Flow
+### Architecture Flow
 ```
-React App (localhost:3000)
+User Swipe
     ↓
-Local Proxy (localhost:3001)
+Base Account SDK (Smart Wallet)
     ↓
-Thetanuts API (round-snowflake-9c31.devops-118.workers.dev)
+directExecution.ts (Transaction Builder)
     ↓
-Returns: Live options orders + market data
+EIP-5792 wallet_sendCalls + Paymaster
+    ↓
+OptionBook Contract (Base)
+    ↓
+Supabase (Position Storage)
 ```
 
 ## Project Structure
 
 ```
-thetanuts-demo/
+moonstack/
 ├── src/
-│   ├── App.tsx          # Main React component
-│   └── main.tsx         # React entry point
-├── proxy-server.js      # Express proxy server
-├── index.html           # HTML template
-├── package.json         # Dependencies and scripts
-├── vite.config.ts       # Vite configuration
-└── tsconfig.json        # TypeScript configuration
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── orders/route.ts      # Fetch orders from Thetanuts API
+│   │   │   ├── positions/route.ts   # Store positions in Supabase
+│   │   │   └── leaderboard/route.ts # Leaderboard API
+│   │   ├── page.tsx                 # Main entry point
+│   │   └── layout.tsx               # Root layout
+│   ├── components/
+│   │   ├── market/
+│   │   │   ├── SwipeView.tsx        # Swipeable card interface
+│   │   │   ├── CardStack.tsx        # Card stack animation
+│   │   │   └── BinaryCard.tsx       # Individual option card
+│   │   ├── bets/MyBets.tsx          # Portfolio view
+│   │   ├── layout/
+│   │   │   ├── TopBar.tsx           # Top navigation
+│   │   │   └── BottomNav.tsx        # Bottom navigation
+│   │   └── Moonstack.tsx            # Main app component
+│   ├── services/
+│   │   └── directExecution.ts       # Blockchain transaction logic
+│   ├── hooks/
+│   │   ├── useOrders.ts             # Fetch and filter orders
+│   │   ├── useWallet.ts             # Wallet state management
+│   │   └── useLocalStorage.ts       # Local storage hook
+│   ├── utils/
+│   │   ├── contracts.ts             # Contract addresses and ABIs
+│   │   ├── binaryPairing.ts         # Pair call/put options
+│   │   ├── optionsParser.ts         # Parse raw order data
+│   │   └── expiryFiltering.ts       # Filter by expiry
+│   └── types/
+│       ├── orders.ts                # Order type definitions
+│       └── prediction.ts            # Binary pair types
+├── public/                          # Static assets
+├── .env.example                     # Environment template
+├── package.json                     # Dependencies
+├── next.config.js                   # Next.js config
+├── tailwind.config.js               # Tailwind config
+└── tsconfig.json                    # TypeScript config
 ```
 
 ## Available Scripts
 
-- `npm run dev` - Start the frontend development server
-- `npm run proxy` - Start the CORS proxy server (for development)
+- `npm run dev` - Start development server (port 3000)
 - `npm run build` - Build for production
 - `npm start` - Start production server
-- `npm run serve` - Build and start production server
-- `npm run preview` - Preview production build with Vite
+- `npm run lint` - Run ESLint
 
 ## Features Breakdown
 
-### Filter Orders
-- **By Strategy Type**: Spreads (2 strikes), Butterflies (3 strikes), Condors (4 strikes)
-- **By Asset**: Bitcoin (BTC) or Ethereum (ETH)
-- **Automatic**: Only shows USDC collateral orders
+### Swipe Trading
+- **Swipe Right (UP)** - Bet that price will increase
+- **Swipe Left (DOWN)** - Bet that price will decrease
+- **Tap for Details** - View strike prices, expiry, potential payout
+- **Smooth Animations** - Framer Motion powered card stack
 
-### View Order Details
-Click any order card to see:
-- Strike prices visualization
-- Premium per contract
-- Maximum payout
-- Expiry date and days remaining
-- Max position size
-- Code example for buying the option
+### Binary Options
+- **Simple Predictions** - Just UP or DOWN, no complex strategies
+- **Fixed Expiry** - Options paired by expiry date and underlying
+- **USDC Collateral** - All bets settled in USDC
+- **Automatic Pairing** - System pairs call/put options into binary predictions
 
-### Pagination
-- 10 orders per page
-- Previous/Next navigation
-- Shows current page and total pages
-- Displays order range (e.g., "Showing 1-10 of 45")
+### Wallet Integration
+- **Base Account** - One-click smart wallet creation
+- **No Gas Fees** - Coinbase Paymaster sponsors all transactions
+- **No Seed Phrases** - Passkey-based authentication
+- **Instant Setup** - No manual network configuration
 
-## API Response Format
+### Portfolio Management
+- **My Bets** - View all your active positions
+- **Transaction History** - See all past trades with BaseScan links
+- **Bet Settings** - Adjust default bet size (5, 10, 20, 50, 100 USDC)
+- **Real-time Updates** - Position tracking via Supabase
 
-The Thetanuts API returns data in this structure:
+## Data Structure
+
+### Binary Pair Format
+Each swipeable card represents a binary prediction:
+```typescript
+{
+  underlying: 'BTC' | 'ETH' | 'SOL' | ...,
+  expiry: Date,
+  currentPrice: 98500,
+  callOption: RawOrderData,    // UP bet
+  putOption: RawOrderData,     // DOWN bet
+  callParsed: ParsedOrder,
+  putParsed: ParsedOrder
+}
+```
+
+### Order Structure
 ```json
 {
-  "data": {
-    "orders": [
-      {
-        "order": {
-          "maker": "0x...",
-          "collateral": "0x...",
-          "isCall": true,
-          "priceFeed": "0x...",
-          "strikes": ["95000000000", "105000000000"],
-          "expiry": 1234567890,
-          "price": "500000000",
-          "maxCollateralUsable": "10000000000",
-          ...
-        },
-        "signature": "0x..."
-      }
-    ],
-    "market_data": {
-      "BTC": 98500,
-      "ETH": 3520
-    }
-  }
+  "order": {
+    "maker": "0x...",
+    "collateral": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "isCall": true,
+    "priceFeed": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
+    "strikes": ["9500000000000"],
+    "expiry": 1730505600,
+    "price": "50000000",
+    "maxCollateralUsable": "100000000",
+    "numContracts": "5000000",
+    ...
+  },
+  "signature": "0x..."
 }
 ```
 
 ## Contract Addresses (Base)
 
-- **OptionBook Contract**: `0xd58b...69A1`
-- **USDC (Collateral)**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
-- **BTC Price Feed**: `0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F`
-- **ETH Price Feed**: `0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70`
+### Core Contracts
+- **OptionBook (v2)**: `0xd58b814C7Ce700f251722b5555e25aE0fa8169A1`
+- **USDC**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- **WETH**: `0x4200000000000000000000000000000000000006`
+- **EntryPoint (ERC-4337 v0.7)**: `0x0000000071727De22E5E9d8BAf0edAc6f37da032`
+
+### Price Feeds (Chainlink)
+- **BTC/USD**: `0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F`
+- **ETH/USD**: `0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70`
+- **SOL/USD**: `0x975043adBb80fc32276CbF9Bbcfd4A601a12462D`
+- **XRP/USD**: `0x9f0C1dD78C4CBdF5b9cf923a549A201EdC676D34`
+- **BNB/USD**: `0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1`
+- **DOGE/USD**: `0x8422f3d3CAFf15Ca682939310d6A5e619AE08e57`
+- **PAXG/USD**: `0x5213eBB69743b85644dbB6E25cdF994aFBb8cF31`
 
 ## Development Notes
 
 ### Price Formatting
-- Strikes: Divided by `1e8` (e.g., `9500000000000` → `$95,000`)
-- Prices: Divided by `1e8` (e.g., `500000000` → `$5.00`)
-- Collateral: Divided by `1e6` for USDC (6 decimals)
+- **Strikes**: Divided by `1e13` for display (e.g., `9500000000000` → `$95,000`)
+- **Premiums**: Divided by `1e8` for display (e.g., `50000000` → `$0.50`)
+- **USDC Amounts**: Divided by `1e6` (6 decimals)
+- **Contract Calculation**: `numContracts = betSize / (price / 1e8)`, scaled to 6 decimals
 
-### Strategy Detection
+### Binary Option Detection
 ```typescript
+if (strikes.length === 1) → BINARY (Yes/No)
 if (strikes.length === 2) → SPREAD
 if (strikes.length === 3) → BUTTERFLY
 if (strikes.length === 4) → CONDOR
 ```
 
+### Transaction Flow
+1. **Check Balance** - Verify user has enough USDC
+2. **Approval** - Send USDC approval transaction (if needed)
+3. **Execute** - Call `fillOrder` on OptionBook contract
+4. **Store** - Save position to Supabase
+5. Both transactions use EIP-5792 with paymaster for gasless execution
+
 ## Troubleshooting
 
-### No data showing?
-1. Make sure both servers are running (`npm run proxy` and `npm run dev`)
-2. Check browser console for errors
-3. Verify proxy is accessible at `http://localhost:3001/api/orders`
+### Wallet not connecting?
+1. Make sure you're using a supported browser (Chrome, Brave, Edge)
+2. Clear browser cache and try again
+3. Check that Base Account SDK is properly configured
+4. Ensure you have an internet connection (for passkey authentication)
 
-### CORS errors?
-The proxy server should handle this. If you still see CORS errors, restart the proxy server.
+### Transactions failing?
+1. **Check USDC Balance** - Ensure you have enough USDC in your wallet
+2. **Check Network** - Verify you're on Base mainnet (Chain ID: 8453)
+3. **Paymaster Issues** - Confirm `NEXT_PUBLIC_PAYMASTER_URL` is set correctly
+4. **Check Console** - Open browser DevTools for detailed error messages
 
-### Port already in use?
-Change the port in `vite.config.ts` (frontend) or `proxy-server.js` (backend).
+### No orders showing?
+1. Check that API route is accessible: `http://localhost:3000/api/orders`
+2. Verify `API_URL` environment variable is set
+3. Check browser console for network errors
+4. Ensure Thetanuts API is responding
+
+### Supabase errors?
+1. Verify Supabase credentials in `.env`
+2. Check that positions table exists with correct schema
+3. Ensure Row Level Security (RLS) policies allow inserts
 
 ## Deployment
 
@@ -214,44 +286,83 @@ Change the port in `vite.config.ts` (frontend) or `proxy-server.js` (backend).
    npm i -g vercel
    ```
 
-2. Set environment variables in Vercel project settings:
-   - `API_URL` - Your Thetanuts API endpoint
-   - `ARBITRUM_RPC_URL` - Arbitrum RPC endpoint (optional)
+2. Set environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_PAYMASTER_URL`
+   - `NEXT_PUBLIC_BUNDLER_URL`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `CDP_PROJECT_ID`
+   - `CDP_API_KEY`
+   - `API_URL` (Thetanuts API endpoint)
 
 3. Deploy:
    ```bash
    vercel deploy --prod
    ```
 
-The `vercel.json` configuration will automatically:
-- Build the frontend to `/dist`
-- Route all `/api/*` requests to `server.js`
-- Serve the frontend from `server.js`
+### Environment Setup
 
-## Environment Variables
-
-Create a `.env` file in the root directory (see `.env.example`):
+Required environment variables (`.env`):
 
 ```env
-API_URL=[TNUTS]
-PORT=3000
+# Coinbase Developer Platform
+NEXT_PUBLIC_PAYMASTER_URL=https://api.developer.coinbase.com/rpc/v1/base/YOUR_PROJECT_ID
+NEXT_PUBLIC_BUNDLER_URL=https://api.developer.coinbase.com/rpc/v1/base/YOUR_PROJECT_ID
+CDP_PROJECT_ID=your_project_id
+CDP_API_KEY=your_api_key
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+
+# API
+API_URL=https://round-snowflake-9c31.devops-118.workers.dev/
+NEXT_PUBLIC_CHAIN_ID=8453
 ```
 
 ## Completed Features
 
-- ✅ Wallet connection (MetaMask)
-- ✅ Buy/sell functionality with on-chain execution
-- ✅ Portfolio tracking with localStorage
-- ✅ Bet sizing options
-- ✅ Transaction history with BaseScan links
+- ✅ **Base Account Integration** - Passkey-based smart wallet authentication
+- ✅ **Gasless Transactions** - Coinbase Paymaster sponsoring all gas fees
+- ✅ **Binary Options Trading** - Simple UP/DOWN predictions
+- ✅ **Swipe Interface** - Tinder-style card swipe UX
+- ✅ **Multi-Asset Support** - BTC, ETH, SOL, XRP, BNB, DOGE, PAXG
+- ✅ **Expiry Filtering** - Filter options by 24h, 7d, 30d, or all
+- ✅ **Portfolio Tracking** - Supabase-powered position storage
+- ✅ **Transaction History** - BaseScan links for all trades
+- ✅ **Bet Size Configuration** - Customize default bet amounts
+- ✅ **Responsive Design** - Mobile-first Tailwind CSS
+- ✅ **Farcaster MiniApp** - Works in Farcaster clients
 
-## Future Enhancements
+## Roadmap
 
-- [ ] Add real-time price updates via WebSocket
-- [ ] Show Greeks (Delta, Gamma, Theta, Vega)
-- [ ] Add profit/loss calculator
-- [ ] Display historical order data
-- [ ] Exercise/settle positions UI
+- [ ] **Leaderboard** - Global rankings by profit/win rate
+- [ ] **AI Predictions** - Moon AI for market insights
+- [ ] **Real-time Updates** - WebSocket price feeds
+- [ ] **Position Settlement** - Exercise/claim winning bets
+- [ ] **P&L Dashboard** - Track profits and losses over time
+- [ ] **Social Features** - Share bets, follow top traders
+- [ ] **Multi-chain** - Expand to Arbitrum, Optimism
+
+## Key Technologies
+
+### Base Account SDK
+- Passkey authentication (no seed phrases)
+- Instant smart wallet creation
+- ERC-4337 account abstraction
+- Built-in session keys
+
+### Coinbase Paymaster
+- Gasless transactions for all users
+- EIP-5792 `wallet_sendCalls` support
+- Automatic gas sponsorship
+- No user gas token required
+
+### Thetanuts Protocol
+- On-chain options orderbook
+- Maker/taker model
+- EIP-712 signed orders
+- USDC collateral settlement
 
 ## License
 
@@ -259,9 +370,37 @@ MIT
 
 ## Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+For major changes, please open an issue first to discuss what you would like to change.
+
+## Security
+
+This is experimental software. Use at your own risk. Never invest more than you can afford to lose.
+
+**Not audited. Not financial advice.**
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/moonstack/issues)
+- **Docs**: See `.docs/plans/` directory for implementation details
+- **Base**: [base.org](https://base.org/)
+- **Thetanuts**: [thetanuts.finance](https://thetanuts.finance/)
 
 ## Acknowledgments
 
-- [Thetanuts Finance](https://thetanuts.finance/) for the options API
-- Built on [Base](https://base.org/) - Ethereum L2
+- [Thetanuts Finance](https://thetanuts.finance/) - Options protocol and API
+- [Base](https://base.org/) - Ethereum L2 network
+- [Coinbase Developer Platform](https://portal.cdp.coinbase.com) - Paymaster and bundler
+- [OnchainKit](https://onchainkit.xyz/) - React components
+- [Farcaster](https://www.farcaster.xyz/) - Decentralized social protocol
+
+---
+
+**Built with ❤️ on Base**

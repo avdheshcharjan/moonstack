@@ -16,8 +16,8 @@ export interface DirectExecutionResult {
  * Execute a single fillOrder transaction directly with the user's wallet
  * Per OptionBook.md section 2.4:
  * 1. Check USDC balance
- * 2. Check USDC allowance and approve if needed
- * 3. Calculate numContracts from betSize
+ * 2. Calculate numContracts from betSize
+ * 3. Send separate USDC approval transaction if needed (not batched)
  * 4. Call fillOrder with user's wallet
  * 5. Use the referrer address from contracts
  */
@@ -45,9 +45,7 @@ export async function executeDirectFillOrder(
 
     const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
 
-
     // Step 1: Check USDC balance
-    // const balance = await getUSDCBalance(userAddress);
     const balance = await usdcContract.balanceOf(userAddress);
 
     // Step 2: Calculate number of contracts based on bet size and price
@@ -69,8 +67,7 @@ export async function executeDirectFillOrder(
       );
     }
 
-    // Step 3: Check USDC allowance and approve if needed (per OptionBook.md section 2.4)
-    // const currentAllowance = await checkUSDCAllowance(userAddress, OPTION_BOOK_ADDRESS as Address);
+    // Step 3: Check USDC allowance and approve if needed (separate transaction)
     const currentAllowance = await usdcContract.allowance(userAddress, OPTION_BOOK_ADDRESS);
 
     if (currentAllowance < requiredAmount) {
@@ -78,16 +75,8 @@ export async function executeDirectFillOrder(
       console.log('Required:', Number(requiredAmount) / 1_000_000, 'USDC');
       console.log('Current allowance:', Number(currentAllowance) / 1_000_000, 'USDC');
 
-      // Approve USDC spending
-      const approveTx = await usdcContract.approve(OPTION_BOOK_ADDRESS, requiredAmount);
-      console.log('Approval transaction submitted:', approveTx.hash);
-
-      // Wait for approval to be mined
-      const approvalReceipt = await approveTx.wait();
-
-      if (!approvalReceipt || approvalReceipt.status !== 1) {
-        throw new Error('USDC approval failed');
-      }
+      // Send separate approval transaction with paymaster
+      await executeApprovalTransaction(requiredAmount, userAddress);
 
       console.log('USDC approval confirmed');
     } else {
@@ -117,7 +106,7 @@ export async function executeDirectFillOrder(
     console.log('Bet size:', betSize, 'USDC');
     console.log('Num contracts:', numContracts.toString());
 
-    // Step 5: Execute fillOrder transaction with paymaster (gasless)
+    // Step 4: Execute fillOrder transaction with paymaster (gasless)
     const fillOrderData = encodeFunctionData({
       abi: OPTION_BOOK_ABI,
       functionName: 'fillOrder',
@@ -153,6 +142,76 @@ export async function executeDirectFillOrder(
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+/**
+ * Execute USDC approval transaction separately (not batched)
+ */
+async function executeApprovalTransaction(
+  requiredUSDC: bigint,
+  userAddress: Address
+): Promise<void> {
+  console.log('\n========================================');
+  console.log('🔐 USDC APPROVAL TRANSACTION');
+  console.log('========================================');
+
+  // Get Base Account SDK provider
+  const baseProvider = baseAccountSDK.getProvider();
+  if (!baseProvider) {
+    throw new Error('Base Account provider not found. Please connect with Base Account.');
+  }
+
+  // Import chain
+  const { base } = await import('viem/chains');
+
+  // Prepare approval transaction
+  const approvalData = encodeFunctionData({
+    abi: [{
+      name: 'approve',
+      type: 'function',
+      inputs: [
+        { name: 'spender', type: 'address' },
+        { name: 'amount', type: 'uint256' }
+      ],
+      outputs: [{ name: '', type: 'bool' }],
+      stateMutability: 'nonpayable'
+    }],
+    functionName: 'approve',
+    args: [OPTION_BOOK_ADDRESS as Address, requiredUSDC],
+  });
+
+  const calls = [
+    {
+      to: USDC_ADDRESS,
+      value: '0x0',
+      data: approvalData,
+    }
+  ];
+
+  console.log('📦 Sending USDC approval transaction');
+  console.log('⚡ Paymaster will sponsor gas fees');
+
+  // Get paymaster URL from environment
+  const PAYMASTER_RPC_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
+
+  // Send approval transaction
+  const result = await baseProvider.request({
+    method: 'wallet_sendCalls',
+    params: [{
+      version: '1.0',
+      from: userAddress,
+      chainId: `0x${base.id.toString(16)}`,
+      calls,
+      capabilities: PAYMASTER_RPC_URL ? {
+        paymasterService: {
+          url: PAYMASTER_RPC_URL,
+        },
+      } : undefined,
+    }]
+  });
+
+  console.log('✅ Approval transaction submitted!');
+  console.log('========================================\n');
 }
 
 /**
@@ -213,70 +272,17 @@ async function executeTransactionWithPaymaster(
 
   console.log('✅ USDC balance sufficient');
 
-  // Check current allowance
-  const allowance = await publicClient.readContract({
-    address: USDC_ADDRESS as Address,
-    abi: [{
-      name: 'allowance',
-      type: 'function',
-      inputs: [
-        { name: 'owner', type: 'address' },
-        { name: 'spender', type: 'address' }
-      ],
-      outputs: [{ name: '', type: 'uint256' }],
-      stateMutability: 'view'
-    }] as const,
-    functionName: 'allowance',
-    args: [userAddress, OPTION_BOOK_ADDRESS as Address],
-    authorizationList: undefined,
-  }) as bigint;
-
-  console.log('📝 Current USDC allowance:', (Number(allowance) / 1_000_000).toFixed(2), 'USDC');
-
-  // Prepare approval transaction if needed
-  const approvalData = encodeFunctionData({
-    abi: [{
-      name: 'approve',
-      type: 'function',
-      inputs: [
-        { name: 'spender', type: 'address' },
-        { name: 'amount', type: 'uint256' }
-      ],
-      outputs: [{ name: '', type: 'bool' }],
-      stateMutability: 'nonpayable'
-    }],
-    functionName: 'approve',
-    args: [OPTION_BOOK_ADDRESS as Address, requiredUSDC],
-  });
-
-  // Build batch: approval + fillOrder if approval needed, otherwise just fillOrder
-  const calls = allowance < requiredUSDC
-    ? [
-        {
-          to: USDC_ADDRESS,
-          value: '0x0',
-          data: approvalData,
-        },
-        {
-          to: OPTION_BOOK_ADDRESS,
-          value: '0x0',
-          data: fillOrderData,
-        }
-      ]
-    : [
-        {
-          to: OPTION_BOOK_ADDRESS,
-          value: '0x0',
-          data: fillOrderData,
-        }
-      ];
+  // Build transaction call
+  const calls = [
+    {
+      to: OPTION_BOOK_ADDRESS,
+      value: '0x0',
+      data: fillOrderData,
+    }
+  ];
 
   console.log('\n📡 Sending transaction via EIP-5792 wallet_sendCalls...');
-  if (allowance < requiredUSDC) {
-    console.log('📦 Batch includes USDC approval + fillOrder');
-  } else {
-    console.log('📦 Sending fillOrder directly (USDC already approved)');
-  }
+  console.log('📦 Sending fillOrder transaction');
   console.log('⚡ Paymaster will sponsor gas fees');
   console.log('========================================\n');
 
