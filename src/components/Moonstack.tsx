@@ -4,6 +4,7 @@ import BottomNav from '@/src/components/layout/BottomNav';
 import TopBar from '@/src/components/layout/TopBar';
 import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
+import Leaderboard from '@/src/components/leaderboard/Leaderboard';
 import { useWallet } from '@/src/hooks/useWallet';
 import { SignInWithBaseButton } from '@base-org/account-ui/react';
 import { sdk } from '@farcaster/miniapp-sdk';
@@ -85,13 +86,7 @@ const Moonstack = () => {
 
         {/* Leaders View */}
         {currentView === 'leaders' && (
-          <div className="flex items-center justify-center min-h-[600px]">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🏆</div>
-              <div className="text-2xl font-bold text-white mb-2">Leaderboard</div>
-              <div className="text-slate-400">Coming soon...</div>
-            </div>
-          </div>
+          <Leaderboard currentWallet={walletAddress} />
         )}
 
         {/* FAQ View */}

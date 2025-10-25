@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { LeaderboardEntry } from '@/src/utils/supabase';
+import React, { useEffect, useState } from 'react';
 
 interface LeaderboardProps {
   currentWallet?: string | null;
@@ -85,38 +85,35 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-4 px-2">
         <h2 className="text-3xl font-bold text-white">🏆 Leaderboard</h2>
 
         {/* Sort Options */}
         <div className="flex items-center gap-2 bg-slate-800/50 rounded-full p-1">
           <button
             onClick={() => setSortBy('total_pnl')}
-            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
-              sortBy === 'total_pnl'
-                ? 'bg-slate-700 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${sortBy === 'total_pnl'
+              ? 'bg-slate-700 text-white'
+              : 'text-slate-400 hover:text-white'
+              }`}
           >
             Total PnL
           </button>
           <button
             onClick={() => setSortBy('win_rate')}
-            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
-              sortBy === 'win_rate'
-                ? 'bg-slate-700 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${sortBy === 'win_rate'
+              ? 'bg-slate-700 text-white'
+              : 'text-slate-400 hover:text-white'
+              }`}
           >
             Win Rate
           </button>
           <button
             onClick={() => setSortBy('roi_percentage')}
-            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${
-              sortBy === 'roi_percentage'
-                ? 'bg-slate-700 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${sortBy === 'roi_percentage'
+              ? 'bg-slate-700 text-white'
+              : 'text-slate-400 hover:text-white'
+              }`}
           >
             ROI %
           </button>
@@ -124,7 +121,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
       </div>
 
       {/* Leaderboard Table */}
-      <div className="bg-slate-800/30 rounded-2xl border border-slate-700 overflow-hidden">
+      <div className="bg-slate-800/30 rounded-2xl border border-slate-700 overflow-hidden px-2">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-900/50">
@@ -157,11 +154,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
                 return (
                   <tr
                     key={entry.wallet_address}
-                    className={`transition-colors ${
-                      isCurrentUser
-                        ? 'bg-purple-500/10 border-l-4 border-purple-500'
-                        : 'hover:bg-slate-800/50'
-                    }`}
+                    className={`transition-colors ${isCurrentUser
+                      ? 'bg-purple-500/10 border-l-4 border-purple-500'
+                      : 'hover:bg-slate-800/50'
+                      }`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-lg font-bold text-white">
@@ -189,11 +185,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className={`font-semibold ${
-                        entry.win_rate >= 60 ? 'text-green-400' :
+                      <div className={`font-semibold ${entry.win_rate >= 60 ? 'text-green-400' :
                         entry.win_rate >= 40 ? 'text-yellow-400' :
-                        'text-red-400'
-                      }`}>
+                          'text-red-400'
+                        }`}>
                         {entry.win_rate.toFixed(1)}%
                         <div className="text-slate-500 text-xs">
                           {entry.winning_bets}W / {entry.losing_bets}L
@@ -201,20 +196,18 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className={`font-bold text-lg ${
-                        entry.total_pnl > 0 ? 'text-green-400' :
+                      <div className={`font-bold text-lg ${entry.total_pnl > 0 ? 'text-green-400' :
                         entry.total_pnl < 0 ? 'text-red-400' :
-                        'text-white'
-                      }`}>
+                          'text-white'
+                        }`}>
                         {entry.total_pnl > 0 ? '+' : ''}${entry.total_pnl.toFixed(2)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className={`font-semibold ${
-                        entry.roi_percentage > 0 ? 'text-green-400' :
+                      <div className={`font-semibold ${entry.roi_percentage > 0 ? 'text-green-400' :
                         entry.roi_percentage < 0 ? 'text-red-400' :
-                        'text-white'
-                      }`}>
+                          'text-white'
+                        }`}>
                         {entry.roi_percentage > 0 ? '+' : ''}{entry.roi_percentage.toFixed(1)}%
                       </div>
                     </td>
@@ -240,9 +233,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
         </div>
         <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
           <div className="text-slate-400 text-sm mb-1">Total Volume</div>
-          <div className={`font-bold text-2xl ${
-            entries.reduce((sum, e) => sum + e.total_pnl, 0) > 0 ? 'text-green-400' : 'text-red-400'
-          }`}>
+          <div className={`font-bold text-2xl ${entries.reduce((sum, e) => sum + e.total_pnl, 0) > 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
             ${Math.abs(entries.reduce((sum, e) => sum + e.total_pnl, 0)).toFixed(2)}
           </div>
         </div>
