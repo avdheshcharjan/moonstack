@@ -18,7 +18,7 @@ export async function GET() {
       splashImageUrl: `${URL}/logo_splash.png`,
       splashBackgroundColor: '#000d1d',
       webhookUrl: `${URL}/api/webhook`,
-      subtitle: 'Swipe to Predict',
+      subtitle: 'Swipe, Predict, and Earn',
       description: 'Predict Crypto with Yes and No.',
       screenshotUrls: [
         `${URL}/logo.png`,
@@ -28,7 +28,7 @@ export async function GET() {
       primaryCategory: 'finance',
       tags: ['trading', 'news-media', 'games', 'socials', 'predictions'],
       heroImageUrl: `${URL}/logo_hero.png`,
-      tagline: 'Swipe To Predict',
+      tagline: 'Swipe, Predict, and Earn.',
       ogTitle: 'Moonstack',
       ogDescription: 'Swipe to Predict',
       ogImageUrl: `${URL}/logo.png`,
