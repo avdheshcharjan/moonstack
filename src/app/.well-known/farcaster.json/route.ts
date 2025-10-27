@@ -32,7 +32,7 @@ export async function GET() {
       ogTitle: 'Moonstack',
       ogDescription: 'Swipe to Predict',
       ogImageUrl: `${URL}/logo.png`,
-      noindex: include,
+      noindex: false,
     },
   });
 }
