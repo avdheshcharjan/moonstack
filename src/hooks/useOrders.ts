@@ -72,7 +72,6 @@ export function useOrders(): UseOrdersReturn {
       clearInterval(intervalRef.current);
     }
 
-    // Set up new interval
     intervalRef.current = setInterval(() => {
       fetchOrders();
     }, REFRESH_INTERVAL);

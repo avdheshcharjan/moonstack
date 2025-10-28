@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { BASE_CHAIN_ID } from '../utils/contracts';
 import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
+import { useEffect, useState } from 'react';
+import { BASE_CHAIN_ID } from '../utils/contracts';
 
 interface UseWalletReturn {
   walletAddress: string | null;
@@ -14,16 +14,6 @@ export function useWallet(): UseWalletReturn {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
-
-  // Clean up old localStorage on mount (one-time cleanup)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Remove old localStorage values from previous implementation
-    localStorage.removeItem('moonstack_wallet_address');
-    localStorage.removeItem('moonstack_chain_id');
-    console.log('🧹 Cleaned up old localStorage values');
-  }, []);
 
   const connectWallet = async (): Promise<void> => {
     try {
@@ -46,13 +36,8 @@ export function useWallet(): UseWalletReturn {
         const address = accounts[0];
         console.log('✅ Connected with Base Account:', address);
         console.log('✅ Setting wallet state:', { address, chainId: BASE_CHAIN_ID });
-        setWalletAddress(address);
+        setWalletAddress(prev => address);
         setChainId(BASE_CHAIN_ID);
-
-        // Verify state was set
-        setTimeout(() => {
-          console.log('🔍 Wallet state after connection:', { walletAddress: address });
-        }, 100);
       } else {
         throw new Error('No accounts returned from Base Account');
       }

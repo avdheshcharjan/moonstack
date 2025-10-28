@@ -1,13 +1,16 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useOrders } from '@/src/hooks/useOrders';
-import { pairBinaryOptions } from '@/src/utils/binaryPairing';
+import { CartButton, CartDrawer } from '@/src/components/cart';
+import { useCart } from '@/src/contexts/CartContext';
 import { useLocalStorage } from '@/src/hooks/useLocalStorage';
-import { filterPairsByExpiry, sortPairsByExpiry, countPairsByExpiry } from '@/src/utils/expiryFiltering';
-import CardStack from './CardStack';
-import ToastContainer, { useToastManager } from '../shared/ToastContainer';
-import ExpiryFilter from './ExpiryFilter';
+import { useOrders } from '@/src/hooks/useOrders';
+import { buildBuyOptionForCart } from '@/src/services/cartService';
 import { BinaryPair, ExpiryFilter as ExpiryFilterType } from '@/src/types/prediction';
+import { pairBinaryOptions } from '@/src/utils/binaryPairing';
+import { countPairsByExpiry, filterPairsByExpiry, sortPairsByExpiry } from '@/src/utils/expiryFiltering';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Address } from 'viem';
+import ToastContainer, { useToastManager } from '../shared/ToastContainer';
+import CardStack from './CardStack';
+import ExpiryFilter from './ExpiryFilter';
 
 interface SwipeViewProps {
   walletAddress: string | null;
@@ -21,6 +24,11 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 1);
+
+  // Cart state
+  const { addItem } = useCart();
+  // const [isCartMode, setIsCartMode] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
     setExpiryFilter(newFilter);
@@ -57,36 +65,20 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       throw new Error('Wallet not connected');
     }
 
-    // Show loading toast
-    addToast(
-      `Executing ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}...`,
-      'info'
-    );
-
     try {
-      // Use direct execution with user's wallet (no smart account)
-      const { executeDirectFillOrder } = await import('@/src/services/directExecution');
-      const result = await executeDirectFillOrder(pair, action, betSize, walletAddress as Address);
-
-      if (result.success) {
-        addToast(
-          `Successfully executed ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying}!`,
-          'success',
-          result.txHash
-        );
-      } else {
-        addToast(
-          result.error || 'Failed to execute bet',
-          'error'
-        );
-      }
+      const cartItem = await buildBuyOptionForCart(pair, action, betSize, walletAddress as Address);
+      addItem(cartItem);
+      addToast(
+        `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to cart!`,
+        'success'
+      );
     } catch (error) {
       addToast(
-        error instanceof Error ? error.message : 'Failed to execute bet',
+        error instanceof Error ? error.message : 'Failed to add to cart',
         'error'
       );
     }
-  }, [walletAddress, betSize, addToast]);
+  }, [walletAddress, betSize, addToast, addItem]);
 
 
   if (!walletAddress) {
@@ -208,6 +200,20 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+
+      {/* Floating cart button */}
+      <CartButton onClick={() => setIsCartOpen(true)} />
+
+      {/* Cart drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onSuccess={(txHash) => {
+          addToast('Batch executed successfully!', 'success', txHash);
+          setIsCartOpen(false);
+        }}
+        walletAddress={walletAddress}
+      />
     </>
   );
 };

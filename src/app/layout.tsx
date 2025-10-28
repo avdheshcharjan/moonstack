@@ -2,6 +2,7 @@ import React from 'react';
 import './globals.css';
 import type { Metadata } from 'next';
 import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
+import { CartProvider } from '@/src/contexts/CartContext';
 
 export const metadata: Metadata = {
   other: {
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <BaseAccountProvider>
-          {children}
+          <CartProvider>
+            {children}
+          </CartProvider>
         </BaseAccountProvider>
       </body>
     </html>
