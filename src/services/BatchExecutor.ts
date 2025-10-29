@@ -93,6 +93,7 @@ export async function executeBatchTransactions(
       abi: ERC20_ABI,
       functionName: 'balanceOf',
       args: [userAddress],
+      authorizationList: undefined,
     }) as bigint;
 
     if (balance < totalUsdcRequired) {
@@ -109,6 +110,7 @@ export async function executeBatchTransactions(
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+      authorizationList: undefined,
     }) as bigint;
 
     // Step 4: Build batch calls array
@@ -318,6 +320,7 @@ export async function estimateBatchGas(
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+      authorizationList: undefined,
     }) as bigint;
 
     if (currentAllowance < totalUsdcRequired) {

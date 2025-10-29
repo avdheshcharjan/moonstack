@@ -170,7 +170,7 @@ export interface CartState {
   isExecuting: boolean;
 
   /** Current execution status */
-  executionStatus?: 'preparing' | 'approving' | 'executing' | 'confirming';
+  executionStatus?: 'preparing' | 'checking_balance' | 'approving' | 'executing' | 'confirming';
 
   /** Error message if cart operation failed */
   error?: string;

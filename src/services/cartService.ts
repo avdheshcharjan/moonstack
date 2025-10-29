@@ -13,7 +13,7 @@
  */
 
 import { Address } from 'viem';
-import type { BinaryPair } from '@/src/types/market';
+import type { BinaryPair } from '@/src/types/prediction';
 import type { CartItem } from '@/src/types/cart';
 import { buildBuyOptionPayload, validateOrder } from './BuyOptionBuilder';
 import {
@@ -77,7 +77,7 @@ export async function buildBuyOptionForCart(
   betSize: number,
   userAddress: Address
 ): Promise<Omit<CartItem, 'id' | 'addedAt'>> {
-  console.log(`📦 Building cart item for ${action} on ${pair.title || pair.coinSymbol}`);
+  console.log(`📦 Building cart item for ${action} on ${pair.question || pair.underlying}`);
 
   // Validate order before building
   const order = action === 'yes' ? pair.callOption : pair.putOption;
