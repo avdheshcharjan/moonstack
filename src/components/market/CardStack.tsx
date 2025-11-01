@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { BinaryPair } from '@/src/types/prediction';
 import { MarketData } from '@/src/types/orders';
+import { BinaryPair } from '@/src/types/prediction';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useCallback, useEffect, useState } from 'react';
 import PredictionCard from './PredictionCard';
 import SwipeableCard from './SwipeableCard';
 import SwipeInstructionsModal from './SwipeInstructionsModal';
@@ -178,7 +178,7 @@ const CardStack: React.FC<CardStackProps> = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto px-2 py-2">
-      <div className="relative" style={{ height: 'calc(100vh - 180px)', maxHeight: '600px' }}>
+      <div className="relative flex justify-center items-center" style={{ height: 'calc(100vh - 180px)' }}>
         <SwipeInstructionsModal
           isOpen={showInstructionsModal}
           onClose={handleCloseInstructions}
@@ -191,7 +191,7 @@ const CardStack: React.FC<CardStackProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
-              className="absolute inset-0"
+              className="max-h-[600px]"
             >
               <SwipeableCard
                 onSwipeRight={handleSwipeRight}

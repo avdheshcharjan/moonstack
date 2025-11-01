@@ -16,27 +16,27 @@
 
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
-} from 'react';
-import { Address } from 'viem';
-import type {
-  CartItem,
-  CartContextType,
-  CartState,
-  BatchExecutionResult,
-} from '@/src/types/cart';
 import {
   executeBatchTransactions,
   validateBatchReadiness,
   type StatusUpdateCallback,
 } from '@/src/services/BatchExecutor';
 import { calculateTotalUsdcRequired } from '@/src/services/BuyOptionBuilder';
+import type {
+  BatchExecutionResult,
+  CartContextType,
+  CartItem,
+  CartState,
+} from '@/src/types/cart';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { Address } from 'viem';
 
 /**
  * Cart Context
@@ -148,7 +148,9 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
           onStatusUpdate
         );
 
-        if (result.status === 'CONFIRMED') {
+        console.log(result)
+
+        if (result && result.status === 'CONFIRMED') {
           console.log('✅ Batch execution successful!', result.transactionHash);
 
           // Clear cart on success

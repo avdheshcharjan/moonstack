@@ -70,6 +70,8 @@ export async function executeBatchTransactions(
       throw new Error('Cart is empty. Add items before executing batch.');
     }
 
+    console.log("Cart items to execute:", cartItems);
+
     onStatusUpdate?.('preparing', 'Preparing batch transaction...');
 
     // Get Base Account SDK provider
@@ -164,7 +166,9 @@ export async function executeBatchTransactions(
     };
 
     // Step 7: Send batch via wallet_sendCalls
-    console.log('🚀 Sending batch transaction via wallet_sendCalls...');
+    // console.log('🚀 Sending batch transaction via wallet_sendCalls...');
+    console.log('🚀 Sending batch transaction via wallet_sendCalls with payload:', batchPayload);
+    // return;
     const result = await baseProvider.request({
       method: 'wallet_sendCalls',
       params: [batchPayload],
