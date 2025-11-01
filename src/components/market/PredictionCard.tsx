@@ -67,14 +67,14 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     ? betSize / pair.callParsed.pricePerContract
     : 0;
   const upProfit = upContracts * pair.callParsed.strikeWidth;
-  const upPayout = betSize + upProfit;
+  const upPayout = upProfit;
 
   // Calculate expected total payout for DOWN (NO) bet (includes bet amount + profit)
   const downContracts = pair.putParsed.pricePerContract > 0
     ? betSize / pair.putParsed.pricePerContract
     : 0;
   const downProfit = downContracts * pair.putParsed.strikeWidth;
-  const downPayout = betSize + downProfit;
+  const downPayout = downProfit;
 
   const impliedProb = Math.round(pair.impliedProbability.up);
   const bearishProb = 100 - impliedProb;
@@ -200,9 +200,8 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
                 }}
               />
             </div>
-            <div className={`flex items-center gap-1 text-base font-semibold ${
-              priceChange >= 0 ? 'text-green-400' : 'text-red-400'
-            }`}>
+            <div className={`flex items-center gap-1 text-base font-semibold ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
               <span>{priceChange >= 0 ? '↑' : '↓'}</span>
               <span>{priceChangeText} (1d)</span>
             </div>
