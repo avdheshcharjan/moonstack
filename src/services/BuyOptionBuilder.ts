@@ -14,7 +14,7 @@ import {
   OrderParams,
   TransactionPayload,
 } from '@/src/types/cart';
-import type { BinaryPair } from '@/src/types/market';
+import type { BinaryPair } from '@/src/types/prediction';
 import {
   OPTION_BOOK_ABI,
   OPTION_BOOK_ADDRESS,

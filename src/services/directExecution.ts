@@ -6,6 +6,20 @@ import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
 import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 
+/**
+ * Gas configuration for direct transactions
+ * PUT orders tend to use more gas than CALL orders
+ * These can be overridden via environment variables
+ */
+const GAS_CONFIG = {
+  // Base gas padding multiplier for CALL orders
+  CALL_GAS_PADDING: parseFloat(process.env.NEXT_PUBLIC_CALL_GAS_PADDING || '1.3'),
+  // Higher padding for PUT orders which require more gas
+  PUT_GAS_PADDING: parseFloat(process.env.NEXT_PUBLIC_PUT_GAS_PADDING || '1.5'),
+  // PreVerification gas padding
+  PRE_VERIFICATION_PADDING: parseFloat(process.env.NEXT_PUBLIC_PRE_VERIFICATION_PADDING || '1.4'),
+};
+
 export interface DirectExecutionResult {
   success: boolean;
   txHash?: Hex;
@@ -195,6 +209,13 @@ export async function executeDirectFillOrder(
       expiry: orderParams.expiry.toString(),
     });
 
+    // Log gas configuration for this order type
+    const isPut = !order.order.isCall;
+    const gasPadding = isPut ? GAS_CONFIG.PUT_GAS_PADDING : GAS_CONFIG.CALL_GAS_PADDING;
+    console.log(`\n⛽ Gas Configuration for ${isPut ? 'PUT' : 'CALL'} order:`);
+    console.log(`  Padding multiplier: ${gasPadding}x`);
+    console.log(`  ${isPut ? 'PUT orders use higher gas padding to avoid reverts' : 'CALL orders use standard gas padding'}`);
+
     // Step 4: Execute fillOrder transaction with paymaster (gasless)
     const fillOrderData = encodeFunctionData({
       abi: OPTION_BOOK_ABI,
@@ -291,7 +312,7 @@ async function executeApprovalTransaction(
   const PAYMASTER_RPC_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
 
   // Send approval transaction
-  const result = await baseProvider.request({
+  const bundleId = await baseProvider.request({
     method: 'wallet_sendCalls',
     params: [{
       version: '1.0',
@@ -304,9 +325,10 @@ async function executeApprovalTransaction(
         },
       } : undefined,
     }]
-  });
+  }) as string;
 
   console.log('✅ Approval transaction submitted!');
+  console.log('🔗 Bundle ID:', bundleId);
   console.log('========================================\n');
 }
 
@@ -378,9 +400,14 @@ async function executeTransactionWithPaymaster(
   const { createPublicClient, http } = await import('viem');
 
   // Create public client to check balances
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+  if (!rpcUrl) {
+    throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
+  }
+
   const publicClient = createPublicClient({
     chain: base,
-    transport: http(),
+    transport: http(rpcUrl),
   });
 
   // Check USDC balance
@@ -430,7 +457,7 @@ async function executeTransactionWithPaymaster(
   }
 
   // Send transaction using EIP-5792 wallet_sendCalls
-  let bundleId;
+  let bundleId: string;
   try {
     bundleId = await baseProvider.request({
       method: 'wallet_sendCalls',
@@ -445,7 +472,7 @@ async function executeTransactionWithPaymaster(
           },
         } : undefined,
       }]
-    });
+    }) as string;
   } catch (sendError) {
     console.error('❌ wallet_sendCalls error:', sendError);
     console.error('Error details:', {

@@ -37,6 +37,20 @@ import { calculateTotalUsdcRequired } from './BuyOptionBuilder';
 const PAYMASTER_RPC_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
 
 /**
+ * Gas configuration for batch transactions
+ * Increase padding for PUT orders which may require more gas than CALL orders
+ * These can be overridden via environment variables
+ */
+const GAS_CONFIG = {
+  // Base gas padding multiplier (e.g., 1.3 = 30% extra gas)
+  CALL_GAS_PADDING: parseFloat(process.env.NEXT_PUBLIC_CALL_GAS_PADDING || '1.3'),
+  // Higher padding for PUT orders which tend to use more gas
+  PUT_GAS_PADDING: parseFloat(process.env.NEXT_PUBLIC_PUT_GAS_PADDING || '1.5'),
+  // PreVerification gas padding
+  PRE_VERIFICATION_PADDING: parseFloat(process.env.NEXT_PUBLIC_PRE_VERIFICATION_PADDING || '1.4'),
+};
+
+/**
  * Status update callback type for progress tracking
  */
 export type StatusUpdateCallback = (
@@ -79,9 +93,14 @@ export async function executeBatchTransactions(
     const baseProvider = baseAccountSDK.getProvider();
 
     // Create public client for reading blockchain state
+    const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+    if (!rpcUrl) {
+      throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
+    }
+
     const publicClient = createPublicClient({
       chain: base,
-      transport: http(),
+      transport: http(rpcUrl),
     });
 
     // Step 1: Calculate total USDC required
@@ -95,6 +114,7 @@ export async function executeBatchTransactions(
       abi: ERC20_ABI,
       functionName: 'balanceOf',
       args: [userAddress],
+      authorizationList: undefined,
     }) as bigint;
 
     if (balance < totalUsdcRequired) {
@@ -111,9 +131,46 @@ export async function executeBatchTransactions(
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+      authorizationList: undefined,
     }) as bigint;
 
-    // Step 4: Build batch calls array
+    // Step 4: Validate all orders before execution
+    console.log('\n🔍 Validating orders before execution...');
+    const now = Math.floor(Date.now() / 1000);
+
+    for (const item of cartItems) {
+      const orderExpiry = Number(item.payload.orderParams.expiry);
+      const orderExpiryTimestamp = Number(item.payload.orderParams.orderExpiryTimestamp);
+
+      // Check expiries
+      if (orderExpiryTimestamp <= now) {
+        throw new Error(
+          `Order for ${item.metadata.marketName} has expired. Order expiry: ${new Date(orderExpiryTimestamp * 1000).toLocaleString()}`
+        );
+      }
+
+      if (orderExpiry <= now) {
+        throw new Error(
+          `Option for ${item.metadata.marketName} has expired. Option expiry: ${new Date(orderExpiry * 1000).toLocaleString()}`
+        );
+      }
+
+      // Validate numContracts is positive and reasonable
+      if (item.metadata.numContracts <= 0n) {
+        throw new Error(
+          `Invalid number of contracts (${item.metadata.numContracts}) for ${item.metadata.marketName}`
+        );
+      }
+
+      // Validate strikes array
+      if (!item.payload.orderParams.strikes || item.payload.orderParams.strikes.length === 0) {
+        throw new Error(`Missing strikes for ${item.metadata.marketName}`);
+      }
+
+      console.log(`✅ ${item.metadata.optionType} order validated: ${item.metadata.marketName}`);
+    }
+
+    // Step 5: Build batch calls array
     const calls: Array<{ to: Address; value: Hex; data: Hex }> = [];
 
     // If approval is needed, add it as the first transaction in the batch
@@ -137,7 +194,7 @@ export async function executeBatchTransactions(
       console.log('✅ USDC already approved, skipping approval transaction');
     }
 
-    // Step 5: Add all fillOrder transactions to the batch
+    // Step 6: Add all fillOrder transactions to the batch
     for (const item of cartItems) {
       calls.push({
         to: item.payload.to,
@@ -148,9 +205,47 @@ export async function executeBatchTransactions(
 
     console.log(`📦 Batch prepared with ${calls.length} transactions (${calls.length - (currentAllowance < totalUsdcRequired ? 1 : 0)} fillOrder calls)`);
 
+    // Step 7: Estimate gas with padding before execution (optional)
+    // Note: We don't block execution if gas estimation fails, as the paymaster
+    // and bundler will determine the actual gas needed
+    onStatusUpdate?.('preparing', 'Estimating gas requirements...');
+
+    let hasProblematicOrders = false;
+    try {
+      const estimatedGas = await estimateBatchGas(cartItems, userAddress);
+      console.log(`✅ Gas estimation complete: ${estimatedGas.toString()} gas units`);
+      console.log(`💡 PUT orders use ${GAS_CONFIG.PUT_GAS_PADDING}x padding, CALL orders use ${GAS_CONFIG.CALL_GAS_PADDING}x padding`);
+    } catch (gasError) {
+      const errorMsg = gasError instanceof Error ? gasError.message : String(gasError);
+
+      // Check if we have arithmetic underflow errors (indicates problematic orders)
+      if (errorMsg.includes('arithmetic underflow or overflow')) {
+        hasProblematicOrders = true;
+        console.error('⚠️ CRITICAL: Detected arithmetic underflow in one or more orders');
+        console.error('⚠️ This typically indicates an issue with PUT option order data from the API');
+        console.error('⚠️ The transaction may fail during execution');
+        console.error('📝 Recommendation: Try removing PUT orders from cart and execute only CALL orders');
+      }
+
+      console.warn('⚠️ Gas estimation failed - will use paymaster defaults');
+      console.warn('This may indicate an issue with the order data. Continuing with execution...');
+      // Continue even if gas estimation fails - the paymaster will determine actual gas
+      // If the transaction truly has issues, it will fail during execution
+    }
+
+    // Warn user if problematic orders detected
+    if (hasProblematicOrders) {
+      const putOrderCount = cartItems.filter(item => item.metadata.optionType === 'PUT').length;
+      console.warn(`\n⚠️⚠️⚠️ WARNING ⚠️⚠️⚠️`);
+      console.warn(`Found ${putOrderCount} PUT order(s) with potential execution issues`);
+      console.warn(`CALL orders should work, but PUT orders may fail`);
+      console.warn(`Consider executing CALL and PUT orders separately`);
+      console.warn(`⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️\n`);
+    }
+
     onStatusUpdate?.('executing', `Executing batch of ${cartItems.length} option purchases...`);
 
-    // Step 6: Construct EIP-5792 batch payload
+    // Step 8: Construct EIP-5792 batch payload
     const batchPayload: BatchPayload = {
       version: '2.0.0',
       from: userAddress,
@@ -190,7 +285,7 @@ export async function executeBatchTransactions(
 
     onStatusUpdate?.('confirming', 'Waiting for confirmation...');
 
-    // Step 8: Poll for transaction hash
+    // Step 10: Poll for transaction hash
     const transactionHash = await pollForTransactionHash(
       baseProvider,
       bundleId,
@@ -282,56 +377,129 @@ async function pollForTransactionHash(
 }
 
 /**
- * Estimates gas for a batch transaction (optional, for display purposes)
+ * Estimates gas for a batch transaction with proper padding
  *
- * Note: With paymaster, users don't pay gas, but this can be useful
- * for showing estimated cost or debugging.
+ * This function estimates gas for each transaction and applies padding multipliers
+ * based on order type (CALL vs PUT). PUT orders tend to use more gas and need
+ * higher padding to avoid execution reverts.
  *
  * @param cartItems - Array of cart items
  * @param userAddress - User's wallet address
- * @returns Estimated gas cost in wei
+ * @returns Estimated gas cost with padding applied
  */
 export async function estimateBatchGas(
   cartItems: CartItem[],
   userAddress: Address
 ): Promise<bigint> {
   try {
-    const publicClient = createPublicClient({
-      chain: base,
-      transport: http(),
-    });
-
-    // Estimate gas for each transaction
-    let totalGas = 0n;
-
-    for (const item of cartItems) {
-      const gas = await publicClient.estimateGas({
-        account: userAddress,
-        to: item.payload.to,
-        data: item.payload.data,
-        value: BigInt(item.payload.value),
-      });
-
-      totalGas += gas;
+    const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+    if (!rpcUrl) {
+      throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
     }
 
-    // Add approval gas if needed (approx 50k gas)
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(rpcUrl),
+    });
+
+    let totalGas = 0n;
+    let callOrderCount = 0;
+    let putOrderCount = 0;
+
+    // Estimate gas for each transaction with appropriate padding
+    for (const item of cartItems) {
+      try {
+        const baseGasEstimate = await publicClient.estimateGas({
+          account: userAddress,
+          to: item.payload.to,
+          data: item.payload.data,
+          value: BigInt(item.payload.value),
+        });
+
+        // Apply different padding based on option type
+        const isPut = item.metadata.optionType === 'PUT';
+        const padding = isPut ? GAS_CONFIG.PUT_GAS_PADDING : GAS_CONFIG.CALL_GAS_PADDING;
+        const paddedGas = BigInt(Math.ceil(Number(baseGasEstimate) * padding));
+
+        console.log(`⛽ Gas estimate for ${item.metadata.optionType} order:`, {
+          base: baseGasEstimate.toString(),
+          padding: `${padding}x`,
+          padded: paddedGas.toString(),
+          market: item.metadata.marketName,
+        });
+
+        totalGas += paddedGas;
+
+        if (isPut) {
+          putOrderCount++;
+        } else {
+          callOrderCount++;
+        }
+      } catch (estimateError) {
+        console.error(`❌ Failed to estimate gas for ${item.metadata.optionType} order:`, {
+          market: item.metadata.marketName,
+          optionType: item.metadata.optionType,
+          action: item.metadata.action,
+          usdcAmount: item.metadata.usdcAmountFormatted,
+          error: estimateError instanceof Error ? estimateError.message : String(estimateError),
+        });
+
+        // Check if this is an arithmetic error that will cause execution to fail
+        const errorMessage = estimateError instanceof Error ? estimateError.message : String(estimateError);
+        if (errorMessage.includes('arithmetic underflow or overflow')) {
+          console.error('⚠️  CRITICAL: Order has arithmetic underflow/overflow - transaction will likely FAIL');
+          console.error('📋 Order metadata:', {
+            to: item.payload.to,
+            strikePrice: item.metadata.strikePrice,
+            expiry: item.metadata.expiryFormatted,
+            numContracts: item.metadata.numContracts.toString(),
+            pricePerContract: item.metadata.pricePerContract,
+          });
+          console.error('📋 Raw order params:', {
+            price: item.payload.orderParams.price.toString(),
+            numContracts: item.payload.orderParams.numContracts.toString(),
+            strikes: item.payload.orderParams.strikes.map(s => s.toString()),
+            maxCollateralUsable: item.payload.orderParams.maxCollateralUsable.toString(),
+            isCall: item.payload.orderParams.isCall,
+            isLong: item.payload.orderParams.isLong,
+          });
+        }
+
+        // Use conservative fallback estimates with higher padding
+        const fallbackGas = item.metadata.optionType === 'PUT' ? 400000n : 300000n;
+        console.warn(`Using fallback gas estimate: ${fallbackGas.toString()}`);
+        totalGas += fallbackGas;
+      }
+    }
+
+    // Add approval gas with padding if needed
     const totalUsdcRequired = calculateTotalUsdcRequired(cartItems);
     const currentAllowance = await publicClient.readContract({
       address: USDC_ADDRESS as Address,
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+      authorizationList: undefined,
     }) as bigint;
 
     if (currentAllowance < totalUsdcRequired) {
-      totalGas += 50000n; // Approximate gas for approval
+      const approvalGas = BigInt(Math.ceil(50000 * GAS_CONFIG.PRE_VERIFICATION_PADDING));
+      console.log(`⛽ Approval gas estimate with padding: ${approvalGas.toString()}`);
+      totalGas += approvalGas;
     }
+
+    console.log(`\n📊 Total Gas Estimate Summary:`);
+    console.log(`  CALL orders: ${callOrderCount}`);
+    console.log(`  PUT orders: ${putOrderCount}`);
+    console.log(`  Total padded gas: ${totalGas.toString()}`);
+    console.log(`  PUT order padding: ${GAS_CONFIG.PUT_GAS_PADDING}x`);
+    console.log(`  CALL order padding: ${GAS_CONFIG.CALL_GAS_PADDING}x\n`);
 
     return totalGas;
   } catch (error) {
     console.error('Error estimating gas:', error);
-    return 0n;
+    // Return conservative estimate
+    return 500000n * BigInt(cartItems.length);
   }
 }
 

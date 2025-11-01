@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Address, encodeFunctionData, parseAbi } from 'viem';
+import { createPublicClient, http, type Address, encodeFunctionData } from 'viem';
 import { base } from 'viem/chains';
 import { USDC_ADDRESS, OPTION_BOOK_ADDRESS, ERC20_ABI } from './contracts';
 
@@ -10,18 +10,23 @@ export async function checkUSDCAllowance(
   owner: Address,
   spender: Address = OPTION_BOOK_ADDRESS as Address
 ): Promise<bigint> {
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+  if (!rpcUrl) {
+    throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
+  }
+
   const publicClient = createPublicClient({
     chain: base,
-    transport: http(),
+    transport: http(rpcUrl),
   });
 
-  // @ts-expect-error - viem v2 type issue with authorizationList
   const allowance = await publicClient.readContract({
     address: USDC_ADDRESS as Address,
-    abi: parseAbi(ERC20_ABI),
+    abi: ERC20_ABI,
     functionName: 'allowance',
     args: [owner, spender],
-  });
+    authorizationList: undefined,
+  }) as bigint;
 
   return allowance;
 }
@@ -66,18 +71,23 @@ export async function needsApproval(
  * Per OptionBook.md section 2.4: Check balance before executing trade
  */
 export async function getUSDCBalance(address: Address): Promise<bigint> {
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+  if (!rpcUrl) {
+    throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
+  }
+
   const publicClient = createPublicClient({
     chain: base,
-    transport: http(),
+    transport: http(rpcUrl),
   });
 
-  // @ts-expect-error - viem v2 type issue with authorizationList
   const balance = await publicClient.readContract({
     address: USDC_ADDRESS as Address,
-    abi: parseAbi(ERC20_ABI),
+    abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [address],
-  });
+    authorizationList: undefined,
+  }) as bigint;
 
   return balance;
 }
