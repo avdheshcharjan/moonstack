@@ -41,23 +41,38 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
     }
   }, [walletAddress, fetchOrders]);
 
-  // Memoize all pairs (before filtering) for counting
-  const allPairs = useMemo(() => {
+  // State for pairs, so we can update them in place
+  const [allPairs, setAllPairs] = useState<BinaryPair[]>([]);
+
+  // Initial load and on wallet change
+  useEffect(() => {
+    if (walletAddress) {
+      fetchOrders();
+    }
+  }, [walletAddress, fetchOrders]);
+
+  // Update allPairs whenever orders change
+  useEffect(() => {
     const binaries = filterBinaries();
     const rawBinaries = binaries.map(parsed => parsed.rawOrder);
-    const newPairs = pairBinaryOptions(rawBinaries);
-    return sortPairsByExpiry(newPairs);
+    const newPairs = sortPairsByExpiry(pairBinaryOptions(rawBinaries));
+    setAllPairs(newPairs);
   }, [filterBinaries, orders]);
 
+  // Periodically refresh orders every 30s and update pairs in place
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      await fetchOrders();
+      // After fetchOrders, orders will update and allPairs will update via above effect
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
+
   // Count pairs by expiry category
-  const expiryCounts = useMemo(() => {
-    return countPairsByExpiry(allPairs);
-  }, [allPairs]);
+  const expiryCounts = useMemo(() => countPairsByExpiry(allPairs), [allPairs]);
 
   // Filter pairs based on selected expiry filter
-  const pairs = useMemo(() => {
-    return filterPairsByExpiry(allPairs, expiryFilter);
-  }, [allPairs, expiryFilter]);
+  const pairs = useMemo(() => filterPairsByExpiry(allPairs, expiryFilter), [allPairs, expiryFilter]);
 
   const handleSwipe = useCallback(async (pair: BinaryPair, action: 'yes' | 'no') => {
     if (!walletAddress) {
@@ -197,6 +212,10 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
         betSize={betSize}
         marketData={marketData}
         onRefresh={fetchOrders}
+        onAllCardsReviewed={async () => {
+          addToast("You're all caught up!", 'success');
+          await fetchOrders();
+        }}
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

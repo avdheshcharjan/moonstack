@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MarketData, ParsedOrder, RawOrderData } from '../types/orders';
+import { USDC_ADDRESS } from '../utils/contracts';
 import { parseOrder } from '../utils/optionsParser';
-import { RawOrderData, ParsedOrder, MarketData } from '../types/orders';
-import { USDC_ADDRESS, WETH_ADDRESS } from '../utils/contracts';
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
@@ -46,6 +46,7 @@ export function useOrders(): UseOrdersReturn {
       if (data && data.data) {
         const rawOrders: RawOrderData[] = data.data.orders || [];
         const parsedOrders = rawOrders.map(parseOrder);
+
         setOrders(parsedOrders);
         setMarketData(data.data.market_data || null);
         setLoading(false);

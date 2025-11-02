@@ -10,10 +10,10 @@ export function generateShareUrl(pair: BinaryPair): string {
     return '';
   }
 
-  const baseUrl = window.location.origin;
+  const baseUrl = window.location.origin + window.location.pathname;
   // Use the pair's unique ID which is already stable: underlying_threshold_expiry
   const encodedId = encodeURIComponent(pair.id);
-  return `${baseUrl}/share/${encodedId}`;
+  return `${baseUrl}?id=${encodedId}`;
 }
 
 /**
