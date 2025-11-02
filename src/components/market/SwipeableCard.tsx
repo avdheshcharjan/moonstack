@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import React, { useCallback, useRef, useState } from 'react';
 
 interface SwipeableCardProps {
   children: React.ReactNode;
@@ -24,6 +24,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 }) => {
   const [exitX, setExitX] = useState<number>(0);
   const [exitY, setExitY] = useState<number>(0);
+  const allowDragRef = useRef<boolean>(true);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
@@ -63,6 +64,17 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       onSwipeComplete();
     }
   };
+
+  // Disable drag when the pointer starts over an element that declares data-noswipe
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement | null;
+    const withinNoSwipe = target?.closest('[data-noswipe="true"]');
+    allowDragRef.current = !withinNoSwipe;
+  }, []);
+
+  const handlePointerUpCapture = useCallback(() => {
+    allowDragRef.current = true;
+  }, []);
 
   // Create reactive opacity transforms for progressive color intensity
   // These will update in real-time as the user drags
@@ -107,11 +119,13 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
         rotate,
         opacity,
       }}
-      drag={disabled ? false : true}
+      drag={disabled ? false : allowDragRef.current}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.7}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
+      onPointerDownCapture={handlePointerDownCapture}
+      onPointerUpCapture={handlePointerUpCapture}
       animate={exitX !== 0 ? { x: exitX } : exitY !== 0 ? { y: exitY } : {}}
       transition={{
         type: 'spring',

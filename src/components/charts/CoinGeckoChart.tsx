@@ -105,10 +105,15 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
       return;
     }
 
+    // Reset any existing transforms before resizing/scaling to avoid compounding scale on re-renders
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    // Use clientWidth/Height so transforms (rotate/translate from parent swipe) don't change measured size
+    const rectWidth = canvas.clientWidth;
+    const rectHeight = canvas.clientHeight;
+    canvas.width = rectWidth * dpr;
+    canvas.height = rectHeight * dpr;
     ctx.scale(dpr, dpr);
 
     // Group prices into candles based on number of data points
@@ -142,9 +147,9 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
     const priceRange = maxPrice - minPrice;
 
     // Calculate dynamic left padding based on price label width
-    const fontSize = rect.width < 400 ? 9 : 10;
+    const fontSize = rectWidth < 400 ? 9 : 10;
     ctx.font = `${fontSize}px sans-serif`;
-    
+
     // Measure the width of all price labels to find the longest
     let maxLabelWidth = 0;
     for (let i = 0; i <= 4; i++) {
@@ -153,13 +158,13 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
       const textWidth = ctx.measureText(formattedPrice).width;
       maxLabelWidth = Math.max(maxLabelWidth, textWidth);
     }
-    
+
     // Set left padding: max label width + spacing buffer (15px)
     const leftPadding = Math.max(40, Math.ceil(maxLabelWidth) + 15);
 
     const padding = { top: 20, right: 20, bottom: 30, left: leftPadding };
-    const chartWidth = rect.width - padding.left - padding.right;
-    const chartHeight = rect.height - padding.top - padding.bottom;
+    const chartWidth = rectWidth - padding.left - padding.right;
+    const chartHeight = rectHeight - padding.top - padding.bottom;
     const candleSpacing = chartWidth / candles.length;
 
     // Store chart metrics for mouse interaction
@@ -173,7 +178,7 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
       priceRange,
     };
 
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.clearRect(0, 0, rectWidth, rectHeight);
 
     // Draw grid lines
     ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.1)';
@@ -324,6 +329,10 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
     );
   }
 
+  useEffect(() => {
+    console.log(mousePos, canvasRef.current?.width);
+  }, [mousePos])
+
   if (loading) {
     return (
       <div className="w-full h-full flex flex-col">
@@ -369,11 +378,10 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
           <button
             key={btn.value}
             onClick={() => setTimeRange(btn.value)}
-            className={`px-2.5 py-1 text-xs rounded font-semibold transition-all ${
-              timeRange === btn.value
-                ? 'bg-purple-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
-            }`}
+            className={`px-2.5 py-1 text-xs rounded font-semibold transition-all ${timeRange === btn.value
+              ? 'bg-purple-600 text-white'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+              }`}
           >
             {btn.label}
           </button>
@@ -381,7 +389,27 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
       </div>
 
       {/* Chart Canvas */}
-      <div className="flex-1 min-h-0 relative">
+      <div
+        className="flex-1 min-h-0 relative"
+        onPointerDownCapture={(e) => {
+          e.stopPropagation();
+        }}
+        onPointerMoveCapture={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseDownCapture={(e) => {
+          e.stopPropagation();
+        }}
+        onTouchStartCapture={(e) => {
+          e.stopPropagation();
+        }}
+        onTouchMoveCapture={(e) => {
+          e.stopPropagation();
+        }}
+        style={{
+          touchAction: 'none',
+        }}
+      >
         <canvas
           ref={canvasRef}
           className="w-full h-full cursor-crosshair"
@@ -393,11 +421,11 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
         {/* Tooltip */}
         {hoveredCandle && mousePos && (
           <div
-            className="absolute bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs pointer-events-none z-10"
+            className={`absolute bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs pointer-events-none z-10`}
             style={{
-              left: `${mousePos.x + 10}px`,
+              left: mousePos.x > (canvasRef.current?.width || 0) / 2 ? `${mousePos.x - 170}px` : `${mousePos.x + 10}px`,
               top: `${mousePos.y - 80}px`,
-              transform: mousePos.x > (canvasRef.current?.width || 0) / 2 ? 'translateX(-100%)' : 'none',
+              // transform: mousePos.x > (canvasRef.current?.width || 0) / 2 ? 'translateX(-100%)' : 'none',
             }}
           >
             <div className="text-slate-400 mb-1">{formatTime(hoveredCandle.timestamp)}</div>

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { BinaryPair } from '@/src/types/prediction';
-import { MarketData } from '@/src/types/orders';
-import RollingNumber from '@/src/components/shared/RollingNumber';
 import CoinGeckoChart from '@/src/components/charts/CoinGeckoChart';
+import RollingNumber from '@/src/components/shared/RollingNumber';
+import { MarketData } from '@/src/types/orders';
+import { BinaryPair } from '@/src/types/prediction';
+import { copyToClipboard, generateShareUrl } from '@/src/utils/shareUtils';
+import React, { useState } from 'react';
 import BearishBullishSpectrum from './BearishBullishSpectrum';
-import { generateShareUrl, copyToClipboard } from '@/src/utils/shareUtils';
 
 interface PredictionCardProps {
   pair: BinaryPair;
@@ -67,14 +67,16 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     ? betSize / pair.callParsed.pricePerContract
     : 0;
   const upProfit = upContracts * pair.callParsed.strikeWidth;
-  const upPayout = betSize + upProfit;
+  // const upPayout = betSize + upProfit;
+  const upPayout = upProfit;
 
   // Calculate expected total payout for DOWN (NO) bet (includes bet amount + profit)
   const downContracts = pair.putParsed.pricePerContract > 0
     ? betSize / pair.putParsed.pricePerContract
     : 0;
   const downProfit = downContracts * pair.putParsed.strikeWidth;
-  const downPayout = betSize + downProfit;
+  // const downPayout = betSize + downProfit;
+  const downPayout = downProfit;
 
   const impliedProb = Math.round(pair.impliedProbability.up);
   const bearishProb = 100 - impliedProb;
@@ -200,9 +202,8 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
                 }}
               />
             </div>
-            <div className={`flex items-center gap-1 text-base font-semibold ${
-              priceChange >= 0 ? 'text-green-400' : 'text-red-400'
-            }`}>
+            <div className={`flex items-center gap-1 text-base font-semibold ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
               <span>{priceChange >= 0 ? '↑' : '↓'}</span>
               <span>{priceChangeText} (1d)</span>
             </div>
@@ -217,8 +218,8 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
         </div>
 
         {/* Chart Section - Takes all available space */}
-        <div className="flex-1 px-2 min-h-0 flex flex-col">
-          <div className="flex-1 rounded-xl overflow-hidden bg-slate-950">
+        <div className="flex-1 px-2 flex flex-col">
+          <div className="flex-1 rounded-xl overflow-hidden bg-slate-950" data-noswipe="true">
             <CoinGeckoChart
               symbol={getTradingViewSymbol(pair.underlying)}
               theme="dark"
