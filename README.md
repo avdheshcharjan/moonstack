@@ -253,9 +253,7 @@ PORT=3000
 - [ ] Display historical order data
 - [ ] Exercise/settle positions UI
 
-## License
 
-MIT
 
 ## Contributing
 
