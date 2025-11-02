@@ -67,7 +67,6 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     ? betSize / pair.callParsed.pricePerContract
     : 0;
   const upProfit = upContracts * pair.callParsed.strikeWidth;
-  // const upPayout = betSize + upProfit;
   const upPayout = upProfit;
 
   // Calculate expected total payout for DOWN (NO) bet (includes bet amount + profit)
@@ -75,7 +74,6 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
     ? betSize / pair.putParsed.pricePerContract
     : 0;
   const downProfit = downContracts * pair.putParsed.strikeWidth;
-  // const downPayout = betSize + downProfit;
   const downPayout = downProfit;
 
   const impliedProb = Math.round(pair.impliedProbability.up);
