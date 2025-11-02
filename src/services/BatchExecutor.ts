@@ -264,10 +264,14 @@ export async function executeBatchTransactions(
     // console.log('🚀 Sending batch transaction via wallet_sendCalls...');
     console.log('🚀 Sending batch transaction via wallet_sendCalls with payload:', batchPayload);
     // return;
-    const result = await baseProvider.request({
+    const result: any = await baseProvider.request({
       method: 'wallet_sendCalls',
       params: [batchPayload],
     });
+
+    if (result && result.code) {
+      return result.message;
+    }
 
     //     const result = await provider.request({
     //   method: 'wallet_sendCalls',
@@ -280,17 +284,15 @@ export async function executeBatchTransactions(
     //   }]
     // });
 
-    const bundleId = result as string;
-    console.log(`📋 Batch submitted with bundle ID: ${bundleId}`);
+    const bundleId = result.id;
 
     onStatusUpdate?.('confirming', 'Waiting for confirmation...');
 
-    // Step 10: Poll for transaction hash
     const transactionHash = await pollForTransactionHash(
       baseProvider,
       bundleId,
-      60, // max attempts
-      2000 // 2 second interval
+      10,
+      2000
     );
 
     console.log(`✅ Batch confirmed! Transaction hash: ${transactionHash}`);
@@ -334,7 +336,7 @@ export async function executeBatchTransactions(
 async function pollForTransactionHash(
   provider: any,
   bundleId: string,
-  maxAttempts = 60,
+  maxAttempts = 10,
   interval = 2000
 ): Promise<Hex> {
   console.log(`🔄 Polling for transaction confirmation (max ${maxAttempts} attempts)...`);
@@ -346,24 +348,23 @@ async function pollForTransactionHash(
         params: [bundleId],
       });
 
+      console.log('Status response:', status);
+
       console.log(`📊 Attempt ${attempt + 1}/${maxAttempts} - Status:`, status?.status);
 
-      if (status?.status === 'CONFIRMED' && status?.receipts?.length > 0) {
-        // Return the last receipt's transaction hash (the final fillOrder transaction)
+      if (status?.status === 200 && status?.receipts?.length > 0) {
         const lastReceipt = status.receipts[status.receipts.length - 1];
         return lastReceipt.transactionHash as Hex;
       }
 
-      if (status?.status === 'FAILED') {
+      if (status?.status !== 200) {
         throw new Error('Batch transaction failed on-chain');
       }
 
-      // Wait before next poll
       await new Promise(resolve => setTimeout(resolve, interval));
     } catch (error) {
       console.error(`⚠️ Error polling status (attempt ${attempt + 1}):`, error);
 
-      // If we're not at max attempts, continue polling
       if (attempt < maxAttempts - 1) {
         await new Promise(resolve => setTimeout(resolve, interval));
         continue;

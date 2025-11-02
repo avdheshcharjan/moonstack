@@ -1,10 +1,10 @@
+import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 import type { RawOrderData } from '@/src/types/orders';
 import type { BinaryPair } from '@/src/types/prediction';
 import { ERC20_ABI, OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
 import { BrowserProvider, Contract } from 'ethers';
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
-import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 
 /**
  * Gas configuration for direct transactions
@@ -513,7 +513,6 @@ async function storePosition(
   try {
     const parsed = action === 'yes' ? pair.callParsed : pair.putParsed;
 
-    // Calculate collateral used based on actual bet size
     const collateralUsed = BigInt(Math.floor(betSize * 1_000_000));
 
     const response = await fetch('/api/positions', {

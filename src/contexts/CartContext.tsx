@@ -36,7 +36,91 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Address } from 'viem';
+import { Address, Hex } from 'viem';
+import { getUnderlyingAsset } from '../utils/binaryPairing';
+
+/**
+ * Stores positions for all items in a batch transaction
+ * 
+ * @param items - Array of cart items that were executed
+ * @param txHash - Transaction hash from the batch execution
+ * @param walletAddress - User's wallet address
+ */
+async function storeBatchPositions(
+  items: CartItem[],
+  txHash: Hex,
+  walletAddress: Address
+): Promise<void> {
+  try {
+    console.log(`📝 Storing ${items.length} positions for batch transaction ${txHash}`);
+
+    // Store each position
+    const storePromises = items.map(async (item) => {
+      try {
+        const { payload, metadata } = item;
+        const orderParams = payload.orderParams;
+
+        const response = await fetch('/api/positions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            wallet_address: walletAddress,
+            tx_hash: txHash,
+            strategy_type: 'BINARY', // Binary option
+            underlying: getUnderlyingAsset(orderParams.priceFeed),
+            is_call: orderParams.isCall,
+            strikes: orderParams.strikes.map(s => s.toString()),
+            strike_width: '0', // Binary options have no strike width
+            expiry: new Date(Number(orderParams.expiry) * 1000).toISOString(),
+            price_per_contract: orderParams.price.toString(),
+            max_size: orderParams.maxCollateralUsable.toString(),
+            collateral_used: metadata.usdcAmount.toString(),
+            num_contracts: metadata.numContracts.toString(),
+            raw_order: {
+              order: {
+                maker: orderParams.maker,
+                orderExpiryTimestamp: orderParams.orderExpiryTimestamp.toString(),
+                collateral: orderParams.collateral,
+                isCall: orderParams.isCall,
+                priceFeed: orderParams.priceFeed,
+                implementation: orderParams.implementation,
+                isLong: orderParams.isLong,
+                maxCollateralUsable: orderParams.maxCollateralUsable.toString(),
+                strikes: orderParams.strikes.map(s => s.toString()),
+                expiry: orderParams.expiry.toString(),
+                price: orderParams.price.toString(),
+              },
+              signature: payload.signature,
+            },
+            // Bet-specific fields
+            decision: metadata.action.toUpperCase(),
+            question: metadata.marketName,
+            threshold: Number(orderParams.strikes[0]) / 1e8, // Strike price is the threshold
+            betSize: Number(metadata.usdcAmountFormatted),
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to store position for ${metadata.marketName}:`, errorText);
+        } else {
+          console.log(`✅ Position stored for ${metadata.marketName}`);
+        }
+      } catch (error) {
+        console.error(`Error storing position for item:`, error);
+        // Don't throw - we don't want to fail the entire batch if one position storage fails
+      }
+    });
+
+    await Promise.all(storePromises);
+    console.log('✅ All positions stored successfully');
+  } catch (error) {
+    console.error('Error storing batch positions:', error);
+    // Don't throw - we don't want to fail the transaction if storage fails
+  }
+}
 
 /**
  * Cart Context
@@ -148,12 +232,16 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
           onStatusUpdate
         );
 
-        console.log(result)
+        // console.log(result)
 
         if (result && result.status === 'CONFIRMED') {
-          console.log('✅ Batch execution successful!', result.transactionHash);
+          const txnHash = result.transactionHash;
+          console.log('✅ Batch execution successful!', txnHash);
 
-          // Clear cart on success
+          if (txnHash) {
+            await storeBatchPositions(items, txnHash, userAddress);
+          }
+
           clearCart();
 
           return result;

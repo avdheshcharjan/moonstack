@@ -45,7 +45,7 @@ function formatExpiryDate(unixTimestamp: number): string {
  * @param priceFeed Oracle price feed address
  * @returns 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG'
  */
-function getUnderlyingAsset(priceFeed: string): 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG' {
+export function getUnderlyingAsset(priceFeed: string): 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG' {
   const priceFeedLower = priceFeed.toLowerCase();
 
   if (priceFeedLower === BTC_FEED.toLowerCase()) {
