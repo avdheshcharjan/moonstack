@@ -19,7 +19,7 @@ export const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
 /**
  * Unique referrer address for tracking positions
  */
-export const REFERRER_ADDRESS = '0x0000000000000000000000000000000000000001';
+export const REFERRER_ADDRESS = '0x92b8ac05b63472d1D84b32bDFBBf3e1887331567';
 
 /**
  * BTC price feed address on Base
