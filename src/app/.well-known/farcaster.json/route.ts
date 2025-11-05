@@ -3,9 +3,12 @@ export async function GET() {
 
   return Response.json({
     accountAssociation: {
-      header: "",
-      payload: "",
-      signature: "",
+      header: "eyJmaWQiOjI1OTE0OCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDgyYjU0NkJiOTc5OUM4YThGMDc4NThmZEIxZWU3OUI4RjY5RkFCMDAifQ",
+      payload: "eyJkb21haW4iOiJtb29uc3RhY2suZnVuIn0",
+      signature: "Bp0TQQ/4Q8kJbYt1ZbwEyJyX9z1z6MSE4cNN+MimlgYMho7ZMbPoAXZbGfYgdBowwrBqNB/u/yfqxwTbZUKQwRs=",
+    },
+    baseBuilder: {
+      ownerAddress: '0x88eBc2a2BCD44947c78DD80407F6Dc5b00049C1E',
     },
     miniapp: {
       version: '1',
