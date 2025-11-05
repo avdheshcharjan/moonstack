@@ -5,7 +5,9 @@ import TopBar from '@/src/components/layout/TopBar';
 import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
 import Leaderboard from '@/src/components/leaderboard/Leaderboard';
+import { OnboardingModal } from '@/src/components/onboarding';
 import { useWallet } from '@/src/hooks/useWallet';
+import { useOnboarding } from '@/src/hooks/useOnboarding';
 import { SignInWithBaseButton } from '@base-org/account-ui/react';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect, useState } from 'react';
@@ -15,6 +17,15 @@ const Moonstack = () => {
 
   // Wallet state - using hook
   const { walletAddress, connectWallet } = useWallet();
+
+  // Onboarding state
+  const {
+    shouldShowOnboarding,
+    markOnboardingAsSeen,
+    setDontShowAgain,
+    isLoading: onboardingLoading,
+  } = useOnboarding();
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
   // Debug: Log wallet state changes
   useEffect(() => {
@@ -29,6 +40,17 @@ const Moonstack = () => {
     setMounted(true);
     sdk.actions.ready();
   }, []);
+
+  // Show onboarding on first visit after wallet connects
+  useEffect(() => {
+    if (mounted && !onboardingLoading && walletAddress && shouldShowOnboarding()) {
+      // Small delay to ensure smooth transition after wallet connection
+      const timer = setTimeout(() => {
+        setShowOnboardingModal(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, onboardingLoading, walletAddress, shouldShowOnboarding]);
 
   // Prevent hydration mismatch - return null during SSR
   if (!mounted) {
@@ -99,6 +121,14 @@ const Moonstack = () => {
 
       {/* Top Bar - Pass wallet address */}
       <TopBar walletAddress={walletAddress} />
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        isOpen={showOnboardingModal}
+        onClose={() => setShowOnboardingModal(false)}
+        onComplete={markOnboardingAsSeen}
+        onDontShowAgain={setDontShowAgain}
+      />
     </div>
   );
 };
