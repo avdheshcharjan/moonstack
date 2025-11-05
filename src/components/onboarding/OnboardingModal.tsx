@@ -1,5 +1,5 @@
+import { AnimatePresence, motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import React, { useState } from 'react';
-import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -412,11 +412,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
             ].map((entry, i) => (
               <div
                 key={i}
-                className={`flex items-center justify-between p-3 rounded-lg ${
-                  i === 0
-                    ? 'bg-yellow-500/10 border border-yellow-500/30'
-                    : 'bg-slate-900/50'
-                }`}
+                className={`flex items-center justify-between p-3 rounded-lg ${i === 0
+                  ? 'bg-yellow-500/10 border border-yellow-500/30'
+                  : 'bg-slate-900/50'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">{entry.rank}</div>
@@ -532,185 +531,185 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
     },
 
     // Card 8 - Reading Prediction Cards
-    {
-      id: 8,
-      title: 'Understanding the Cards',
-      icon: '📊',
-      content: (
-        <div className="space-y-6">
-          <p className="text-slate-300 text-center">
-            Learn how to read prediction cards effectively
-          </p>
+    // {
+    //   id: 8,
+    //   title: 'Understanding the Cards',
+    //   icon: '📊',
+    //   content: (
+    //     <div className="space-y-6">
+    //       <p className="text-slate-300 text-center">
+    //         Learn how to read prediction cards effectively
+    //       </p>
 
-          <div className="bg-slate-800/50 rounded-xl p-4 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-blue-500/30">
-                <span className="text-blue-400 font-bold">1</span>
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold text-sm">
-                  Current Price
-                </div>
-                <div className="text-slate-400 text-xs">
-                  Live price with 24h change
-                </div>
-              </div>
-            </div>
+    //       <div className="bg-slate-800/50 rounded-xl p-4 space-y-4">
+    //         <div className="flex items-start gap-3">
+    //           <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-blue-500/30">
+    //             <span className="text-blue-400 font-bold">1</span>
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold text-sm">
+    //               Current Price
+    //             </div>
+    //             <div className="text-slate-400 text-xs">
+    //               Live price with 24h change
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-purple-500/30">
-                <span className="text-purple-400 font-bold">2</span>
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold text-sm">
-                  Threshold Price
-                </div>
-                <div className="text-slate-400 text-xs">
-                  The target price to beat
-                </div>
-              </div>
-            </div>
+    //         <div className="flex items-start gap-3">
+    //           <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-purple-500/30">
+    //             <span className="text-purple-400 font-bold">2</span>
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold text-sm">
+    //               Threshold Price
+    //             </div>
+    //             <div className="text-slate-400 text-xs">
+    //               The target price to beat
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-green-500/30">
-                <span className="text-green-400 font-bold">3</span>
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold text-sm">
-                  Bearish/Bullish Bar
-                </div>
-                <div className="text-slate-400 text-xs">
-                  Market sentiment indicator
-                </div>
-              </div>
-            </div>
+    //         <div className="flex items-start gap-3">
+    //           <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-green-500/30">
+    //             <span className="text-green-400 font-bold">3</span>
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold text-sm">
+    //               Bearish/Bullish Bar
+    //             </div>
+    //             <div className="text-slate-400 text-xs">
+    //               Market sentiment indicator
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-yellow-500/30">
-                <span className="text-yellow-400 font-bold">4</span>
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold text-sm">
-                  Price Chart
-                </div>
-                <div className="text-slate-400 text-xs">
-                  Historical price trends
-                </div>
-              </div>
-            </div>
+    //         <div className="flex items-start gap-3">
+    //           <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-yellow-500/30">
+    //             <span className="text-yellow-400 font-bold">4</span>
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold text-sm">
+    //               Price Chart
+    //             </div>
+    //             <div className="text-slate-400 text-xs">
+    //               Historical price trends
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-red-500/30">
-                <span className="text-red-400 font-bold">5</span>
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold text-sm">
-                  Payout & Multiplier
-                </div>
-                <div className="text-slate-400 text-xs">
-                  Shown on YES and NO buttons
-                </div>
-              </div>
-            </div>
-          </div>
+    //         <div className="flex items-start gap-3">
+    //           <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0 border border-red-500/30">
+    //             <span className="text-red-400 font-bold">5</span>
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold text-sm">
+    //               Payout & Multiplier
+    //             </div>
+    //             <div className="text-slate-400 text-xs">
+    //               Shown on YES and NO buttons
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
 
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-            <div className="flex gap-3">
-              <div className="text-2xl">💡</div>
-              <div className="flex-1">
-                <div className="text-blue-400 font-semibold text-sm">Tip</div>
-                <div className="text-slate-300 text-sm">
-                  Compare multipliers to find the best value bets
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
+    //       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+    //         <div className="flex gap-3">
+    //           <div className="text-2xl">💡</div>
+    //           <div className="flex-1">
+    //             <div className="text-blue-400 font-semibold text-sm">Tip</div>
+    //             <div className="text-slate-300 text-sm">
+    //               Compare multipliers to find the best value bets
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   ),
+    // },
 
     // Card 9 - Wallet & Funding
-    {
-      id: 9,
-      title: 'Get Started',
-      icon: '🚀',
-      content: (
-        <div className="space-y-6">
-          <p className="text-slate-300 text-center">
-            You're ready to start predicting and winning!
-          </p>
+    // {
+    //   id: 9,
+    //   title: 'Get Started',
+    //   icon: '🚀',
+    //   content: (
+    //     <div className="space-y-6">
+    //       <p className="text-slate-300 text-center">
+    //         You're ready to start predicting and winning!
+    //       </p>
 
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 bg-slate-800/50 rounded-lg p-4">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center text-xl flex-shrink-0 border border-purple-500/30">
-                1
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold">
-                  Connect Wallet
-                </div>
-                <div className="text-slate-400 text-sm">
-                  Sign in with Base Account for instant smart wallet access
-                </div>
-              </div>
-            </div>
+    //       <div className="space-y-3">
+    //         <div className="flex items-start gap-3 bg-slate-800/50 rounded-lg p-4">
+    //           <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center text-xl flex-shrink-0 border border-purple-500/30">
+    //             1
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold">
+    //               Connect Wallet
+    //             </div>
+    //             <div className="text-slate-400 text-sm">
+    //               Sign in with Base Account for instant smart wallet access
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="flex items-start gap-3 bg-slate-800/50 rounded-lg p-4">
-              <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center text-xl flex-shrink-0 border border-blue-500/30">
-                2
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold">Fund with USDC</div>
-                <div className="text-slate-400 text-sm">
-                  Add USDC to your wallet to start making predictions
-                </div>
-              </div>
-            </div>
+    //         <div className="flex items-start gap-3 bg-slate-800/50 rounded-lg p-4">
+    //           <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center text-xl flex-shrink-0 border border-blue-500/30">
+    //             2
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold">Fund with USDC</div>
+    //             <div className="text-slate-400 text-sm">
+    //               Add USDC to your wallet to start making predictions
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="flex items-start gap-3 bg-slate-800/50 rounded-lg p-4">
-              <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-xl flex-shrink-0 border border-green-500/30">
-                3
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold">
-                  Start Swiping
-                </div>
-                <div className="text-slate-400 text-sm">
-                  Make predictions and watch your profits grow
-                </div>
-              </div>
-            </div>
-          </div>
+    //         <div className="flex items-start gap-3 bg-slate-800/50 rounded-lg p-4">
+    //           <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-xl flex-shrink-0 border border-green-500/30">
+    //             3
+    //           </div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold">
+    //               Start Swiping
+    //             </div>
+    //             <div className="text-slate-400 text-sm">
+    //               Make predictions and watch your profits grow
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
 
-          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
-            <div className="flex gap-3 items-center">
-              <div className="text-3xl">❓</div>
-              <div className="flex-1">
-                <div className="text-white font-semibold">Need Help?</div>
-                <div className="text-slate-300 text-sm">
-                  Check the FAQ tab for guides and answers
-                </div>
-              </div>
-            </div>
-          </div>
+    //       <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
+    //         <div className="flex gap-3 items-center">
+    //           <div className="text-3xl">❓</div>
+    //           <div className="flex-1">
+    //             <div className="text-white font-semibold">Need Help?</div>
+    //             <div className="text-slate-300 text-sm">
+    //               Check the FAQ tab for guides and answers
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
 
-          {/* Don't show again checkbox */}
-          <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={dontShowAgain}
-                onChange={(e) => setDontShowAgain(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-              />
-              <span className="text-white text-sm font-medium">
-                Don't show this again
-              </span>
-            </label>
-          </div>
-        </div>
-      ),
-    },
+    //       {/* Don't show again checkbox */}
+    //       <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+    //         <label className="flex items-center gap-3 cursor-pointer">
+    //           <input
+    //             type="checkbox"
+    //             checked={dontShowAgain}
+    //             onChange={(e) => setDontShowAgain(e.target.checked)}
+    //             className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+    //           />
+    //           <span className="text-white text-sm font-medium">
+    //             Don't show this again
+    //           </span>
+    //         </label>
+    //       </div>
+    //     </div>
+    //   ),
+    // },
   ];
 
   const handleDragEnd = (
@@ -832,11 +831,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   <button
                     key={index}
                     onClick={() => setCurrentCard(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentCard
-                        ? 'w-8 bg-purple-500'
-                        : 'w-2 bg-slate-600 hover:bg-slate-500'
-                    }`}
+                    className={`h-2 rounded-full transition-all ${index === currentCard
+                      ? 'w-8 bg-purple-500'
+                      : 'w-2 bg-slate-600 hover:bg-slate-500'
+                      }`}
                   />
                 ))}
               </div>
@@ -850,8 +848,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     direction === 'left'
                       ? { x: -300, opacity: 0 }
                       : direction === 'up'
-                      ? { y: 300, opacity: 0 }
-                      : { x: 300, opacity: 0 }
+                        ? { y: 300, opacity: 0 }
+                        : { x: 300, opacity: 0 }
                   }
                   animate={{ x: 0, y: 0, opacity: 1 }}
                   exit={getExitDirection()}
@@ -884,7 +882,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     </div>
 
                     {/* Card Content */}
-                    <div className="min-h-[400px]">
+                    <div className="min-h-[400px] max-h-[45vh] overflow-y-auto">
                       {cards[currentCard].content}
                     </div>
 

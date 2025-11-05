@@ -2,12 +2,12 @@ import MyBets from '@/src/components/bets/MyBets';
 import FAQ from '@/src/components/faq/FAQ';
 import BottomNav from '@/src/components/layout/BottomNav';
 import TopBar from '@/src/components/layout/TopBar';
-import SwipeView from '@/src/components/market/SwipeView';
-import BetSettings from '@/src/components/settings/BetSettings';
 import Leaderboard from '@/src/components/leaderboard/Leaderboard';
+import SwipeView from '@/src/components/market/SwipeView';
 import { OnboardingModal } from '@/src/components/onboarding';
-import { useWallet } from '@/src/hooks/useWallet';
+import BetSettings from '@/src/components/settings/BetSettings';
 import { useOnboarding } from '@/src/hooks/useOnboarding';
+import { useWallet } from '@/src/hooks/useWallet';
 import { SignInWithBaseButton } from '@base-org/account-ui/react';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect, useState } from 'react';
@@ -89,7 +89,7 @@ const Moonstack = () => {
 
         {/* My Bets View */}
         {currentView === 'mybets' && (
-          <div className="space-y-6">
+          <div className="pt-4 space-y-6">
             <BetSettings walletAddress={walletAddress} />
             <MyBets walletAddress={walletAddress} />
           </div>

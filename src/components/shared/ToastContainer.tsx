@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Toast from './Toast';
 
 interface ToastData {
@@ -15,7 +15,7 @@ interface ToastContainerProps {
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemoveToast }) => {
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2">
+    <div className="fixed bottom-4 right-4 z-[10000] space-y-2">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}

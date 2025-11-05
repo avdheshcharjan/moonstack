@@ -60,7 +60,7 @@ const FAQ: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="max-w-3xl mx-auto space-y-4 pt-4">
       <div className="text-center mb-8">
         <div className="text-6xl mb-4">❓</div>
         <h1 className="text-3xl font-bold text-white mb-2">Frequently Asked Questions</h1>
@@ -79,9 +79,8 @@ const FAQ: React.FC = () => {
             >
               <span className="text-white font-semibold pr-4">{item.question}</span>
               <svg
-                className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform ${
-                  openIndex === index ? 'rotate-180' : ''
-                }`}
+                className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform ${openIndex === index ? 'rotate-180' : ''
+                  }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

@@ -4,6 +4,7 @@ import { MarketData } from '@/src/types/orders';
 import { BinaryPair } from '@/src/types/prediction';
 import { copyToClipboard, generateShareUrl } from '@/src/utils/shareUtils';
 import React, { useState } from 'react';
+import ToastContainer, { useToastManager } from '../shared/ToastContainer';
 import BearishBullishSpectrum from './BearishBullishSpectrum';
 
 interface PredictionCardProps {
@@ -33,12 +34,14 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
   const currentPrice = marketData[pair.underlying] ?? 0;
   const threshold = pair.threshold;
   const isAboveThreshold = currentPrice > threshold;
+  const { addToast, toasts, removeToast } = useToastManager();
 
   const handleShare = async (): Promise<void> => {
     const shareUrl = generateShareUrl(pair);
     const success = await copyToClipboard(shareUrl);
 
     if (success) {
+      addToast("Link copied to clipboard!", "success");
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 2000);
     }
@@ -265,6 +268,7 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 });
