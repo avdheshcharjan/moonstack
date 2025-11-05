@@ -82,7 +82,7 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
 
     try {
       const cartItem = await buildBuyOptionForCart(pair, action, betSize, walletAddress as Address);
-      addItem(cartItem);
+      addItem(cartItem, pair.id);
       addToast(
         `Added ${action === 'yes' ? 'UP' : 'DOWN'} bet on ${pair.underlying} to cart!`,
         'success'

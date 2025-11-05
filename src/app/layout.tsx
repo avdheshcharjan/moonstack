@@ -1,8 +1,9 @@
+import { CartProvider } from '@/src/contexts/CartContext';
+import { WalletProvider } from '@/src/contexts/WalletContext';
+import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
+import type { Metadata } from 'next';
 import React from 'react';
 import './globals.css';
-import type { Metadata } from 'next';
-import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
-import { CartProvider } from '@/src/contexts/CartContext';
 
 export const metadata: Metadata = {
   other: {
@@ -28,9 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <BaseAccountProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          <WalletProvider>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </WalletProvider>
         </BaseAccountProvider>
       </body>
     </html>

@@ -1,0 +1,208 @@
+{
+    "request": {
+        "transaction": {
+            "nonce": "0xc",
+            "sender": "0x000a1c7d2fd96985f467f3f7d0e6f7d2ae11d658",
+            "initCode": "0x",
+            "callData": "0x34fcd5be000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000d58b814c7ce700f251722b5555e25ae0fa8169a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000304a4761ec1000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000001000000000000000000000000f1711ba7e74435032aa103ef20a4cbece40b6df50000000000000000000000000000000000000000000000000000000069063df1000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000000000000000000000000000000000000000000100000000000000000000000071041dddad3595f9ced3dccfbe3d1f4b0a16bb700000000000000000000000002db5afa04aee616157beb53b96612947b3d13ee30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012a05f20000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000069070f800000000000000000000000000000000000000000000000000000000060c658b0000000000000000000000000000000000000000000000000000000000000784b0000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000059a3c9ca000000000000000000000000000000000000000000000000000000005a38ccc30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041db997558036479025cf5bd5f0da9e9a874c1eef3135edebca5fad7456cbc24e55940d34c71c7d30bb254d965029f93f242f44da69e3e90a43aeca1363b193c931c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e15b0a8c44ecad456533d0110ead2ce0",
+            "maxPriorityFeePerGas": "0x16e360",
+            "maxFeePerGas": "0xe5a84e",
+            "paymasterAndData": "0x2faeb0760d4230ef2ac21496bb4f0b47d634fd4c000069063e23000000000000cd3078e7552441e4a81a7139f1f352460001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000069788a10b9fcc5110524098ce618acb93770d51e0583da03cff96ca99146aee648c44e35c46907db0e635235019fec6b0c912f70c5103073d4a3515331e109c44ea91c",
+            "preVerificationGas": "0x1ecf6",
+            "verificationGasLimit": "0x1ffb6",
+            "callGasLimit": "0x99bb8",
+            "additionalParameters": {
+                "baseFeePerGas": "0xbe5ab8"
+            }
+        },
+        "dappURL": "http://localhost:3000"
+    },
+    "result": {
+        "notices": [
+            {
+                "level": "INFO",
+                "i18nKey": "",
+                "localizedMessage": "",
+                "sourceCoordinate": "SOURCE_COORDINATE_UNKNOWN",
+                "sourceCoordinateIndex": 0,
+                "noticeType": "NOTICE_TYPE_6"
+            }
+        ],
+        "decodedTx": {
+            "blockchain": "BLOCKCHAIN_BASE",
+            "operations": [
+                {
+                    "operationType": "BALANCE_TRANSFER",
+                    "balanceTransfer": {
+                        "fromAddress": "0xf1711BA7E74435032AA103Ef20a4cBeCE40B6df5",
+                        "toAddress": "0xd58b814C7Ce700f251722b5555e25aE0fa8169A1",
+                        "amount": {
+                            "currency": {
+                                "currencyType": "TOKEN",
+                                "symbol": "USDC",
+                                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                "decimals": 6,
+                                "attributes": [],
+                                "name": "USDC",
+                                "images": [
+                                    {
+                                        "url": "https://d3r81g40ycuhqg.cloudfront.net/wallet/wais/44/2b/442b80bd16af0c0d9b22e03a16753823fe826e5bfd457292b55fa0ba8c1ba213-ZWUzYjJmZGUtMDYxNy00NDcyLTg0NjQtMWI4OGEwYjBiODE2",
+                                        "size": "256x256"
+                                    }
+                                ]
+                            },
+                            "value": "769875",
+                            "attributes": []
+                        },
+                        "currentBalance": {
+                            "currency": {
+                                "currencyType": "TOKEN",
+                                "symbol": "USDC",
+                                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                "decimals": 6,
+                                "attributes": [],
+                                "name": "USDC",
+                                "images": [
+                                    {
+                                        "url": "https://d3r81g40ycuhqg.cloudfront.net/wallet/wais/44/2b/442b80bd16af0c0d9b22e03a16753823fe826e5bfd457292b55fa0ba8c1ba213-ZWUzYjJmZGUtMDYxNy00NDcyLTg0NjQtMWI4OGEwYjBiODE2",
+                                        "size": "256x256"
+                                    }
+                                ]
+                            },
+                            "value": "9035767",
+                            "attributes": []
+                        },
+                        "amountRange": null
+                    },
+                    "validity": null,
+                    "attributes": []
+                },
+                {
+                    "operationType": "BALANCE_TRANSFER",
+                    "balanceTransfer": {
+                        "fromAddress": "0xd58b814C7Ce700f251722b5555e25aE0fa8169A1",
+                        "toAddress": "0xDef031B9f1a9DbD40B1b17546C531cfCC4D4244c",
+                        "amount": {
+                            "currency": {
+                                "currencyType": "TOKEN",
+                                "symbol": "USDC",
+                                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                "decimals": 6,
+                                "attributes": [],
+                                "name": "USDC",
+                                "images": [
+                                    {
+                                        "url": "https://d3r81g40ycuhqg.cloudfront.net/wallet/wais/44/2b/442b80bd16af0c0d9b22e03a16753823fe826e5bfd457292b55fa0ba8c1ba213-ZWUzYjJmZGUtMDYxNy00NDcyLTg0NjQtMWI4OGEwYjBiODE2",
+                                        "size": "256x256"
+                                    }
+                                ]
+                            },
+                            "value": "769875",
+                            "attributes": []
+                        },
+                        "currentBalance": {
+                            "currency": {
+                                "currencyType": "TOKEN",
+                                "symbol": "USDC",
+                                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                "decimals": 6,
+                                "attributes": [],
+                                "name": "USDC",
+                                "images": [
+                                    {
+                                        "url": "https://d3r81g40ycuhqg.cloudfront.net/wallet/wais/44/2b/442b80bd16af0c0d9b22e03a16753823fe826e5bfd457292b55fa0ba8c1ba213-ZWUzYjJmZGUtMDYxNy00NDcyLTg0NjQtMWI4OGEwYjBiODE2",
+                                        "size": "256x256"
+                                    }
+                                ]
+                            },
+                            "value": "9035767",
+                            "attributes": []
+                        },
+                        "amountRange": null
+                    },
+                    "validity": null,
+                    "attributes": []
+                },
+                {
+                    "operationType": "BALANCE_TRANSFER",
+                    "balanceTransfer": {
+                        "fromAddress": "0x000A1c7D2fD96985f467f3f7D0e6f7D2AE11D658",
+                        "toAddress": "0xd58b814C7Ce700f251722b5555e25aE0fa8169A1",
+                        "amount": {
+                            "currency": {
+                                "currencyType": "TOKEN",
+                                "symbol": "USDC",
+                                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                "decimals": 6,
+                                "attributes": [],
+                                "name": "USDC",
+                                "images": [
+                                    {
+                                        "url": "https://d3r81g40ycuhqg.cloudfront.net/wallet/wais/44/2b/442b80bd16af0c0d9b22e03a16753823fe826e5bfd457292b55fa0ba8c1ba213-ZWUzYjJmZGUtMDYxNy00NDcyLTg0NjQtMWI4OGEwYjBiODE2",
+                                        "size": "256x256"
+                                    }
+                                ]
+                            },
+                            "value": "499991",
+                            "attributes": []
+                        },
+                        "currentBalance": {
+                            "currency": {
+                                "currencyType": "TOKEN",
+                                "symbol": "USDC",
+                                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                "decimals": 6,
+                                "attributes": [],
+                                "name": "USDC",
+                                "images": [
+                                    {
+                                        "url": "https://d3r81g40ycuhqg.cloudfront.net/wallet/wais/44/2b/442b80bd16af0c0d9b22e03a16753823fe826e5bfd457292b55fa0ba8c1ba213-ZWUzYjJmZGUtMDYxNy00NDcyLTg0NjQtMWI4OGEwYjBiODE2",
+                                        "size": "256x256"
+                                    }
+                                ]
+                            },
+                            "value": "9035767",
+                            "attributes": []
+                        },
+                        "amountRange": null
+                    },
+                    "validity": null,
+                    "attributes": []
+                }
+            ],
+            "addresses": [
+                {
+                    "address": "0xf1711BA7E74435032AA103Ef20a4cBeCE40B6df5",
+                    "attributes": []
+                },
+                {
+                    "address": "0xDef031B9f1a9DbD40B1b17546C531cfCC4D4244c",
+                    "attributes": []
+                }
+            ],
+            "contracts": [
+                {
+                    "address": "0xd58b814C7Ce700f251722b5555e25aE0fa8169A1",
+                    "proxyTo": null,
+                    "deployedInBlock": "0",
+                    "code": "",
+                    "attributes": []
+                },
+                {
+                    "address": "0x000A1c7D2fD96985f467f3f7D0e6f7D2AE11D658",
+                    "proxyTo": null,
+                    "deployedInBlock": "0",
+                    "code": "",
+                    "attributes": []
+                }
+            ],
+            "hints": [],
+            "raw": "eyJub25jZSI6IjB4YyIsInNlbmRlciI6IjB4MDAwYTFjN2QyZmQ5Njk4NWY0NjdmM2Y3ZDBlNmY3ZDJhZTExZDY1OCIsImluaXRDb2RlIjoiMHgiLCJjYWxsRGF0YSI6IjB4MzRmY2Q1YmUwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDBkNThiODE0YzdjZTcwMGYyNTE3MjJiNTU1NWUyNWFlMGZhODE2OWExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzA0YTQ3NjFlYzEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDYwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDI4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDBmMTcxMWJhN2U3NDQzNTAzMmFhMTAzZWYyMGE0Y2JlY2U0MGI2ZGY1MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA2OTA2M2RmMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDgzMzU4OWZjZDZlZGI2ZTA4ZjRjN2MzMmQ0ZjcxYjU0YmRhMDI5MTMwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNzEwNDFkZGRhZDM1OTVmOWNlZDNkY2NmYmUzZDFmNGIwYTE2YmI3MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDJkYjVhZmEwNGFlZTYxNjE1N2JlYjUzYjk2NjEyOTQ3YjNkMTNlZTMwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEyYTA1ZjIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxYTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDY5MDcwZjgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA2MGM2NThiMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDc4NGIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDU5YTNjOWNhMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA1YTM4Y2NjMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNDFkYjk5NzU1ODAzNjQ3OTAyNWNmNWJkNWYwZGE5ZTlhODc0YzFlZWYzMTM1ZWRlYmNhNWZhZDc0NTZjYmMyNGU1NTk0MGQzNGM3MWM3ZDMwYmIyNTRkOTY1MDI5ZjkzZjI0MmY0NGRhNjllM2U5MGE0M2FlY2ExMzYzYjE5M2M5MzFjMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMGUxNWIwYThjNDRlY2FkNDU2NTMzZDAxMTBlYWQyY2UwIiwibWF4UHJpb3JpdHlGZWVQZXJHYXMiOiIweDE2ZTM2MCIsIm1heEZlZVBlckdhcyI6IjB4ZTVhODRlIiwicGF5bWFzdGVyQW5kRGF0YSI6IjB4MmZhZWIwNzYwZDQyMzBlZjJhYzIxNDk2YmI0ZjBiNDdkNjM0ZmQ0YzAwMDA2OTA2M2UyMzAwMDAwMDAwMDAwMGNkMzA3OGU3NTUyNDQxZTRhODFhNzEzOWYxZjM1MjQ2MDAwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA2OTc4OGExMGI5ZmNjNTExMDUyNDA5OGNlNjE4YWNiOTM3NzBkNTFlMDU4M2RhMDNjZmY5NmNhOTkxNDZhZWU2NDhjNDRlMzVjNDY5MDdkYjBlNjM1MjM1MDE5ZmVjNmIwYzkxMmY3MGM1MTAzMDczZDRhMzUxNTMzMWUxMDljNDRlYTkxYyIsInByZVZlcmlmaWNhdGlvbkdhcyI6IjB4MWVjZjYiLCJ2ZXJpZmljYXRpb25HYXNMaW1pdCI6IjB4MWZmYjYiLCJjYWxsR2FzTGltaXQiOiIweDk5YmI4IiwiYWRkaXRpb25hbFBhcmFtZXRlcnMiOnsiYmFzZUZlZVBlckdhcyI6IjB4YmU1YWI4In19",
+            "from": "0x000A1c7D2fD96985f467f3f7D0e6f7D2AE11D658",
+            "overriddenBlockheight": "",
+            "domain": "http://localhost:3000",
+            "entrypoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+            "attributes": []
+        }
+    }
+}

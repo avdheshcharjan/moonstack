@@ -96,6 +96,8 @@ export interface CartItem {
   /** Unique identifier for this cart item */
   id: string;
 
+  pairId: string;
+
   /** Transaction payload ready for batch execution */
   payload: TransactionPayload;
 
@@ -181,7 +183,7 @@ export interface CartState {
  */
 export interface CartActions {
   /** Add a new item to the cart */
-  addItem: (item: Omit<CartItem, 'id' | 'addedAt'>) => void;
+  addItem: (item: Omit<CartItem, 'id' | 'addedAt'>, pairId: string) => void;
 
   /** Remove an item from the cart by ID */
   removeItem: (itemId: string) => void;
@@ -191,6 +193,9 @@ export interface CartActions {
 
   /** Execute all cart items in a single batch transaction */
   executeBatch: (userAddress: Address) => Promise<BatchExecutionResult>;
+
+  /** Update cart items with fresh order data from newly fetched pairs */
+  updateCartWithFreshOrders: (freshPairs: any[]) => void;
 
   /** Update execution status */
   setExecutionStatus: (status: CartState['executionStatus']) => void;

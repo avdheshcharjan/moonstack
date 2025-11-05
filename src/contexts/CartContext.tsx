@@ -32,12 +32,194 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 import { Address, Hex } from 'viem';
+import { useWallet } from '../hooks/useWallet';
 import { getUnderlyingAsset } from '../utils/binaryPairing';
+
+/**
+ * LocalStorage key prefix for cart data
+ */
+const CART_STORAGE_PREFIX = 'optionbook_cart_';
+
+/**
+ * Serializable cart item for localStorage
+ * BigInt values are converted to strings for JSON serialization
+ */
+interface SerializableCartItem {
+  id: string;
+  pairId: string;
+  addedAt: number;
+  metadata: {
+    marketName: string;
+    optionType: 'CALL' | 'PUT';
+    action: 'yes' | 'no';
+    strikePrice: string;
+    expiry: string; // BigInt converted to string
+    expiryFormatted: string;
+    usdcAmount: string; // BigInt converted to string
+    usdcAmountFormatted: string;
+    numContracts: string; // BigInt converted to string
+    pricePerContract: string;
+  };
+  payload: {
+    to: Address;
+    data: Hex;
+    value: Hex;
+    signature: Hex;
+    referrer: Address;
+    orderParams: {
+      maker: Address;
+      orderExpiryTimestamp: string; // BigInt converted to string
+      collateral: Address;
+      isCall: boolean;
+      priceFeed: Address;
+      implementation: Address;
+      isLong: boolean;
+      maxCollateralUsable: string; // BigInt converted to string
+      strikes: string[]; // BigInt[] converted to string[]
+      expiry: string; // BigInt converted to string
+      price: string; // BigInt converted to string
+      numContracts: string; // BigInt converted to string
+      extraOptionData: Hex;
+    };
+  };
+}
+
+/**
+ * Converts a CartItem to a serializable format for localStorage
+ */
+function serializeCartItem(item: CartItem): SerializableCartItem {
+  return {
+    id: item.id,
+    pairId: item.pairId,
+    addedAt: item.addedAt,
+    metadata: {
+      ...item.metadata,
+      expiry: item.metadata.expiry.toString(),
+      usdcAmount: item.metadata.usdcAmount.toString(),
+      numContracts: item.metadata.numContracts.toString(),
+    },
+    payload: {
+      to: item.payload.to,
+      data: item.payload.data,
+      value: item.payload.value,
+      signature: item.payload.signature,
+      referrer: item.payload.referrer,
+      orderParams: {
+        maker: item.payload.orderParams.maker,
+        orderExpiryTimestamp: item.payload.orderParams.orderExpiryTimestamp.toString(),
+        collateral: item.payload.orderParams.collateral,
+        isCall: item.payload.orderParams.isCall,
+        priceFeed: item.payload.orderParams.priceFeed,
+        implementation: item.payload.orderParams.implementation,
+        isLong: item.payload.orderParams.isLong,
+        maxCollateralUsable: item.payload.orderParams.maxCollateralUsable.toString(),
+        strikes: item.payload.orderParams.strikes.map(s => s.toString()),
+        expiry: item.payload.orderParams.expiry.toString(),
+        price: item.payload.orderParams.price.toString(),
+        numContracts: item.payload.orderParams.numContracts.toString(),
+        extraOptionData: item.payload.orderParams.extraOptionData,
+      },
+    },
+  };
+}
+
+/**
+ * Converts a serializable cart item back to CartItem format
+ */
+function deserializeCartItem(serialized: SerializableCartItem): CartItem {
+  return {
+    id: serialized.id,
+    pairId: serialized.pairId,
+    addedAt: serialized.addedAt,
+    metadata: {
+      ...serialized.metadata,
+      expiry: BigInt(serialized.metadata.expiry),
+      usdcAmount: BigInt(serialized.metadata.usdcAmount),
+      numContracts: BigInt(serialized.metadata.numContracts),
+    },
+    payload: {
+      to: serialized.payload.to,
+      data: serialized.payload.data,
+      value: serialized.payload.value,
+      signature: serialized.payload.signature,
+      referrer: serialized.payload.referrer,
+      orderParams: {
+        maker: serialized.payload.orderParams.maker,
+        orderExpiryTimestamp: BigInt(serialized.payload.orderParams.orderExpiryTimestamp),
+        collateral: serialized.payload.orderParams.collateral,
+        isCall: serialized.payload.orderParams.isCall,
+        priceFeed: serialized.payload.orderParams.priceFeed,
+        implementation: serialized.payload.orderParams.implementation,
+        isLong: serialized.payload.orderParams.isLong,
+        maxCollateralUsable: BigInt(serialized.payload.orderParams.maxCollateralUsable),
+        strikes: serialized.payload.orderParams.strikes.map(s => BigInt(s)),
+        expiry: BigInt(serialized.payload.orderParams.expiry),
+        price: BigInt(serialized.payload.orderParams.price),
+        numContracts: BigInt(serialized.payload.orderParams.numContracts),
+        extraOptionData: serialized.payload.orderParams.extraOptionData,
+      },
+    },
+  };
+}
+
+/**
+ * Saves cart items to localStorage for a specific wallet
+ */
+function saveCartToLocalStorage(walletAddress: string | null, items: CartItem[]): void {
+  if (!walletAddress || typeof window === 'undefined') return;
+
+  try {
+    const key = `${CART_STORAGE_PREFIX}${walletAddress.toLowerCase()}`;
+    const serializedItems = items.map(serializeCartItem);
+    localStorage.setItem(key, JSON.stringify(serializedItems));
+    console.log(`💾 Cart saved to localStorage for ${walletAddress}`);
+  } catch (error) {
+    console.error('Failed to save cart to localStorage:', error);
+  }
+}
+
+/**
+ * Loads cart items from localStorage for a specific wallet
+ */
+function loadCartFromLocalStorage(walletAddress: string | null): CartItem[] {
+  if (!walletAddress || typeof window === 'undefined') return [];
+
+  try {
+    const key = `${CART_STORAGE_PREFIX}${walletAddress.toLowerCase()}`;
+    const stored = localStorage.getItem(key);
+
+    if (!stored) return [];
+
+    const serializedItems: SerializableCartItem[] = JSON.parse(stored);
+    const items = serializedItems.map(deserializeCartItem);
+    console.log(`📦 Cart loaded from localStorage for ${walletAddress}: ${items.length} items`);
+    return items;
+  } catch (error) {
+    console.error('Failed to load cart from localStorage:', error);
+    return [];
+  }
+}
+
+/**
+ * Clears cart data from localStorage for a specific wallet
+ */
+function clearCartFromLocalStorage(walletAddress: string | null): void {
+  if (!walletAddress || typeof window === 'undefined') return;
+
+  try {
+    const key = `${CART_STORAGE_PREFIX}${walletAddress.toLowerCase()}`;
+    localStorage.removeItem(key);
+    console.log(`🗑️ Cart cleared from localStorage for ${walletAddress}`);
+  } catch (error) {
+    console.error('Failed to clear cart from localStorage:', error);
+  }
+}
 
 /**
  * Stores positions for all items in a batch transaction
@@ -147,11 +329,31 @@ interface CartProviderProps {
  * ```
  */
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
+  const { walletAddress } = useWallet();
+
   // State
   const [items, setItems] = useState<CartItem[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStatus, setExecutionStatus] = useState<CartState['executionStatus']>();
   const [error, setError] = useState<string>();
+
+  // Load cart from localStorage when wallet address changes
+  useEffect(() => {
+    console.log("Wallet address changed in CartContext:", walletAddress);
+    if (walletAddress) {
+      const loadedItems = loadCartFromLocalStorage(walletAddress);
+      setItems(loadedItems);
+    } else {
+      setItems([]);
+    }
+  }, [walletAddress]);
+
+  // Save cart to localStorage whenever items change
+  useEffect(() => {
+    if (walletAddress) {
+      saveCartToLocalStorage(walletAddress, items);
+    }
+  }, [items, walletAddress]);
 
   // Computed values
   const totalUsdcRequired = useMemo(
@@ -163,15 +365,17 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
    * Adds a new item to the cart
    * Generates a unique ID and timestamp for the item
    */
-  const addItem = useCallback((item: Omit<CartItem, 'id' | 'addedAt'>) => {
+  const addItem = useCallback((item: Omit<CartItem, 'id' | 'addedAt'>, pairId: string) => {
+    console.log('Wallet address ' + walletAddress);
     const newItem: CartItem = {
       ...item,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       addedAt: Date.now(),
+      pairId,
     };
 
-    setItems((prev) => [...prev, newItem]);
-    console.log('✅ Added item to cart:', newItem.metadata.marketName);
+    setItems(prev => [...prev, newItem]);
+    console.log('✅ Added item to cart:', newItem);
   }, []);
 
   /**
@@ -194,8 +398,103 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     setItems([]);
     setError(undefined);
     setExecutionStatus(undefined);
+    clearCartFromLocalStorage(walletAddress);
     console.log('🧹 Cart cleared');
-  }, []);
+  }, [walletAddress]);
+
+  /**
+   * Updates cart items with fresh order data from newly fetched pairs
+   * Matches items by pairId and updates order parameters while preserving user's bet size
+   * 
+   * @param freshPairs - Array of BinaryPair objects with fresh order data
+   */
+  const updateCartWithFreshOrders = useCallback((freshPairs: any[]) => {
+    if (items.length === 0) return;
+
+    console.log(`🔄 Updating ${items.length} cart items with fresh order data...`);
+
+    const updatedItems = items.map(item => {
+      // Find matching pair by pairId
+      const matchingPair = freshPairs.find(pair => pair.id === item.pairId);
+
+      if (!matchingPair) {
+        console.warn(`⚠️ No matching pair found for cart item ${item.pairId}`);
+        return item;
+      }
+
+      try {
+        // Get fresh order data based on action (yes = call, no = put)
+        const freshOrder = item.metadata.action === 'yes'
+          ? matchingPair.callOption
+          : matchingPair.putOption;
+
+        if (!freshOrder?.order) {
+          console.warn(`⚠️ No fresh order data available for ${item.pairId}`);
+          return item;
+        }
+
+        // Preserve user's bet size but use fresh order parameters
+        const betSize = Number(item.metadata.usdcAmountFormatted);
+        const pricePerContract = Number(freshOrder.order.price) / 1e8;
+        const contractsToBuy = betSize / pricePerContract;
+        const numContracts = BigInt(Math.floor(contractsToBuy * 1e6));
+        const requiredAmount = BigInt(Math.floor(betSize * 1_000_000));
+
+        // Update order parameters with fresh data
+        const updatedOrderParams = {
+          maker: freshOrder.order.maker as Address,
+          orderExpiryTimestamp: BigInt(freshOrder.order.orderExpiryTimestamp),
+          collateral: freshOrder.order.collateral as Address,
+          isCall: freshOrder.order.isCall,
+          priceFeed: freshOrder.order.priceFeed as Address,
+          implementation: freshOrder.order.implementation as Address,
+          isLong: freshOrder.order.isLong,
+          maxCollateralUsable: BigInt(freshOrder.order.maxCollateralUsable),
+          strikes: freshOrder.order.strikes.map((s: string) => BigInt(s)),
+          expiry: BigInt(freshOrder.order.expiry),
+          price: BigInt(freshOrder.order.price),
+          numContracts: numContracts,
+          extraOptionData: (freshOrder.order.extraOptionData || '0x') as Hex,
+        };
+
+        // Rebuild the transaction data with fresh signature
+        const { encodeFunctionData } = require('viem');
+        const { OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS } = require('../utils/contracts');
+
+        const fillOrderData = encodeFunctionData({
+          abi: OPTION_BOOK_ABI,
+          functionName: 'fillOrder',
+          args: [
+            updatedOrderParams,
+            freshOrder.signature as Hex,
+            REFERRER_ADDRESS as Address,
+          ],
+        });
+
+        // Return updated item
+        return {
+          ...item,
+          payload: {
+            ...item.payload,
+            data: fillOrderData,
+            signature: freshOrder.signature as Hex,
+            orderParams: updatedOrderParams,
+          },
+          metadata: {
+            ...item.metadata,
+            numContracts,
+            pricePerContract: pricePerContract.toFixed(4),
+          },
+        };
+      } catch (error) {
+        console.error(`Error updating cart item ${item.pairId}:`, error);
+        return item;
+      }
+    });
+
+    setItems(updatedItems);
+    console.log('✅ Cart items updated with fresh order data');
+  }, [items]);
 
   /**
    * Executes all cart items in a single batch transaction
@@ -286,6 +585,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       removeItem,
       clearCart,
       executeBatch,
+      updateCartWithFreshOrders,
       setExecutionStatus,
       setError,
     }),
@@ -299,6 +599,9 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       removeItem,
       clearCart,
       executeBatch,
+      updateCartWithFreshOrders,
+      setExecutionStatus,
+      setError,
     ]
   );
 

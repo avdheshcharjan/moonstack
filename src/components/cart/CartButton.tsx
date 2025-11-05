@@ -7,7 +7,6 @@
 
 'use client';
 
-import React from 'react';
 import { useCartItemCount } from '@/src/contexts/CartContext';
 
 interface CartButtonProps {
@@ -25,13 +24,13 @@ export function CartButton({ onClick, className = '' }: CartButtonProps): JSX.El
   return (
     <button
       onClick={onClick}
-      className={`fixed bottom-24 right-4 z-50 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-all duration-200 hover:scale-110 active:scale-95 ${className}`}
+      className={`fixed top-2 right-3 z-[100] bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700 transition-all duration-200 hover:scale-110 active:scale-95 ${className}`}
       aria-label={`Open cart with ${itemCount} items`}
     >
       <div className="relative">
         {/* Cart Icon */}
         <svg
-          className="w-6 h-6"
+          className="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -47,7 +46,7 @@ export function CartButton({ onClick, className = '' }: CartButtonProps): JSX.El
 
         {/* Badge */}
         {itemCount > 0 && (
-          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          <div className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
             {itemCount > 9 ? '9+' : itemCount}
           </div>
         )}
