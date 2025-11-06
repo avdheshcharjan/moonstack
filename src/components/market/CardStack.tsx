@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React, { useCallback, useEffect, useState } from 'react';
 import PredictionCard from './PredictionCard';
 import SwipeableCard from './SwipeableCard';
-import SwipeInstructionsModal from './SwipeInstructionsModal';
 
 interface CardStackProps {
   pairs: BinaryPair[];
@@ -44,11 +43,6 @@ const CardStack: React.FC<CardStackProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [preloadedIndices, setPreloadedIndices] = useState<Set<number>>(new Set([0, 1, 2]));
   const currentPairIdRef = React.useRef<string | null>(null);
-  const [showInstructionsModal, setShowInstructionsModal] = useState(true);
-
-  const handleCloseInstructions = useCallback(() => {
-    setShowInstructionsModal(false);
-  }, []);
 
   const currentPair = pairs[currentIndex];
 
@@ -195,10 +189,6 @@ const CardStack: React.FC<CardStackProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto px-2 py-2">
       <div className="relative flex justify-center items-center" style={{ height: 'calc(100vh - 180px)' }}>
-        <SwipeInstructionsModal
-          isOpen={showInstructionsModal}
-          onClose={handleCloseInstructions}
-        />
         <AnimatePresence mode="wait">
           {hasMoreCards && currentPair && (
             <motion.div
