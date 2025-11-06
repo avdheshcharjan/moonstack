@@ -241,6 +241,10 @@ export async function executeDirectFillOrder(
     // Store position in database with bet details
     await storePosition(pair, action, order, txHash, userAddress, betSize, numContracts);
 
+    // Ensure user has a referral code (generates on first trade if not exists)
+    // Referral tracking and points will be processed by cron job
+    await ensureUserReferralCode(userAddress);
+
     return {
       success: true,
       txHash,
@@ -499,7 +503,23 @@ async function executeTransactionWithPaymaster(
 }
 
 /**
- * Store position in Supabase database with bet details
+ * Ensure user has a referral code generated (called on first trade)
+ */
+async function ensureUserReferralCode(walletAddress: Address): Promise<void> {
+  try {
+    await fetch('/api/referrals/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet_address: walletAddress }),
+    });
+  } catch (error) {
+    console.error('Error ensuring referral code:', error);
+    // Don't throw - non-critical operation
+  }
+}
+
+/**
+ * Store position in database
  */
 async function storePosition(
   pair: BinaryPair,

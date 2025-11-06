@@ -5,6 +5,7 @@ import TopBar from '@/src/components/layout/TopBar';
 import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
 import Leaderboard from '@/src/components/leaderboard/Leaderboard';
+import ReferralDashboard from '@/src/components/referrals/ReferralDashboard';
 import { OnboardingModal } from '@/src/components/onboarding';
 import { useWallet } from '@/src/hooks/useWallet';
 import { useOnboarding } from '@/src/hooks/useOnboarding';
@@ -33,7 +34,7 @@ const Moonstack = () => {
   }, [walletAddress]);
 
   // Page navigation
-  const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'moonai' | 'leaders' | 'faq'>('play');
+  const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'referrals' | 'leaders' | 'faq'>('play');
 
   // Handle hydration and MiniApp SDK ready
   useEffect(() => {
@@ -95,14 +96,26 @@ const Moonstack = () => {
           </div>
         )}
 
-        {/* Moon AI View */}
-        {currentView === 'moonai' && (
-          <div className="flex items-center justify-center min-h-[600px]">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚀</div>
-              <div className="text-2xl font-bold text-white mb-2">Moon AI</div>
-              <div className="text-slate-400">Coming soon...</div>
-            </div>
+        {/* Referrals View */}
+        {currentView === 'referrals' && (
+          <div className="max-w-2xl mx-auto">
+            {walletAddress ? (
+              <ReferralDashboard walletAddress={walletAddress} />
+            ) : (
+              <div className="flex items-center justify-center min-h-[600px]">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-12 text-center max-w-md">
+                  <div className="text-6xl mb-4">🔗</div>
+                  <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
+                  <div className="text-slate-400 mb-6">Connect to view your referral dashboard</div>
+                  <SignInWithBaseButton
+                    align="center"
+                    variant="solid"
+                    colorScheme="dark"
+                    onClick={connectWallet}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -1,11 +1,16 @@
 import { LeaderboardEntry } from '@/src/utils/supabase';
 import React, { useEffect, useState } from 'react';
+import SeasonTracker from './SeasonTracker';
+import WeeklyLeaderboard from './WeeklyLeaderboard';
 
 interface LeaderboardProps {
   currentWallet?: string | null;
 }
 
+type ViewMode = 'classic' | 'points';
+
 const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('points');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,40 +92,42 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
       {/* Header */}
       <div className="flex items-center justify-between pt-4 px-2">
         <h2 className="text-3xl font-bold text-white">🏆 Leaderboard</h2>
+        
+        {/* View Toggle */}
+        <div className="flex gap-2 bg-slate-800/50 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('points')}
+            className={`px-4 py-2 rounded-md font-semibold text-xs transition-all ${
+              viewMode === 'points'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Points
+          </button>
+          <button
+            onClick={() => setViewMode('classic')}
+            className={`px-4 py-2 rounded-md font-semibold text-xs transition-all ${
+              viewMode === 'classic'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Classic
+          </button>
+        </div>
 
-        {/* Sort Options */}
-        {/* <div className="flex items-center gap-2 bg-slate-800/50 rounded-full p-1">
-          <button
-            onClick={() => setSortBy('total_pnl')}
-            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${sortBy === 'total_pnl'
-              ? 'bg-slate-700 text-white'
-              : 'text-slate-400 hover:text-white'
-              }`}
-          >
-            Total PnL
-          </button>
-          <button
-            onClick={() => setSortBy('win_rate')}
-            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${sortBy === 'win_rate'
-              ? 'bg-slate-700 text-white'
-              : 'text-slate-400 hover:text-white'
-              }`}
-          >
-            Win Rate
-          </button>
-          <button
-            onClick={() => setSortBy('roi_percentage')}
-            className={`px-4 py-2 rounded-full font-semibold text-xs transition-all ${sortBy === 'roi_percentage'
-              ? 'bg-slate-700 text-white'
-              : 'text-slate-400 hover:text-white'
-              }`}
-          >
-            ROI %
-          </button>
-        </div> */}
       </div>
 
-      {/* Leaderboard Table */}
+      {/* Season Tracker */}
+      {viewMode === 'points' && <SeasonTracker />}
+
+      {/* Points-Based Leaderboard */}
+      {viewMode === 'points' ? (
+        <WeeklyLeaderboard currentUserWallet={currentWallet || undefined} />
+      ) : (
+        <>
+      {/* Classic Leaderboard Table */}
       <div className="bg-slate-800/30 rounded-2xl border border-slate-700 overflow-hidden px-2">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -239,6 +246,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
