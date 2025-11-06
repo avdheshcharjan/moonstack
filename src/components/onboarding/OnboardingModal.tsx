@@ -807,7 +807,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
               {/* Close button */}
               <button
                 onClick={handleClose}
-                className="absolute -top-12 right-0 text-slate-400 hover:text-white transition-colors z-10"
+                className="absolute -top-12 right-0 text-slate-400 hover:text-white transition-colors z-[102]"
                 aria-label="Close"
               >
                 <svg

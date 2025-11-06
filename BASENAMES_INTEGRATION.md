@@ -85,11 +85,26 @@ All components use `chain={base}` to ensure basename resolution happens on Base 
 
 ## Usage Patterns
 
-### Pattern 1: Full Identity with Avatar
+### When to Use `chain={base}` Prop
+
+**✅ USE `chain={base}` for standalone Identity components:**
+- Leaderboard entries
+- User profile cards
+- Custom address displays
+- Any Identity component NOT inside a Wallet component
+
+**❌ DON'T USE `chain={base}` inside Wallet component:**
+- ConnectWallet children (Avatar, Name)
+- WalletDropdown Identity
+- Any component that's a child of `<Wallet>`
+
+These automatically inherit the chain from `OnchainKitProvider` configured in `Providers.tsx`.
+
+### Pattern 1: Full Identity with Avatar (Standalone)
 ```tsx
 <Identity address={walletAddress} chain={base}>
-  <Avatar className="w-8 h-8" chain={base} />
-  <Name chain={base}>
+  <Avatar className="w-8 h-8" />
+  <Name>
     <Address />
   </Name>
 </Identity>
@@ -98,29 +113,31 @@ All components use `chain={base}` to ensure basename resolution happens on Base 
 ### Pattern 2: Compact Display (No Avatar)
 ```tsx
 <Identity address={walletAddress} chain={base}>
-  <Name chain={base}>
+  <Name>
     <Address className="font-mono" />
   </Name>
 </Identity>
 ```
 
-### Pattern 3: Wallet Connection
+### Pattern 3: Wallet Connection (NO chain prop needed)
 ```tsx
 <Wallet>
   <ConnectWallet>
-    <Avatar chain={base} />
-    <Name chain={base} />
+    <Avatar />  {/* Inherits chain from OnchainKitProvider */}
+    <Name />    {/* Inherits chain from OnchainKitProvider */}
   </ConnectWallet>
   <WalletDropdown>
-    <Identity chain={base} hasCopyAddressOnClick>
-      <Avatar chain={base} />
-      <Name chain={base} />
+    <Identity hasCopyAddressOnClick>  {/* NO chain prop here */}
+      <Avatar />
+      <Name />
       <Address />
     </Identity>
     <WalletDropdownDisconnect />
   </WalletDropdown>
 </Wallet>
 ```
+
+**Important:** Do NOT use `chain={base}` inside Wallet components - they inherit the chain from `OnchainKitProvider` automatically!
 
 ## Benefits
 
