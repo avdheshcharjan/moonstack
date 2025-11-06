@@ -1,13 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { DbUserPosition } from '@/src/utils/supabase';
 import { getBaseScanTxUrl, formatTxHash } from '@/src/utils/basescan';
+
+// Position type matching the transformed format from API
+interface Position {
+  id: string;
+  wallet_address: string;
+  timestamp: number;
+  tx_hash: string;
+  status: string;
+  strategy_type: string;
+  underlying: string;
+  is_call: boolean;
+  strikes: number[];
+  strike_width: number;
+  expiry: string;
+  price_per_contract: number;
+  max_size: number;
+  collateral_used: number;
+  num_contracts: number;
+  decision: string;
+  question: string | null;
+  threshold: number | null;
+  bet_size: number;
+  entry_price: number | null;
+  current_price: number | null;
+  pnl: number;
+  pnl_percentage: number;
+  is_settled: boolean;
+  settlement_price: number | null;
+  settlement_timestamp: number | null;
+}
 
 interface MyBetsProps {
   walletAddress: string | null;
 }
 
 const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
-  const [positions, setPositions] = useState<DbUserPosition[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,8 +171,8 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
     );
   }
 
-  const ongoingPositions = positions.filter(p => timeRemaining[p.id] !== 'Expired');
-  const completedPositions = positions.filter(p => timeRemaining[p.id] === 'Expired');
+  const ongoingPositions = positions.filter(p => p.status === 'open' || !p.is_settled);
+  const completedPositions = positions.filter(p => p.status === 'settled' || p.is_settled);
   const displayPositions = activeTab === 'ongoing' ? ongoingPositions : completedPositions;
 
   return (

@@ -70,3 +70,61 @@ export interface Toast {
   txHash?: string;
   type: 'success' | 'error' | 'info';
 }
+
+// Odette API Position Types
+export interface OdetteSettlement {
+  settlementPrice: string; // 8 decimals
+  payoutBuyer: string; // 6 decimals for USDC
+  collateralReturnedSeller: string | null;
+}
+
+export interface OdettePosition {
+  address: string; // Option contract address
+  status: 'open' | 'settled' | 'closed';
+  buyer: string;
+  seller: string;
+  referrer: string; // Referrer address - use this to filter
+  createdBy: string; // OptionBook contract address
+
+  // Entry details
+  entryTimestamp: number;
+  entryTxHash: string;
+  entryPremium: string; // Premium paid (6 decimals for USDC)
+  entryFeePaid: string; // Fee paid (6 decimals)
+
+  // Option details
+  collateralToken: string;
+  collateralSymbol: string;
+  collateralDecimals: number;
+  underlyingAsset: string; // 'BTC', 'ETH', 'SOL', etc.
+  priceFeed: string;
+  strikes: string[]; // 8 decimals
+  expiryTimestamp: number;
+  numContracts: string; // 6 decimals (USDC)
+  collateralAmount: string; // 6 decimals
+  optionType: number;
+  optionTypeRaw: number;
+
+  // Settlement (only if settled)
+  settlement?: OdetteSettlement | null;
+  explicitClose?: any;
+}
+
+// Open positions API response
+export interface OpenPositionsResponse {
+  count: number;
+  positions: OdettePosition[];
+}
+
+// Leaderboard entry type
+export interface LeaderboardEntry {
+  wallet_address: string;
+  total_bets: number;
+  settled_bets: number;
+  winning_bets: number;
+  losing_bets: number;
+  win_rate: number;
+  total_pnl: number;
+  roi_percentage: number;
+  total_volume: number;
+}

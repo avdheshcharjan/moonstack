@@ -26,7 +26,6 @@ import {
   OPTION_BOOK_ADDRESS,
   USDC_ADDRESS,
 } from '@/src/utils/contracts';
-import { BrowserProvider, ethers } from 'ethers';
 import { Address, Hex, createPublicClient, encodeFunctionData, http } from 'viem';
 import { base } from 'viem/chains';
 import { calculateTotalUsdcRequired } from './BuyOptionBuilder';
@@ -524,21 +523,25 @@ export async function validateBatchReadiness(
     throw new Error('Cart is empty');
   }
 
-  // Check USDC balance
-  // const publicClient = createPublicClient({
-  //   chain: base,
-  //   transport: http(),
-  // });
-  const baseProvider = baseAccountSDK.getProvider();
+  // Check USDC balance using viem public client
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+  if (!rpcUrl) {
+    throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
+  }
 
-  // Create ethers provider for transaction execution
-  const provider = new BrowserProvider(baseProvider);
-  const signer = await provider.getSigner();
+  const publicClient = createPublicClient({
+    chain: base,
+    transport: http(rpcUrl),
+  });
 
-  const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
   const totalUsdcRequired = calculateTotalUsdcRequired(cartItems);
 
-  const balance = await usdcContract.balanceOf(userAddress);
+  const balance = await publicClient.readContract({
+    address: USDC_ADDRESS as Address,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [userAddress],
+  }) as bigint;
 
   if (balance < totalUsdcRequired) {
     const balanceFormatted = (Number(balance) / 1_000_000).toFixed(2);

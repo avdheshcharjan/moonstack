@@ -2,7 +2,6 @@ import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
 import type { RawOrderData } from '@/src/types/orders';
 import type { BinaryPair } from '@/src/types/prediction';
 import { ERC20_ABI, OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
-import { BrowserProvider, Contract } from 'ethers';
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
 
@@ -75,17 +74,27 @@ export async function executeDirectFillOrder(
       throw new Error('Wrong order type selected. NO bets should use PUT options.');
     }
 
-    // Use Base Account SDK provider
-    const baseProvider = baseAccountSDK.getProvider();
+    // Step 1: Create viem public client for read operations
+    const { createPublicClient, http } = await import('viem');
+    const { base } = await import('viem/chains');
 
-    // Create ethers provider for transaction execution
-    const provider = new BrowserProvider(baseProvider);
-    const signer = await provider.getSigner();
+    const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
+    if (!rpcUrl) {
+      throw new Error('NEXT_PUBLIC_BASE_RPC_URL not configured in environment variables');
+    }
 
-    const usdcContract = new Contract(USDC_ADDRESS, ERC20_ABI, signer);
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(rpcUrl),
+    });
 
-    // Step 1: Check USDC balance
-    const balance = await usdcContract.balanceOf(userAddress);
+    // Check USDC balance using viem
+    const balance = await publicClient.readContract({
+      address: USDC_ADDRESS as Address,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [userAddress],
+    }) as bigint;
 
     // Step 2: Calculate number of contracts based on bet size and price
     // Per OptionBook.md section 2.4:
@@ -133,7 +142,12 @@ export async function executeDirectFillOrder(
     }
 
     // Step 3: Check USDC allowance and approve if needed (separate transaction)
-    const currentAllowance = await usdcContract.allowance(userAddress, OPTION_BOOK_ADDRESS);
+    const currentAllowance = await publicClient.readContract({
+      address: USDC_ADDRESS as Address,
+      abi: ERC20_ABI,
+      functionName: 'allowance',
+      args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+    }) as bigint;
 
     if (currentAllowance < requiredAmount) {
       console.log('Approving USDC for OptionBook...');

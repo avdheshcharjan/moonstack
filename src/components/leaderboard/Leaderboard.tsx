@@ -1,4 +1,4 @@
-import { LeaderboardEntry } from '@/src/utils/supabase';
+import { LeaderboardEntry } from '@/src/types/orders';
 import React, { useEffect, useState } from 'react';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { base } from 'viem/chains';
