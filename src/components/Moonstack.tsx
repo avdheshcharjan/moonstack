@@ -22,6 +22,7 @@ import {
   Name,
   Identity,
 } from '@coinbase/onchainkit/identity';
+import { base } from 'viem/chains';
 
 const Moonstack = () => {
   const [mounted, setMounted] = useState(false);
@@ -87,13 +88,13 @@ const Moonstack = () => {
                   <div className="flex justify-center">
                     <Wallet>
                       <ConnectWallet className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
-                        <Avatar className="h-6 w-6" />
-                        <Name />
+                        <Avatar className="h-6 w-6" chain={base} />
+                        <Name chain={base} />
                       </ConnectWallet>
                       <WalletDropdown>
-                        <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                          <Avatar />
-                          <Name />
+                        <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick chain={base}>
+                          <Avatar chain={base} />
+                          <Name chain={base} />
                           <Address />
                         </Identity>
                         <WalletDropdownDisconnect />

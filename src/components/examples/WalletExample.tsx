@@ -9,6 +9,7 @@ import {
   Name, 
   Address 
 } from '@coinbase/onchainkit/identity';
+import { base } from 'viem/chains';
 
 /**
  * Example component demonstrating OnchainKit wallet integration
@@ -65,9 +66,14 @@ export function WalletExample() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Address:</span>
-              <span className="text-white font-mono text-sm">
-                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-              </span>
+              <Identity
+                address={walletAddress as `0x${string}`}
+                chain={base}
+              >
+                <Name className="text-white font-mono text-sm">
+                  <Address className="text-white font-mono text-sm" />
+                </Name>
+              </Identity>
             </div>
             
             <div className="flex items-center justify-between">
@@ -87,9 +93,10 @@ export function WalletExample() {
         {/* OnchainKit Identity Component Example */}
         {address && (
           <div className="border-t border-slate-700 pt-4">
-            <h3 className="text-lg font-semibold text-white mb-2">Identity Display</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Identity Display with Basename</h3>
             <Identity 
               address={address} 
+              chain={base}
               className="bg-slate-700 rounded-lg p-4"
               hasCopyAddressOnClick
             >

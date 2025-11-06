@@ -1,5 +1,7 @@
 import { LeaderboardEntry } from '@/src/utils/supabase';
 import React, { useEffect, useState } from 'react';
+import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
+import { base } from 'viem/chains';
 
 interface LeaderboardProps {
   currentWallet?: string | null;
@@ -41,10 +43,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
 
     return () => clearInterval(interval);
   }, [sortBy]);
-
-  const formatWallet = (address: string): string => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   const getRankEmoji = (rank: number): string => {
     if (rank === 1) return '🥇';
@@ -166,9 +164,15 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <div className="font-mono text-white">
-                          {formatWallet(entry.wallet_address)}
-                        </div>
+                        <Identity
+                          address={entry.wallet_address as `0x${string}`}
+                          chain={base}
+                        >
+                          <Avatar className="w-8 h-8" />
+                          <Name className="text-white font-medium">
+                            <Address className="font-mono text-white" />
+                          </Name>
+                        </Identity>
                         {isCurrentUser && (
                           <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs font-semibold rounded">
                             YOU

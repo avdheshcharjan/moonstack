@@ -13,6 +13,7 @@ import {
   Name,
   Identity,
 } from '@coinbase/onchainkit/identity';
+import { base } from 'viem/chains';
 
 interface TopBarProps {
   walletAddress?: string | null;
@@ -39,13 +40,13 @@ const TopBar: React.FC<TopBarProps> = () => {
           <div className="flex items-center">
             <Wallet>
               <ConnectWallet>
-                <Avatar className="h-6 w-6" />
-                <Name />
+                <Avatar className="h-6 w-6" chain={base} />
+                <Name chain={base} />
               </ConnectWallet>
               <WalletDropdown>
-                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                  <Avatar />
-                  <Name />
+                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick chain={base}>
+                  <Avatar chain={base} />
+                  <Name chain={base} />
                   <Address />
                 </Identity>
                 <WalletDropdownDisconnect />
