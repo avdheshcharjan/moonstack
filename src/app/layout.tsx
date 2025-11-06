@@ -1,9 +1,9 @@
+import './globals.css';
 import { CartProvider } from '@/src/contexts/CartContext';
 import { WalletProvider } from '@/src/contexts/WalletContext';
-import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
+import { Providers } from '@/src/providers/Providers';
 import type { Metadata } from 'next';
 import React from 'react';
-import './globals.css';
 
 export const metadata: Metadata = {
   other: {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
       version: '1',
       imageUrl: `${process.env.NEXT_PUBLIC_URL}/logo_embedded.png`,
       button: {
-        title: 'Launch Moonstack',
+        title: 'Swipe Now',
         action: {
           type: 'launch_miniapp',
           name: 'Moonstack',
@@ -28,13 +28,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <BaseAccountProvider>
+        <Providers>
           <WalletProvider>
             <CartProvider>
               {children}
             </CartProvider>
           </WalletProvider>
-        </BaseAccountProvider>
+        </Providers>
       </body>
     </html>
   );
