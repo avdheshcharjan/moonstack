@@ -23,12 +23,19 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
 
       try {
         const response = await fetch(`/api/leaderboard?orderBy=${sortBy}&limit=100`);
+        const data = await response.json();
 
         if (!response.ok) {
-          throw new Error('Failed to fetch leaderboard');
+          // Use the detailed error message from the API if available
+          if (data.code === 'LEADERBOARD_NOT_SETUP') {
+            setError(data.details || 'Classic leaderboard not set up. Please run the database migration.');
+          } else {
+            setError(data.details || data.error || 'Failed to fetch leaderboard');
+          }
+          setEntries([]);
+          return;
         }
 
-        const data = await response.json();
         setEntries(data.data || []);
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -68,11 +75,31 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentWallet }) => {
   }
 
   if (error) {
+    // Check if it's a setup error
+    const isSetupError = error.includes('not set up') || error.includes('does not exist') || error.includes('LEADERBOARD_NOT_SETUP');
+    
     return (
       <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-12 text-center">
-        <div className="text-6xl mb-4">⚠️</div>
-        <div className="text-2xl font-bold text-white mb-2">Error Loading Leaderboard</div>
-        <div className="text-slate-400">{error}</div>
+        <div className="text-6xl mb-4">{isSetupError ? '🛠️' : '⚠️'}</div>
+        <div className="text-2xl font-bold text-white mb-2">
+          {isSetupError ? 'Leaderboard Setup Required' : 'Error Loading Leaderboard'}
+        </div>
+        <div className="text-slate-400 mb-4">{error}</div>
+        
+        {isSetupError && (
+          <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg text-left">
+            <p className="text-blue-300 text-sm font-semibold mb-2">Setup Instructions:</p>
+            <ol className="text-blue-200 text-sm space-y-1 list-decimal list-inside">
+              <li>Go to your Supabase project dashboard</li>
+              <li>Navigate to the SQL Editor</li>
+              <li>Run: <code className="bg-blue-950 px-2 py-1 rounded">supabase/migrations/complete_setup.sql</code></li>
+              <li>Refresh this page</li>
+            </ol>
+            <p className="text-blue-400 text-xs mt-3">
+              💡 Tip: You can also verify your schema setup at <code className="bg-blue-950 px-2 py-1 rounded">/api/admin/verify-schema</code>
+            </p>
+          </div>
+        )}
       </div>
     );
   }

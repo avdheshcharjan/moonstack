@@ -32,13 +32,28 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Supabase query error:', error);
+      
+      // Provide helpful error message if view doesn't exist
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json(
+          { 
+            error: 'Classic leaderboard not set up', 
+            details: 'The classic leaderboard view has not been created yet. Please run the complete_setup.sql migration in Supabase.',
+            code: 'LEADERBOARD_NOT_SETUP',
+            setupInstructions: 'Run: supabase/migrations/complete_setup.sql'
+          },
+          { status: 503 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to fetch leaderboard', details: error.message },
+        { error: 'Failed to fetch leaderboard', details: error.message, code: error.code },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    // Return empty array if no data (instead of error)
+    return NextResponse.json({ success: true, data: data || [] });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching leaderboard:', errorMessage);

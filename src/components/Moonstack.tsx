@@ -6,10 +6,10 @@ import SwipeView from '@/src/components/market/SwipeView';
 import BetSettings from '@/src/components/settings/BetSettings';
 import Leaderboard from '@/src/components/leaderboard/Leaderboard';
 import ReferralDashboard from '@/src/components/referrals/ReferralDashboard';
+import SignInModal from '@/src/components/auth/SignInModal';
 import { OnboardingModal } from '@/src/components/onboarding';
 import { useWallet } from '@/src/hooks/useWallet';
 import { useOnboarding } from '@/src/hooks/useOnboarding';
-import { SignInWithBaseButton } from '@base-org/account-ui/react';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect, useState } from 'react';
 
@@ -28,10 +28,113 @@ const Moonstack = () => {
   } = useOnboarding();
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
+  // Referral/invite code state
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+
   // Debug: Log wallet state changes
   useEffect(() => {
     console.log('🔍 Moonstack wallet state:', { walletAddress });
   }, [walletAddress]);
+
+  // Check URL for referral code on mount
+  useEffect(() => {
+    if (typeof window === 'undefined' || !mounted) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get('ref');
+
+    if (refCode) {
+      console.log('🔗 Found referral code in URL:', refCode);
+      setInviteCode(refCode);
+      localStorage.setItem('pendingReferralCode', refCode);
+      
+      // Clean URL (remove ref param) 
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      // Check localStorage for pending code
+      const pendingCode = localStorage.getItem('pendingReferralCode');
+      if (pendingCode) {
+        console.log('💾 Found pending referral code in storage:', pendingCode);
+        setInviteCode(pendingCode);
+      }
+    }
+  }, [mounted]);
+
+  // Auto-generate referral code and apply invite code when wallet connects
+  useEffect(() => {
+    if (walletAddress && mounted) {
+      console.log('💫 Wallet connected, ensuring referral code exists...');
+      
+      // 1. Ensure user has their own referral code
+      fetch('/api/referrals/ensure-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: walletAddress }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.code) {
+            console.log(`✅ Referral code ${data.isNew ? 'generated' : 'verified'}: ${data.code}`);
+          } else {
+            console.error('❌ Failed to ensure referral code:', data.error);
+          }
+        })
+        .catch(err => {
+          console.error('❌ Error ensuring referral code:', err);
+        });
+
+      // 2. Apply invite code if present
+      const pendingCode = localStorage.getItem('pendingReferralCode') || inviteCode;
+      
+      if (pendingCode) {
+        console.log('🎁 Applying invite code:', pendingCode);
+        
+        fetch('/api/referrals/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: pendingCode,
+            referee_wallet: walletAddress
+          })
+        })
+          .then(res => {
+            console.log('📊 Validation API response status:', res.status);
+            return res.json();
+          })
+          .then(data => {
+            console.log('📊 Validation API response data:', data);
+            
+            if (data.valid) {
+              console.log('✅ Invite code applied successfully!');
+              console.log('✅ Referral saved to database:', {
+                code: pendingCode,
+                referee: walletAddress,
+                referrer: data.referrer_wallet
+              });
+              // Show success toast (you can add toast notification here)
+              localStorage.removeItem('pendingReferralCode');
+              setInviteCode(null);
+            } else {
+              console.error('❌ Validation failed:', {
+                error: data.error,
+                details: data.details,
+                code: data.code
+              });
+              // Show error toast but continue (code is optional)
+              localStorage.removeItem('pendingReferralCode');
+              setInviteCode(null);
+            }
+          })
+          .catch(err => {
+            console.error('❌ Error applying invite code:', err);
+            // Clear even on error
+            localStorage.removeItem('pendingReferralCode');
+            setInviteCode(null);
+          });
+      }
+    }
+  }, [walletAddress, mounted, inviteCode]);
 
   // Page navigation
   const [currentView, setCurrentView] = useState<'play' | 'mybets' | 'referrals' | 'leaders' | 'faq'>('play');
@@ -68,20 +171,11 @@ const Moonstack = () => {
         {currentView === 'play' && (
           <>
             {!walletAddress ? (
-              <div className="flex items-center justify-center min-h-[600px]">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-12 text-center max-w-md">
-                  <div className="text-6xl mb-4">🔐</div>
-                  <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
-                  <div className="text-slate-400 mb-6">Sign in with Base Account for instant smart wallet access</div>
-
-                  <SignInWithBaseButton
-                    align="center"
-                    variant="solid"
-                    colorScheme="dark"
-                    onClick={connectWallet}
-                  />
-                </div>
-              </div>
+              <SignInModal
+                onConnect={connectWallet}
+                initialInviteCode={inviteCode}
+                onInviteCodeChange={setInviteCode}
+              />
             ) : (
               <SwipeView walletAddress={walletAddress} />
             )}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ReferralStats, RefereeInfo } from '@/src/types/referrals';
 import ShareReferralModal from '../shared/ShareReferralModal';
+import { ensureReferralCode } from '@/src/services/referralService';
 
 interface ReferralDashboardProps {
   walletAddress: string;
@@ -14,14 +15,73 @@ export default function ReferralDashboard({ walletAddress }: ReferralDashboardPr
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [generatingCode, setGeneratingCode] = useState(false);
 
   useEffect(() => {
-    fetchReferralStats();
+    initializeReferralCode();
   }, [walletAddress]);
+
+  // Auto-generate referral code if user doesn't have one
+  const initializeReferralCode = async () => {
+    try {
+      setLoading(true);
+      setGeneratingCode(true);
+      
+      // Check for pending referral code in localStorage
+      if (typeof window !== 'undefined') {
+        const pendingCode = localStorage.getItem('pendingReferralCode');
+        if (pendingCode) {
+          console.log('🔗 Found pending referral code:', pendingCode);
+          // Apply it if user hasn't used a code yet
+          const response = await fetch('/api/referrals/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: pendingCode,
+              referee_wallet: walletAddress,
+            }),
+          });
+          
+          if (response.ok) {
+            console.log('✅ Applied pending referral code');
+            localStorage.removeItem('pendingReferralCode');
+          } else {
+            const errorData = await response.json();
+            console.log('ℹ️ Could not apply pending code:', errorData.error || 'Unknown error');
+            localStorage.removeItem('pendingReferralCode');
+          }
+        }
+      }
+      
+      // Ensure user has a referral code via API endpoint
+      console.log('📞 Calling ensure-code endpoint...');
+      const codeResponse = await fetch('/api/referrals/ensure-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: walletAddress }),
+      });
+      
+      const codeData = await codeResponse.json();
+      
+      if (codeResponse.ok && codeData.code) {
+        console.log(`✅ Referral code ${codeData.isNew ? 'generated' : 'verified'}: ${codeData.code}`);
+      } else {
+        console.error('❌ Failed to ensure referral code:', codeData.error);
+      }
+      
+      setGeneratingCode(false);
+      
+      // Fetch full referral stats
+      await fetchReferralStats();
+    } catch (error) {
+      console.error('Error initializing referral code:', error);
+      setGeneratingCode(false);
+      setLoading(false);
+    }
+  };
 
   const fetchReferralStats = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`/api/referrals/stats?wallet=${walletAddress}`);
       const data = await response.json();
 
@@ -89,7 +149,14 @@ export default function ReferralDashboard({ walletAddress }: ReferralDashboardPr
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          {generatingCode && (
+            <p className="text-gray-400 text-sm">
+              Generating your referral code...
+            </p>
+          )}
+        </div>
       </div>
     );
   }

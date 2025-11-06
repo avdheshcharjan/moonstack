@@ -152,11 +152,12 @@ async function processPosition(
 
       result.referral_bonuses_awarded += bonusResult.bonus_points;
 
-      // Update referral record
+      // Update referral record - accumulate referee's points that generated bonuses
+      // Note: total_points_generated tracks the referee's points that resulted in bonuses
       await supabase
         .from('referrals')
         .update({
-          total_points_generated: referralData.total_trades_count + bonusResult.bonus_points,
+          total_points_generated: (Number(referralData.total_points_generated) || 0) + tradePoints,
         })
         .eq('referee_wallet', walletAddress);
     }
