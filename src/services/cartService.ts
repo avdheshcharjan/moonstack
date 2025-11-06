@@ -86,7 +86,7 @@ export async function buildBuyOptionForCart(
   }
 
   // Build the transaction payload
-  const { cartItem } = await buildBuyOptionPayload(pair, action, betSize, userAddress);
+  const { cartItem } = await buildBuyOptionPayload(pair, action, betSize, userAddress, pair.id);
 
   return cartItem;
 }
@@ -131,7 +131,7 @@ export async function buyOption(
     return { mode: 'immediate', result };
   } else {
     const cartItem = await buildBuyOptionForCart(pair, action, betSize, userAddress);
-    const { usdcRequired } = await buildBuyOptionPayload(pair, action, betSize, userAddress);
+    const { usdcRequired } = await buildBuyOptionPayload(pair, action, betSize, userAddress, pair.id);
     return { mode: 'cart', cartItem, usdcRequired };
   }
 }
