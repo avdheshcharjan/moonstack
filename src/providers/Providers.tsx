@@ -2,25 +2,28 @@
 
 import React, { ReactNode } from 'react';
 import { OnchainKitProvider } from '@coinbase/onchainkit';
-import { base } from 'viem/chains';
-import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
-import { CartProvider } from '@/src/contexts/CartContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { base } from 'wagmi/chains';
+import { WagmiProvider } from 'wagmi';
+import { wagmiConfig } from '@/src/wagmi';
 
 interface ProvidersProps {
   children: ReactNode;
 }
 
+const queryClient = new QueryClient();
+
 export function Providers({ children }: ProvidersProps): React.ReactElement {
   return (
-    <OnchainKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-      chain={base}
-    >
-      <BaseAccountProvider>
-        <CartProvider>
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <OnchainKitProvider
+          apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+          chain={base}
+        >
           {children}
-        </CartProvider>
-      </BaseAccountProvider>
-    </OnchainKitProvider>
+        </OnchainKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }

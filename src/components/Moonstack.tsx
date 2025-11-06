@@ -8,15 +8,26 @@ import { OnboardingModal } from '@/src/components/onboarding';
 import BetSettings from '@/src/components/settings/BetSettings';
 import { useOnboarding } from '@/src/hooks/useOnboarding';
 import { useWallet } from '@/src/hooks/useWallet';
-import { SignInWithBaseButton } from '@base-org/account-ui/react';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect, useState } from 'react';
+import {
+  ConnectWallet,
+  Wallet,
+  WalletDropdown,
+  WalletDropdownDisconnect,
+} from '@coinbase/onchainkit/wallet';
+import {
+  Address,
+  Avatar,
+  Name,
+  Identity,
+} from '@coinbase/onchainkit/identity';
 
 const Moonstack = () => {
   const [mounted, setMounted] = useState(false);
 
   // Wallet state - using hook
-  const { walletAddress, connectWallet } = useWallet();
+  const { walletAddress } = useWallet();
 
   // Onboarding state
   const {
@@ -73,12 +84,22 @@ const Moonstack = () => {
                   <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
                   <div className="text-slate-400 mb-6">Sign in with Base Account for instant smart wallet access</div>
 
-                  <SignInWithBaseButton
-                    align="center"
-                    variant="solid"
-                    colorScheme="dark"
-                    onClick={connectWallet}
-                  />
+                  <div className="flex justify-center">
+                    <Wallet>
+                      <ConnectWallet className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+                        <Avatar className="h-6 w-6" />
+                        <Name />
+                      </ConnectWallet>
+                      <WalletDropdown>
+                        <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                          <Avatar />
+                          <Name />
+                          <Address />
+                        </Identity>
+                        <WalletDropdownDisconnect />
+                      </WalletDropdown>
+                    </Wallet>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -119,8 +140,8 @@ const Moonstack = () => {
       {/* Bottom Navigation */}
       <BottomNav activeTab={currentView} onTabChange={(tab) => setCurrentView(tab as typeof currentView)} />
 
-      {/* Top Bar - Pass wallet address */}
-      <TopBar walletAddress={walletAddress} />
+      {/* Top Bar - Wallet connection handled by OnchainKit */}
+      <TopBar />
 
       {/* Onboarding Modal */}
       <OnboardingModal
