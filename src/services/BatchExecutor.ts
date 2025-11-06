@@ -541,6 +541,7 @@ export async function validateBatchReadiness(
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [userAddress],
+    authorizationList: undefined,
   }) as bigint;
 
   if (balance < totalUsdcRequired) {

@@ -94,6 +94,7 @@ export async function executeDirectFillOrder(
       abi: ERC20_ABI,
       functionName: 'balanceOf',
       args: [userAddress],
+      authorizationList: undefined,
     }) as bigint;
 
     // Step 2: Calculate number of contracts based on bet size and price
@@ -147,6 +148,7 @@ export async function executeDirectFillOrder(
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [userAddress, OPTION_BOOK_ADDRESS as Address],
+      authorizationList: undefined,
     }) as bigint;
 
     if (currentAllowance < requiredAmount) {
