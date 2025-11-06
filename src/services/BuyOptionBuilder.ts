@@ -49,6 +49,7 @@ export interface BuildBuyOptionResult {
  * @param action - User's choice: 'yes' for CALL, 'no' for PUT
  * @param betSize - Amount of USDC to spend (in dollars, e.g., 10.5)
  * @param userAddress - User's wallet address (not used in calldata, for validation)
+ * @param pairId - Unique identifier for the binary pair
  * @returns BuildBuyOptionResult containing cart item and required USDC
  * @throws Error if order data is invalid or calculations fail
  */
@@ -56,7 +57,8 @@ export async function buildBuyOptionPayload(
   pair: BinaryPair,
   action: 'yes' | 'no',
   betSize: number,
-  userAddress: Address
+  userAddress: Address,
+  pairId: string
 ): Promise<BuildBuyOptionResult> {
   // Step 1: Select the correct order based on action
   const order = action === 'yes' ? pair.callOption : pair.putOption;
