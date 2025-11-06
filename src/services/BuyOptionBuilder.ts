@@ -162,6 +162,7 @@ export async function buildBuyOptionPayload(
 
   // Step 9: Construct cart item (without id and addedAt, those are added by cart manager)
   const cartItem: Omit<CartItem, 'id' | 'addedAt'> = {
+    pairId: pair.id,
     payload,
     metadata,
   };
