@@ -44,7 +44,7 @@ export default function Home() {
   const progressPercentage = (stars / maxStars) * 100;
 
   return (
-    <main className="min-h-screen w-full relative overflow-hidden scan-lines">
+    <main className="min-h-screen w-full relative overflow-hidden scan-lines" style={{ fontFamily: "'Pixelify Sans', cursive" }}>
       {/* Animated Pixel Stars Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black" />

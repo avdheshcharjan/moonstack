@@ -1,3 +1,6 @@
+/* Google Fonts - MUST be at the top before any other CSS */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,8 +35,6 @@ body {
 }
 
 /* Beta Access Page Animations and Styles */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;500;600;700&display=swap');
-
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-20px); }
