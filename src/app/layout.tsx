@@ -5,6 +5,8 @@ import { BaseAccountProvider } from '@/src/providers/BaseAccountProvider';
 import { CartProvider } from '@/src/contexts/CartContext';
 
 export const metadata: Metadata = {
+  title: 'Moonstack - Options Trading on Base',
+  description: 'Trade binary options on Base with Moonstack',
   other: {
     'fc:miniapp': JSON.stringify({
       version: '1',

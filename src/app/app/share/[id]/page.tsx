@@ -110,7 +110,7 @@ export default function SharePage(): React.ReactElement {
           <div className="text-white text-2xl font-bold mb-2">Prediction Not Found</div>
           <div className="text-slate-400 text-sm mb-6">{error || 'This prediction may have expired or been removed'}</div>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/app')}
             className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
           >
             Go to Home
@@ -141,7 +141,7 @@ export default function SharePage(): React.ReactElement {
         {/* Call to Action */}
         <div className="mt-8 text-center">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/app')}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
           >
             Make Your Prediction

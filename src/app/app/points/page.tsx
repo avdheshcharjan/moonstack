@@ -7,10 +7,10 @@ import SeasonTracker from '@/src/components/leaderboard/SeasonTracker';
 import { useWallet } from '@/src/hooks/useWallet';
 
 export default function PointsPage() {
-  const { address, isConnected } = useWallet();
+  const { walletAddress } = useWallet();
   const [activeTab, setActiveTab] = useState<'overview' | 'history'>('overview');
 
-  if (!isConnected || !address) {
+  if (!walletAddress) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#000d1d] to-[#001a33] flex items-center justify-center p-4">
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 text-center max-w-md">
@@ -66,9 +66,9 @@ export default function PointsPage() {
 
         {/* Tab Content */}
         {activeTab === 'overview' ? (
-          <PointsDisplay walletAddress={address} />
+          <PointsDisplay walletAddress={walletAddress} />
         ) : (
-          <PointsHistory walletAddress={address} />
+          <PointsHistory walletAddress={walletAddress} />
         )}
       </div>
     </div>

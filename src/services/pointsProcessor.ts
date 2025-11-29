@@ -104,7 +104,7 @@ async function processPosition(
   // Step 3: Check if user has a referrer
   const { data: referralData } = await supabase
     .from('referrals')
-    .select('referrer_wallet, is_active, total_trades_count')
+    .select('referrer_wallet, is_active, total_trades_count, total_points_generated')
     .eq('referee_wallet', walletAddress)
     .single();
 
@@ -154,10 +154,13 @@ async function processPosition(
 
       // Update referral record - accumulate referee's points that generated bonuses
       // Note: total_points_generated tracks the referee's points that resulted in bonuses
+      const currentTotal = referralData.total_points_generated 
+        ? Number(referralData.total_points_generated) 
+        : 0;
       await supabase
         .from('referrals')
         .update({
-          total_points_generated: (Number(referralData.total_points_generated) || 0) + tradePoints,
+          total_points_generated: currentTotal + tradePoints,
         })
         .eq('referee_wallet', walletAddress);
     }

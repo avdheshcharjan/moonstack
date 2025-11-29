@@ -27,7 +27,7 @@ const TopBar: React.FC<TopBarProps> = ({ walletAddress }) => {
 
           {/* Points Badge */}
           {walletAddress && (
-            <Link href="/points">
+            <Link href="/app/points">
               <PointsDisplay walletAddress={walletAddress} compact={true} />
             </Link>
           )}

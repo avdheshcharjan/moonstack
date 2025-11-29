@@ -141,7 +141,7 @@ export default function Home() {
       <header className="relative z-10 pt-8 pb-4">
         <div className="container mx-auto px-4">
           <h1 className="pixel-font text-4xl md:text-5xl text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 crt-glow drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]">
-            MOONSTACK.FUN
+            STELLAR
           </h1>
 
           {/* Progress Bar */}
@@ -200,7 +200,7 @@ export default function Home() {
                   <div className="text-left">
                     <div className="font-bold text-white text-lg md:text-xl flex items-center gap-2">
                       <span className="text-2xl animate-bounce">⭐</span>
-                      <span className="drop-shadow-lg">Stars</span>
+                      <span className="drop-shadow-lg">Moon</span>
                     </div>
                   </div>
                   <div className="px-4 py-2 bg-yellow-400/30 border-2 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/30">
@@ -221,15 +221,15 @@ export default function Home() {
               <div className="space-y-2">
                 {[
                   { task: 'Share with friends', reward: 3000, icon: '🚀', delay: 0 },
-                  { task: 'Follow @moonstackdotfun', reward: 100, icon: '👤', delay: 0.1 },
+                  { task: 'Follow @stellarcosmos', reward: 100, icon: '👤', delay: 0.1 },
                   { task: 'Like the moonlight post', reward: 100, icon: '❤️', delay: 0.2 },
-                  { task: 'Comment on Moonstack post', reward: 100, icon: '💬', delay: 0.3 },
-                  { task: 'Share Moonstack post', reward: 100, icon: '🌙', delay: 0.4 },
+                  { task: 'Comment on stellar cast', reward: 100, icon: '💬', delay: 0.3 },
+                  { task: 'Share the night sky', reward: 100, icon: '🌙', delay: 0.4 },
                   { task: 'Follow on X', reward: 100, icon: '✖️', delay: 0.5 },
                   { task: 'Like this celestial post', reward: 100, icon: '⭐', delay: 0.6 },
                   { task: 'Comment under the stars', reward: 100, icon: '💫', delay: 0.7 },
                   { task: 'Repost the constellation', reward: 100, icon: '🔄', delay: 0.8 },
-                  { task: 'Refer Moonies', reward: 100, icon: '👥', delay: 0.9 },
+                  { task: 'Refer stargazers', reward: 100, icon: '👥', delay: 0.9 },
                 ].map((item, index) => (
                   <button
                     key={index}
@@ -253,7 +253,7 @@ export default function Home() {
 
               {/* Footer Note */}
               <p className="mt-6 text-center text-xs md:text-sm text-gray-400 px-2 animate-pulse">
-                Start your Moonstack journey today
+                Start your stellar journey today
               </p>
             </div>
           </div>

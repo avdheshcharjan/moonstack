@@ -5,28 +5,28 @@ import ReferralDashboard from '@/src/components/referrals/ReferralDashboard';
 import { useWallet } from '@/src/hooks/useWallet';
 
 export default function ReferralsPage() {
-  const { address, isConnected } = useWallet();
+  const { walletAddress } = useWallet();
 
   // Generate referral code when user connects
   useEffect(() => {
-    if (address) {
+    if (walletAddress) {
       generateReferralCode();
     }
-  }, [address]);
+  }, [walletAddress]);
 
   const generateReferralCode = async () => {
     try {
       await fetch('/api/referrals/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet_address: address }),
+        body: JSON.stringify({ wallet_address: walletAddress }),
       });
     } catch (error) {
       console.error('Error generating referral code:', error);
     }
   };
 
-  if (!isConnected || !address) {
+  if (!walletAddress) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#000d1d] to-[#001a33] flex items-center justify-center p-4">
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 text-center max-w-md">
@@ -53,7 +53,7 @@ export default function ReferralsPage() {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <ReferralDashboard walletAddress={address} />
+        <ReferralDashboard walletAddress={walletAddress} />
       </div>
     </div>
   );

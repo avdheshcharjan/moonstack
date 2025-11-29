@@ -201,11 +201,8 @@ const Moonstack = () => {
                   <div className="text-6xl mb-4">🔗</div>
                   <div className="text-2xl font-bold text-white mb-2">Connect Your Wallet</div>
                   <div className="text-slate-400 mb-6">Connect to view your referral dashboard</div>
-                  <SignInWithBaseButton
-                    align="center"
-                    variant="solid"
-                    colorScheme="dark"
-                    onClick={connectWallet}
+                  <SignInModal
+                    onConnect={connectWallet}
                   />
                 </div>
               </div>

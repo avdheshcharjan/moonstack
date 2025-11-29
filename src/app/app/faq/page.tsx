@@ -203,7 +203,7 @@ const FAQPage = () => {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-5xl mx-auto px-4 py-8">
           <Link
-            href="/"
+            href="/app"
             className="inline-block mb-4 text-blue-100 hover:text-white transition"
           >
             ← Back to Market
@@ -277,7 +277,7 @@ const FAQPage = () => {
               View Docs
             </a>
             <Link
-              href="/"
+              href="/app"
               className="bg-white/20 text-white px-6 py-3 rounded-lg font-bold hover:bg-white/30 transition"
             >
               Back to Trading

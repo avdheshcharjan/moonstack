@@ -11,11 +11,11 @@ export default function ReferralLandingPage() {
   // Immediately redirect to home with query parameter
   useEffect(() => {
     if (code) {
-      console.log('🔄 Redirecting /ref/' + code + ' to /?ref=' + code);
-      router.replace(`/?ref=${code}`);
+      console.log('🔄 Redirecting /app/ref/' + code + ' to /app?ref=' + code);
+      router.replace(`/app?ref=${code}`);
     } else {
       // No code, just go home
-      router.replace('/');
+      router.replace('/app');
     }
   }, [code, router]);
 
