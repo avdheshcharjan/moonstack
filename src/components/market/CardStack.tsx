@@ -23,7 +23,7 @@ const CardStack: React.FC<CardStackProps> = ({
   onAllCardsReviewed,
 }) => {
   // Always start at the card matching ?id=pairId after sign-in and after orders refresh
-  const getInitialIndex = () => {
+  const getInitialIndex = useCallback(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const sharedId = params.get('id');
@@ -33,13 +33,13 @@ const CardStack: React.FC<CardStackProps> = ({
       }
     }
     return 0;
-  };
-  const [currentIndex, setCurrentIndex] = useState(getInitialIndex);
+  }, [pairs]);
+  const [currentIndex, setCurrentIndex] = useState(() => getInitialIndex());
 
   // When pairs change (e.g. after sign-in or refresh), reset to correct index
   useEffect(() => {
     setCurrentIndex(getInitialIndex());
-  }, [pairs]);
+  }, [getInitialIndex]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [preloadedIndices, setPreloadedIndices] = useState<Set<number>>(new Set([0, 1, 2]));
   const currentPairIdRef = React.useRef<string | null>(null);

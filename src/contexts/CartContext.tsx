@@ -376,7 +376,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
     setItems(prev => [...prev, newItem]);
     console.log('✅ Added item to cart:', newItem);
-  }, []);
+  }, [walletAddress]);
 
   /**
    * Removes an item from the cart by ID
@@ -398,7 +398,9 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     setItems([]);
     setError(undefined);
     setExecutionStatus(undefined);
-    clearCartFromLocalStorage(walletAddress);
+    if (walletAddress) {
+      clearCartFromLocalStorage(walletAddress);
+    }
     console.log('🧹 Cart cleared');
   }, [walletAddress]);
 

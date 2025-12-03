@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import {
   ConnectWallet,
   Wallet,
@@ -29,10 +30,13 @@ const TopBar: React.FC<TopBarProps> = () => {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
-              <img
+              <Image
                 src="/logo.png"
                 alt="MOONSTACK"
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
+                priority
               />
             </div>
             <span className="text-white text-2xl font-black tracking-tight">Moonstack</span>

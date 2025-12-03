@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CoinGeckoChartProps {
   symbol?: string;
@@ -328,10 +328,6 @@ const CoinGeckoChart: React.FC<CoinGeckoChartProps> = ({
       </div>
     );
   }
-
-  useEffect(() => {
-    console.log(mousePos, canvasRef.current?.width);
-  }, [mousePos])
 
   if (loading) {
     return (

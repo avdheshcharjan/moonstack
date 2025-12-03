@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { getBaseScanTxUrl, formatTxHash } from '@/src/utils/basescan';
 
 // Position type matching the transformed format from API
@@ -225,9 +226,11 @@ const MyBets: React.FC<MyBetsProps> = ({ walletAddress }) => {
                 <div className="flex items-center gap-4">
                   {/* Token Icon */}
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-700 flex items-center justify-center flex-shrink-0">
-                    <img
+                    <Image
                       src={getTokenLogo(position.underlying)}
                       alt={position.underlying}
+                      width={64}
+                      height={64}
                       className="w-full h-full object-cover"
                     />
                   </div>

@@ -5,15 +5,15 @@ import styles from '../beta-home.module.css';
 
 const TASKS = [
   { task: 'Share with friends', reward: 3000, icon: '🚀', delay: 0 },
-  { task: 'Follow @stellarcosmos', reward: 100, icon: '👤', delay: 0.1 },
-  { task: 'Like the moonlight post', reward: 100, icon: '❤️', delay: 0.2 },
-  { task: 'Comment on stellar cast', reward: 100, icon: '💬', delay: 0.3 },
+  { task: 'Follow @moonstackdotfun on Base App', reward: 100, icon: '👤', delay: 0.1 },
+  { task: 'Like the Moonstack post', reward: 100, icon: '❤️', delay: 0.2 },
+  { task: 'Comment on Moonstack cast', reward: 100, icon: '💬', delay: 0.3 },
   { task: 'Share the night sky', reward: 100, icon: '🌙', delay: 0.4 },
-  { task: 'Follow on X', reward: 100, icon: '✖️', delay: 0.5 },
+  { task: 'Follow @moonstackdotfun on X', reward: 100, icon: '✖️', delay: 0.5 },
   { task: 'Like this celestial post', reward: 100, icon: '⭐', delay: 0.6 },
   { task: 'Comment under the stars', reward: 100, icon: '💫', delay: 0.7 },
   { task: 'Repost the constellation', reward: 100, icon: '🔄', delay: 0.8 },
-  { task: 'Refer stargazers', reward: 100, icon: '👥', delay: 0.9 },
+  { task: 'Refer Moonstackers', reward: 100, icon: '👥', delay: 0.9 },
 ] as const;
 
 const maxStars = 10000;
@@ -158,7 +158,7 @@ export default function BetaHome() {
       <header className="relative z-10 pt-8 pb-4">
         <div className="container mx-auto px-4">
           <h1 className="pixel-font text-4xl md:text-5xl text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 crt-glow drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]">
-            STELLAR
+            Moonstack
           </h1>
           <div className="mt-6 max-w-lg mx-auto">
             <div className="flex justify-between items-center mb-2 px-2">
@@ -192,7 +192,7 @@ export default function BetaHome() {
             <div className="relative bg-black/90 backdrop-blur-xl rounded-3xl p-6 md:p-8 border-4 border-purple-500/50 shadow-2xl shadow-purple-500/50">
               <div className="text-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 pixel-font drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                  Claim Your Stars
+                  Claim Your Moons
                 </h2>
                 <p className="text-cyan-400 text-sm font-semibold animate-pulse">Stars + beta access</p>
               </div>
@@ -205,7 +205,7 @@ export default function BetaHome() {
                 <div className="relative flex items-center justify-between">
                   <div className="text-left">
                     <div className="font-bold text-white text-lg md:text-xl flex items-center gap-2">
-                      <span className="text-2xl animate-bounce">⭐</span>
+                      <span className="text-2xl animate-bounce">🌕</span>
                       <span className="drop-shadow-lg">Moon</span>
                     </div>
                   </div>
@@ -245,7 +245,7 @@ export default function BetaHome() {
               </div>
 
               <p className="mt-6 text-center text-xs md:text-sm text-gray-400 px-2 animate-pulse">
-                Start your stellar journey today
+                Start your Moonstack journey today
               </p>
             </div>
           </div>

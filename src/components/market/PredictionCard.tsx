@@ -3,6 +3,7 @@ import RollingNumber from '@/src/components/shared/RollingNumber';
 import { MarketData } from '@/src/types/orders';
 import { BinaryPair } from '@/src/types/prediction';
 import { copyToClipboard, generateShareUrl } from '@/src/utils/shareUtils';
+import Image from 'next/image';
 import React, { useState } from 'react';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';
 import BearishBullishSpectrum from './BearishBullishSpectrum';
@@ -133,9 +134,11 @@ const PredictionCard: React.FC<PredictionCardProps> = React.memo(({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
-                  <img
+                  <Image
                     src={getTokenLogo(pair.underlying)}
                     alt={pair.underlying}
+                    width={40}
+                    height={40}
                     className="w-full h-full object-cover"
                   />
                 </div>

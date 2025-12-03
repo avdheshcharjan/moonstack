@@ -22,7 +22,7 @@ const FAQPage = () => {
       answer: (
         <>
           <ol className="list-decimal list-inside space-y-2">
-            <li>Click "Connect Wallet" or "Sign in with Base" in the top right corner</li>
+            <li>Click &ldquo;Connect Wallet&rdquo; or &ldquo;Sign in with Base&rdquo; in the top right corner</li>
             <li>Follow the prompts to create or connect your Base Account (Smart Wallet)</li>
             <li>Ensure you have USDC in your wallet for trading</li>
             <li>Browse the market and select an option to trade</li>
@@ -55,7 +55,7 @@ const FAQPage = () => {
             <li>Browse available options using the filters</li>
             <li>Click on an option card to view details</li>
             <li>Select your bet size ($1, $5, $10, or $25)</li>
-            <li>Click "Buy Option" and approve the transaction</li>
+            <li>Click &ldquo;Buy Option&rdquo; and approve the transaction</li>
             <li>The platform will first approve USDC spending, then execute the trade</li>
           </ol>
         </>
@@ -108,7 +108,7 @@ const FAQPage = () => {
     {
       category: 'Portfolio & Positions',
       question: 'How do I view my positions?',
-      answer: 'Click the "My Positions" tab at the top of the page. You\'ll see all your active positions, including how much you invested, expiry dates, and transaction hashes. You must have your wallet connected to view positions.'
+      answer: 'Click the &ldquo;My Positions&rdquo; tab at the top of the page. You\'ll see all your active positions, including how much you invested, expiry dates, and transaction hashes. You must have your wallet connected to view positions.'
     },
     {
       category: 'Portfolio & Positions',
@@ -181,7 +181,7 @@ const FAQPage = () => {
     {
       category: 'Features',
       question: 'How often is market data updated?',
-      answer: 'Market data is fetched when you load the page or click the "Refresh Orders" button. In production, it\'s recommended to refresh every 30 seconds to get the latest prices and available orders.'
+      answer: 'Market data is fetched when you load the page or click the &ldquo;Refresh Orders&rdquo; button. In production, it\'s recommended to refresh every 30 seconds to get the latest prices and available orders.'
     },
     {
       category: 'Features',
@@ -190,7 +190,7 @@ const FAQPage = () => {
     },
     {
       category: 'Features',
-      question: 'What does "Max Size" mean?',
+      question: 'What does &ldquo;Max Size&rdquo; mean?',
       answer: 'Max Size shows the maximum amount of collateral (in USDC) that can be used for that specific order. This is set by the order maker and represents the largest position you can take.'
     }
   ];
