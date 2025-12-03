@@ -1,7 +1,6 @@
-'use client';
-
-import Moonstack from '@/src/components/Moonstack';
+﻿import BetaHome from './betanft/BetaHome';
 
 export default function Home() {
-  return <Moonstack />;
+  return <BetaHome />;
 }
+
