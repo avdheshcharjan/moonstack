@@ -12,6 +12,8 @@ interface CardStackProps {
   marketData: MarketData;
   onRefresh: () => Promise<void>;
   onAllCardsReviewed?: () => void;
+  emptyTitle?: string;
+  emptySubtitle?: string;
 }
 
 const CardStack: React.FC<CardStackProps> = ({
@@ -21,6 +23,8 @@ const CardStack: React.FC<CardStackProps> = ({
   marketData,
   onRefresh,
   onAllCardsReviewed,
+  emptyTitle,
+  emptySubtitle,
 }) => {
   // Always start at the card matching ?id=pairId after sign-in and after orders refresh
   const getInitialIndex = useCallback(() => {
@@ -146,12 +150,15 @@ const CardStack: React.FC<CardStackProps> = ({
     };
   }, [handleKeyDown]);
 
+  const emptyStateTitle = emptyTitle ?? 'No predictions available';
+  const emptyStateSubtitle = emptySubtitle ?? 'Check back later for new trading opportunities';
+
   if (pairs.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[600px] px-4">
         <div className="text-center">
-          <div className="text-slate-400 text-xl mb-2">No predictions available</div>
-          <div className="text-slate-500 text-sm mb-4">Check back later for new trading opportunities</div>
+          <div className="text-slate-400 text-xl mb-2">{emptyStateTitle}</div>
+          <div className="text-slate-500 text-sm mb-4">{emptyStateSubtitle}</div>
           <button
             onClick={onRefresh}
             className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"

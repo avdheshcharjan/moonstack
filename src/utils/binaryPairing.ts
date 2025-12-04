@@ -88,6 +88,17 @@ function calculateImpliedProbability(premium: number, maxPayout: number): number
 }
 
 /**
+ * Detects if a binary option name represents an hourly contract.
+ * Matches patterns like ETH-04DEC25_11H-3200-UP.
+ */
+function isHourlyContract(name?: string | null): boolean {
+  if (!name) {
+    return false;
+  }
+  return /_[0-9]+H-/.test(name.toUpperCase());
+}
+
+/**
  * Generates a prediction question for a binary pair.
  *
  * @param asset Underlying asset ('BTC' | 'ETH' | 'SOL' | 'XRP' | 'BNB' | 'DOGE' | 'PAXG')
@@ -213,6 +224,8 @@ export function pairBinaryOptions(orders: RawOrderData[]): BinaryPair[] {
       group.decisionBoundary,
       group.expiry
     );
+    const callHourly = isHourlyContract(callOption.raw.order.name);
+    const putHourly = isHourlyContract(putOption.raw.order.name);
 
     // Create the binary pair with a stable ID
     const pair: BinaryPair = {
@@ -225,6 +238,7 @@ export function pairBinaryOptions(orders: RawOrderData[]): BinaryPair[] {
       putOption: putOption.raw,
       callParsed: callOption.parsed,
       putParsed: putOption.parsed,
+      isHourly: callHourly || putHourly,
       impliedProbability: {
         up: callProbability,
         down: putProbability

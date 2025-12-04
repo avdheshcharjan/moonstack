@@ -12,6 +12,7 @@ export interface BinaryPair {
   putOption: RawOrderData;
   callParsed: ParsedOrder;
   putParsed: ParsedOrder;
+  isHourly: boolean;
   impliedProbability: {
     up: number;
     down: number;
