@@ -21,7 +21,6 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   const { toasts, addToast, removeToast } = useToastManager();
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilterType>('all');
   const [filterKey, setFilterKey] = useState(0);
-  const [viewMode, setViewMode] = useState<'hourly' | 'all'>('hourly');
 
   const storageKey = walletAddress ? `betSize_${walletAddress}` : 'betSize_null';
   const [betSize] = useLocalStorage<number>(storageKey, 1);
@@ -33,11 +32,6 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
 
   const handleFilterChange = useCallback((newFilter: ExpiryFilterType) => {
     setExpiryFilter(newFilter);
-    setFilterKey(prev => prev + 1);
-  }, []);
-
-  const handleViewModeChange = useCallback((mode: 'hourly' | 'all') => {
-    setViewMode(mode);
     setFilterKey(prev => prev + 1);
   }, []);
 
@@ -77,18 +71,11 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
   // Count pairs by expiry category
   const expiryCounts = useMemo(() => countPairsByExpiry(allPairs), [allPairs]);
 
-  const hourlyPairs = useMemo(() => {
-    const now = Date.now();
-    return allPairs.filter(pair => pair.isHourly && pair.expiry.getTime() > now);
-  }, [allPairs]);
-
   // Filter pairs based on selected expiry filter
-  const filteredPairs = useMemo(
+  const viewPairs = useMemo(
     () => filterPairsByExpiry(allPairs, expiryFilter),
     [allPairs, expiryFilter]
   );
-
-  const viewPairs = viewMode === 'hourly' ? hourlyPairs : filteredPairs;
 
   const handleSwipe = useCallback(async (pair: BinaryPair, action: 'yes' | 'no') => {
     if (!walletAddress) {
@@ -215,40 +202,14 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
 
   return (
     <>
-      <div className="w-full max-w-4xl mx-auto px-2 mb-3">
-        <div className="flex gap-2 bg-slate-900/70 border border-slate-800 rounded-2xl p-1">
-          {([
-            { value: 'hourly', label: 'Hourly' },
-            { value: 'all', label: 'All' },
-          ] as const).map(option => {
-            const isActive = viewMode === option.value;
-            return (
-              <button
-                key={option.value}
-                onClick={() => handleViewModeChange(option.value)}
-                className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                    : 'bg-transparent text-slate-400 hover:text-white'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {viewMode === 'all' && (
-        <ExpiryFilter
-          selectedFilter={expiryFilter}
-          onFilterChange={handleFilterChange}
-          counts={expiryCounts}
-        />
-      )}
+      <ExpiryFilter
+        selectedFilter={expiryFilter}
+        onFilterChange={handleFilterChange}
+        counts={expiryCounts}
+      />
 
       <CardStack
-        key={`${viewMode}-${filterKey}`}
+        key={`${expiryFilter}-${filterKey}`}
         pairs={viewPairs}
         onSwipe={handleSwipe}
         betSize={betSize}
@@ -258,14 +219,6 @@ const SwipeView: React.FC<SwipeViewProps> = ({ walletAddress }) => {
           addToast("You're all caught up!", 'success');
           await fetchOrders();
         }}
-        emptyTitle={
-          viewMode === 'hourly' ? 'No hourly predictions available' : undefined
-        }
-        emptySubtitle={
-          viewMode === 'hourly'
-            ? 'Hourly markets will appear here as soon as new orders arrive'
-            : undefined
-        }
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

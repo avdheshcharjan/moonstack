@@ -10,6 +10,7 @@ interface ExpiryFilterProps {
 const ExpiryFilter: React.FC<ExpiryFilterProps> = ({ selectedFilter, onFilterChange, counts }) => {
   const filters: Array<{ value: ExpiryFilterType; label: string }> = [
     { value: 'all', label: 'All' },
+    { value: '1H', label: '1H' },
     { value: '1D', label: '1D' },
     { value: '2D', label: '2D' },
     { value: '3D', label: '3D' },

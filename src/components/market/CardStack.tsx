@@ -150,6 +150,17 @@ const CardStack: React.FC<CardStackProps> = ({
     };
   }, [handleKeyDown]);
 
+  // Notify parent when all cards are reviewed (side-effect to avoid setState in render)
+  useEffect(() => {
+    if (allCardsReviewed && onAllCardsReviewed) {
+      onAllCardsReviewed();
+    }
+    // If new cards become available, reset to start
+    if (allCardsReviewed && pairs.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [allCardsReviewed, onAllCardsReviewed, pairs.length]);
+
   const emptyStateTitle = emptyTitle ?? 'No predictions available';
   const emptyStateSubtitle = emptySubtitle ?? 'Check back later for new trading opportunities';
 
@@ -171,9 +182,6 @@ const CardStack: React.FC<CardStackProps> = ({
   }
 
   if (allCardsReviewed) {
-    if (onAllCardsReviewed) {
-      onAllCardsReviewed();
-    }
     // Show loader while waiting for new cards
     if (pairs.length === 0) {
       return (
@@ -188,8 +196,6 @@ const CardStack: React.FC<CardStackProps> = ({
         </div>
       );
     }
-    // If new cards are available, restart from the first card
-    setCurrentIndex(0);
     return null;
   }
 

@@ -17,32 +17,42 @@ export function categorizeExpiry(pair: BinaryPair): ExpiryFilter | null {
     return null;
   }
 
-  // 1D: expires within 24 hours
+  // Always bucket hourly products into 1H, regardless of time-to-expiry
+  if (pair.isHourly) {
+    return '1H';
+  }
+
+  // 1H: expires within 1 hour
+  if (diffHours <= 1) {
+    return '1H';
+  }
+
+  // 1D: >1h and within 24h
   if (diffHours <= 24) {
     return '1D';
   }
 
-  // 2D: expires within 48 hours (but more than 24)
+  // 2D: >24h and within 48h
   if (diffHours <= 48) {
     return '2D';
   }
 
-  // 3D: expires within 72 hours (but more than 48)
+  // 3D: >48h and within 72h
   if (diffHours <= 72) {
     return '3D';
   }
 
-  // Weekly: expires within 7 days (but more than 3)
+  // Weekly: within 7 days (but more than 3 days)
   if (diffDays <= 7) {
     return 'weekly';
   }
 
-  // Monthly: expires within 30 days (but more than 7)
+  // Monthly: within 30 days (but more than 7 days)
   if (diffDays <= 30) {
     return 'monthly';
   }
 
-  // Quarterly: expires in more than 30 days
+  // Quarterly: more than 30 days
   return 'quarterly';
 }
 
@@ -78,6 +88,7 @@ export function sortPairsByExpiry(pairs: BinaryPair[]): BinaryPair[] {
  */
 export function countPairsByExpiry(pairs: BinaryPair[]): Record<ExpiryFilter, number> {
   const counts: Record<ExpiryFilter, number> = {
+    '1H': 0,
     'all': 0,
     '1D': 0,
     '2D': 0,

@@ -251,7 +251,8 @@ export async function executeBatchTransactions(
       chainId: `0x${BASE_CHAIN_ID.toString(16)}`,
       // chainId: numberToHex(base.constants.CHAIN_IDS.base),
       calls,
-      // atomicRequired: true,
+      // Require all calls to succeed (prevents wallet from executing only the first call)
+      atomicRequired: true,
       capabilities: PAYMASTER_RPC_URL ? {
         paymasterService: {
           url: PAYMASTER_RPC_URL,
@@ -436,26 +437,28 @@ export async function estimateBatchGas(
           callOrderCount++;
         }
       } catch (estimateError) {
-        console.error(`❌ Failed to estimate gas for ${item.metadata.optionType} order:`, {
+        const errorMessage = estimateError instanceof Error ? estimateError.message : String(estimateError || 'Unknown error');
+
+        // Non-fatal: fall back to conservative gas so batch can continue.
+        console.warn(`⚠️ Gas estimate unavailable for ${item.metadata.optionType} order, using fallback.`, {
           market: item.metadata.marketName,
           optionType: item.metadata.optionType,
           action: item.metadata.action,
           usdcAmount: item.metadata.usdcAmountFormatted,
-          error: estimateError instanceof Error ? estimateError.message : String(estimateError),
+          error: errorMessage,
         });
 
-        // Check if this is an arithmetic error that will cause execution to fail
-        const errorMessage = estimateError instanceof Error ? estimateError.message : String(estimateError);
+        // If arithmetic error, surface a clear warning (still proceed with fallback)
         if (errorMessage.includes('arithmetic underflow or overflow')) {
-          console.error('⚠️  CRITICAL: Order has arithmetic underflow/overflow - transaction will likely FAIL');
-          console.error('📋 Order metadata:', {
+          console.warn('⚠️ CRITICAL: Order has arithmetic under/overflow; execution may fail.');
+          console.warn('📋 Order metadata:', {
             to: item.payload.to,
             strikePrice: item.metadata.strikePrice,
             expiry: item.metadata.expiryFormatted,
             numContracts: item.metadata.numContracts.toString(),
             pricePerContract: item.metadata.pricePerContract,
           });
-          console.error('📋 Raw order params:', {
+          console.warn('📋 Raw order params:', {
             price: item.payload.orderParams.price.toString(),
             numContracts: item.payload.orderParams.numContracts.toString(),
             strikes: item.payload.orderParams.strikes.map(s => s.toString()),

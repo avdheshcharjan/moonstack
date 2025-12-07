@@ -1,6 +1,14 @@
 import { RawOrderData, ParsedOrder } from './orders';
 
-export type ExpiryFilter = 'all' | '1D' | '2D' | '3D' | 'weekly' | 'monthly' | 'quarterly';
+export type ExpiryFilter =
+  | 'all'
+  | '1H'
+  | '1D'
+  | '2D'
+  | '3D'
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly';
 
 export interface BinaryPair {
   id: string;
