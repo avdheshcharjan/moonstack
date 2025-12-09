@@ -10,8 +10,8 @@ const PLATFORMS = [
   { name: 'X', image: '/twitter.jpeg', icon: '✖️' },
 ] as const;
 
-const ACTION_REWARD = 250;
-const MAIN_REWARD = 5000;
+const ACTION_REWARD = 100;
+const MAIN_REWARD = 6100;
 
 const maxStars = 10000;
 
@@ -199,19 +199,52 @@ export default function BetaHome() {
                 className="w-full mb-4 group relative overflow-hidden rounded-2xl border-4 border-pink-500 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 p-4 transition-all hover:scale-105 hover:border-cyan-500 active:scale-95 shadow-lg shadow-pink-500/50 hover:shadow-cyan-500/50 hover:shadow-xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-                <div className="relative flex items-center justify-between">
+                <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-left">
-                    <div className="font-bold text-white text-lg md:text-xl flex items-center gap-2">
+                    <div className="font-bold text-white text-lg sm:text-xl flex items-center gap-2 leading-tight">
                       <span className="text-2xl animate-bounce">🌕</span>
-                      <span className="drop-shadow-lg">Moon</span>
+                      <span className="drop-shadow-lg">Mint Your Moon</span>
                     </div>
-                    <p className="text-yellow-200 text-xs font-semibold mt-1">Mint NFT + Beta Access</p>
+                    <p className="text-yellow-200 text-xs sm:text-sm font-semibold mt-1 leading-snug">
+                      Mint NFT + Beta Access
+                    </p>
+                    <p className="text-yellow-100 text-[11px] sm:text-xs font-semibold mt-1 uppercase tracking-wide">
+                      Claim your spot now
+                    </p>
                   </div>
-                  <div className="px-4 py-2 bg-yellow-400/30 border-2 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/30">
-                    <span className="text-2xl font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">+{MAIN_REWARD}</span>
-                    <span className="ml-2 text-sm font-bold text-yellow-400">Moon</span>
+                  <div className="px-4 py-2 bg-yellow-400/30 border-2 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/30 w-full sm:w-auto flex items-center justify-center gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">
+                      +{MAIN_REWARD}
+                    </span>
+                    <span className="text-sm sm:text-base font-bold text-yellow-400">Moon</span>
                   </div>
                 </div>
+              </button>
+
+              <button
+                onClick={() => handleTaskClick(3100)}
+                className="w-full mb-6 group relative overflow-hidden rounded-2xl border-4 border-cyan-500 bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-700 p-4 transition-all hover:scale-105 hover:border-pink-500 active:scale-95 shadow-lg shadow-cyan-500/40 hover:shadow-pink-500/40 hover:shadow-xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+                <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-left">
+                    <div className="font-bold text-white text-lg sm:text-xl flex items-center gap-2 leading-tight">
+                      <span className="text-2xl animate-bounce">🎁</span>
+                      <span className="drop-shadow-lg">Gift Moons</span>
+                    </div>
+                    <p className="text-cyan-100 text-xs sm:text-sm font-semibold mt-1 leading-snug">
+                      Gift NFT
+                    </p>
+                    <p className="text-cyan-100 text-[11px] sm:text-xs font-semibold mt-1 uppercase tracking-wide">
+                      Refer access instantly
+                    </p>
+                  </div>
+                  <div className="px-4 py-2 bg-yellow-400/30 border-2 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/30 w-full sm:w-auto flex items-center justify-center gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">+3100</span>
+                    <span className="text-sm sm:text-base font-bold text-yellow-400">Moon</span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-3 inset-x-8 h-2 rounded-full bg-cyan-400/40 blur-xl opacity-70 group-hover:opacity-100 transition-opacity" />
               </button>
 
               <div className="mb-4">
