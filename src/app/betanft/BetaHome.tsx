@@ -3,18 +3,15 @@
 import { useEffect, useState } from 'react';
 import styles from '../beta-home.module.css';
 
-const TASKS = [
-  { task: 'Share with friends', reward: 3000, icon: '🚀', delay: 0 },
-  { task: 'Follow @moonstackdotfun on Base App', reward: 100, icon: '👤', delay: 0.1 },
-  { task: 'Like the Moonstack post', reward: 100, icon: '❤️', delay: 0.2 },
-  { task: 'Comment on Moonstack cast', reward: 100, icon: '💬', delay: 0.3 },
-  { task: 'Share the night sky', reward: 100, icon: '🌙', delay: 0.4 },
-  { task: 'Follow @moonstackdotfun on X', reward: 100, icon: '✖️', delay: 0.5 },
-  { task: 'Like this celestial post', reward: 100, icon: '⭐', delay: 0.6 },
-  { task: 'Comment under the stars', reward: 100, icon: '💫', delay: 0.7 },
-  { task: 'Repost the constellation', reward: 100, icon: '🔄', delay: 0.8 },
-  { task: 'Refer Moonstackers', reward: 100, icon: '👥', delay: 0.9 },
+const PLATFORM_ACTIONS = ['Follow', 'Like', 'Comment', 'Recast'] as const;
+
+const PLATFORMS = [
+  { name: 'Base', image: '/base.jpeg', icon: '🟦' },
+  { name: 'X', image: '/twitter.jpeg', icon: '✖️' },
 ] as const;
+
+const ACTION_REWARD = 250;
+const MAIN_REWARD = 5000;
 
 const maxStars = 10000;
 
@@ -162,7 +159,7 @@ export default function BetaHome() {
           </h1>
           <div className="mt-6 max-w-lg mx-auto">
             <div className="flex justify-between items-center mb-2 px-2">
-              <span className="text-cyan-400 text-sm font-bold pixel-font">Stars: {stars.toLocaleString()}</span>
+              <span className="text-cyan-400 text-sm font-bold pixel-font">Moons: {stars.toLocaleString()}</span>
               <span className="text-purple-400 text-sm font-bold pixel-font">Goal: {maxStars.toLocaleString()}</span>
             </div>
             <div className="relative h-8 bg-gray-900/80 rounded-lg border-4 border-purple-500/50 overflow-hidden backdrop-blur-sm">
@@ -194,11 +191,11 @@ export default function BetaHome() {
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 pixel-font drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                   Claim Your Moons
                 </h2>
-                <p className="text-cyan-400 text-sm font-semibold animate-pulse">Stars + beta access</p>
+                <p className="text-cyan-400 text-sm font-semibold animate-pulse">Limited to 10,000 Moons</p>
               </div>
 
               <button
-                onClick={() => handleTaskClick(2000)}
+                onClick={() => handleTaskClick(MAIN_REWARD)}
                 className="w-full mb-4 group relative overflow-hidden rounded-2xl border-4 border-pink-500 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 p-4 transition-all hover:scale-105 hover:border-cyan-500 active:scale-95 shadow-lg shadow-pink-500/50 hover:shadow-cyan-500/50 hover:shadow-xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
@@ -208,9 +205,10 @@ export default function BetaHome() {
                       <span className="text-2xl animate-bounce">🌕</span>
                       <span className="drop-shadow-lg">Moon</span>
                     </div>
+                    <p className="text-yellow-200 text-xs font-semibold mt-1">Mint NFT + Beta Access</p>
                   </div>
                   <div className="px-4 py-2 bg-yellow-400/30 border-2 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/30">
-                    <span className="text-2xl font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">+2000</span>
+                    <span className="text-2xl font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">+{MAIN_REWARD}</span>
                     <span className="ml-2 text-sm font-bold text-yellow-400">Moon</span>
                   </div>
                 </div>
@@ -218,34 +216,63 @@ export default function BetaHome() {
 
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-center text-purple-300 pixel-font drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">
-                  Earn More Stars
+                  Base & X Actions
                 </h3>
               </div>
 
-              <div className="space-y-2">
-                {TASKS.map((item) => (
-                  <button
-                    key={item.task}
-                    onClick={() => handleTaskClick(item.reward)}
-                    className="w-full flex items-center justify-between rounded-xl bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-2 border-gray-600 px-4 py-3 transition-all hover:border-purple-500 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/30 active:scale-98 group"
-                    style={{ animationDelay: `${item.delay}s` }}
+              <div className="space-y-6">
+                {PLATFORMS.map((platform) => (
+                  <div
+                    key={platform.name}
+                    className="rounded-2xl border-2 border-purple-500/40 bg-gray-900/70 shadow-lg shadow-purple-500/30 p-3"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-xl flex-shrink-0 group-hover:scale-125 transition-transform">{item.icon}</span>
-                      <span className="text-white text-sm md:text-base font-semibold truncate group-hover:text-cyan-300 transition-colors drop-shadow-md">
-                        {item.task}
-                      </span>
+                    <div className="relative rounded-xl border border-purple-500/30 bg-gradient-to-r from-gray-900 via-gray-850 to-gray-900 mb-3 px-4 py-3 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center bg-black/60 rounded-lg p-2 border border-purple-500/40">
+                          <img
+                            src={platform.image}
+                            alt={`${platform.name} preview`}
+                            className="h-16 w-24 object-contain rounded-md drop-shadow-lg"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-sm pixel-font drop-shadow-md">{platform.name}</p>
+                          <p className="text-cyan-300 text-xs font-semibold">+{ACTION_REWARD} Moon per action</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="px-3 py-1.5 bg-yellow-400/20 border-2 border-yellow-400/50 rounded-lg flex-shrink-0 ml-2 group-hover:bg-yellow-400/30 group-hover:border-yellow-400 transition-all">
-                      <span className="text-yellow-300 font-bold text-sm drop-shadow-[0_0_5px_rgba(255,255,0,0.5)]">+{item.reward}</span>
-                      <span className="ml-1 text-yellow-400/80 text-xs font-semibold">Moon</span>
+
+                    <div className="space-y-2">
+                      {PLATFORM_ACTIONS.map((action, idx) => (
+                        <button
+                          key={`${platform.name}-${action}`}
+                          onClick={() => handleTaskClick(ACTION_REWARD)}
+                          className="w-full flex items-center justify-between rounded-xl bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-2 border-gray-600 px-4 py-3 transition-all hover:border-purple-500 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/30 active:scale-98 group"
+                          style={{ animationDelay: `${idx * 0.1}s` }}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <img
+                              src={platform.image}
+                              alt={`${platform.name} logo`}
+                              className="w-8 h-8 rounded-lg border border-purple-500/40 object-cover flex-shrink-0"
+                            />
+                            <span className="text-white text-sm md:text-base font-semibold truncate group-hover:text-cyan-300 transition-colors drop-shadow-md">
+                              {action} on {platform.name}
+                            </span>
+                          </div>
+                          <div className="px-3 py-1.5 bg-yellow-400/20 border-2 border-yellow-400/50 rounded-lg flex-shrink-0 ml-2 group-hover:bg-yellow-400/30 group-hover:border-yellow-400 transition-all">
+                            <span className="text-yellow-300 font-bold text-sm drop-shadow-[0_0_5px_rgba(255,255,0,0.5)]">+{ACTION_REWARD}</span>
+                            <span className="ml-1 text-yellow-400/80 text-xs font-semibold">Moon</span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
 
               <p className="mt-6 text-center text-xs md:text-sm text-gray-400 px-2 animate-pulse">
-                Start your Moonstack journey today
+                Start your Moonstack journey on Base App
               </p>
             </div>
           </div>
