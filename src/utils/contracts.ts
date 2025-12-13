@@ -64,6 +64,12 @@ export const PAXG_FEED = '0x5213eBB69743b85644dbB6E25cdF994aFBb8cF31';
 export const BASE_CHAIN_ID = 8453;
 
 /**
+ * MoonNFT contract address on Base
+ * @see deployed address from Moon project
+ */
+export const MOON_NFT_ADDRESS = (process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS as `0x${string}`) || '';
+
+/**
  * EntryPoint contract address for ERC-4337 (v0.7)
  * @see https://docs.alchemy.com/docs/entrypoint-addresses
  */

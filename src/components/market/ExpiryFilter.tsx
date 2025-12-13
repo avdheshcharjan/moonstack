@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExpiryFilter as ExpiryFilterType } from '@/src/types/prediction';
+import { ExpiryFilter as ExpiryFilterType } from '@/types/prediction';
 
 interface ExpiryFilterProps {
   selectedFilter: ExpiryFilterType;

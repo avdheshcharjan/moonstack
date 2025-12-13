@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { BinaryPair } from '@/src/types/prediction';
-import { MarketData } from '@/src/types/orders';
-import PredictionCard from '@/src/components/market/PredictionCard';
-import { pairBinaryOptions } from '@/src/utils/binaryPairing';
-import { parseOrder } from '@/src/utils/optionsParser';
+import { BinaryPair } from '@/types/prediction';
+import { MarketData } from '@/types/orders';
+import PredictionCard from '@/components/market/PredictionCard';
+import { pairBinaryOptions } from '@/utils/binaryPairing';
+import { parseOrder } from '@/utils/optionsParser';
 
 export default function SharePage(): React.ReactElement {
   const params = useParams();

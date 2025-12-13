@@ -1,5 +1,5 @@
-import { MarketData } from '@/src/types/orders';
-import { BinaryPair } from '@/src/types/prediction';
+import { MarketData } from '@/types/orders';
+import { BinaryPair } from '@/types/prediction';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useCallback, useEffect, useState } from 'react';
 import PredictionCard from './PredictionCard';

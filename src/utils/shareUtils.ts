@@ -1,4 +1,4 @@
-import { BinaryPair } from '@/src/types/prediction';
+import { BinaryPair } from '@/types/prediction';
 
 /**
  * Generates a unique shareable URL for a binary pair card

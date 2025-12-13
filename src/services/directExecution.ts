@@ -1,7 +1,7 @@
-import { baseAccountSDK } from '@/src/providers/BaseAccountProvider';
-import type { RawOrderData } from '@/src/types/orders';
-import type { BinaryPair } from '@/src/types/prediction';
-import { ERC20_ABI, OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS, USDC_ADDRESS } from '@/src/utils/contracts';
+import { baseAccountSDK } from '@/providers/BaseAccountProvider';
+import type { RawOrderData } from '@/types/orders';
+import type { BinaryPair } from '@/types/prediction';
+import { ERC20_ABI, OPTION_BOOK_ABI, OPTION_BOOK_ADDRESS, REFERRER_ADDRESS, USDC_ADDRESS } from '@/utils/contracts';
 import type { Address, Hex } from 'viem';
 import { encodeFunctionData } from 'viem';
 

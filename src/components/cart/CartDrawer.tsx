@@ -11,8 +11,8 @@
 
 'use client';
 
-import { useCart, useCartTotal } from '@/src/contexts/CartContext';
-import type { CartComponentProps } from '@/src/types/cart';
+import { useCart, useCartTotal } from '@/contexts/CartContext';
+import type { CartComponentProps } from '@/types/cart';
 import { useState } from 'react';
 import { Address } from 'viem';
 import { CartItemComponent } from './CartItemComponent';

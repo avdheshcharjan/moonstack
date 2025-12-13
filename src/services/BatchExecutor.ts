@@ -14,18 +14,18 @@
  * @module BatchExecutor
  */
 
-import { baseAccountSDK, getBaseAccountSDK } from '@/src/providers/BaseAccountProvider';
+import { baseAccountSDK, getBaseAccountSDK } from '@/providers/BaseAccountProvider';
 import type {
   BatchExecutionResult,
   BatchPayload,
   CartItem,
-} from '@/src/types/cart';
+} from '@/types/cart';
 import {
   BASE_CHAIN_ID,
   ERC20_ABI,
   OPTION_BOOK_ADDRESS,
   USDC_ADDRESS,
-} from '@/src/utils/contracts';
+} from '@/utils/contracts';
 import { Address, Hex, createPublicClient, encodeFunctionData, http } from 'viem';
 import { base } from 'viem/chains';
 import { calculateTotalUsdcRequired } from './BuyOptionBuilder';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocalStorage } from '@/src/hooks/useLocalStorage';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface BetSettingsProps {
   walletAddress: string | null;

@@ -1,4 +1,4 @@
-import { BinaryPair, ExpiryFilter } from '@/src/types/prediction';
+import { BinaryPair, ExpiryFilter } from '@/types/prediction';
 
 /**
  * Categorizes a BinaryPair's expiry into a filter category

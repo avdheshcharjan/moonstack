@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OdettePosition, LeaderboardEntry, OpenPositionsResponse } from '@/src/types/orders';
-import { REFERRER_ADDRESS } from '@/src/utils/contracts';
+import { OdettePosition, LeaderboardEntry, OpenPositionsResponse } from '@/types/orders';
+import { REFERRER_ADDRESS } from '@/utils/contracts';
 
 export const dynamic = 'force-dynamic';
 

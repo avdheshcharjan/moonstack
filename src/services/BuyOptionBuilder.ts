@@ -13,13 +13,13 @@ import {
   CartItemMetadata,
   OrderParams,
   TransactionPayload,
-} from '@/src/types/cart';
-import type { BinaryPair } from '@/src/types/prediction';
+} from '@/types/cart';
+import type { BinaryPair } from '@/types/prediction';
 import {
   OPTION_BOOK_ABI,
   OPTION_BOOK_ADDRESS,
   REFERRER_ADDRESS
-} from '@/src/utils/contracts';
+} from '@/utils/contracts';
 import { Address, Hex, encodeFunctionData } from 'viem';
 
 /**

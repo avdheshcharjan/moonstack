@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useCartItemCount } from '@/src/contexts/CartContext';
+import { useCartItemCount } from '@/contexts/CartContext';
 
 interface CartButtonProps {
   onClick: () => void;

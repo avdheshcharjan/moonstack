@@ -1,8 +1,8 @@
-import CoinGeckoChart from '@/src/components/charts/CoinGeckoChart';
-import RollingNumber from '@/src/components/shared/RollingNumber';
-import { MarketData } from '@/src/types/orders';
-import { BinaryPair } from '@/src/types/prediction';
-import { copyToClipboard, generateShareUrl } from '@/src/utils/shareUtils';
+import CoinGeckoChart from '@/components/charts/CoinGeckoChart';
+import RollingNumber from '@/components/shared/RollingNumber';
+import { MarketData } from '@/types/orders';
+import { BinaryPair } from '@/types/prediction';
+import { copyToClipboard, generateShareUrl } from '@/utils/shareUtils';
 import Image from 'next/image';
 import React, { useState } from 'react';
 import ToastContainer, { useToastManager } from '../shared/ToastContainer';

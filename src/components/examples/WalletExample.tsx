@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useWallet } from '@/src/contexts/WalletContext';
-import { useOnchainKit } from '@/src/hooks/useOnchainKit';
+import { useWallet } from '@/contexts/WalletContext';
+import { useOnchainKit } from '@/hooks/useOnchainKit';
 import { 
   Identity, 
   Avatar, 

@@ -6,7 +6,7 @@
 
 'use client';
 
-import type { CartItemComponentProps } from '@/src/types/cart';
+import type { CartItemComponentProps } from '@/types/cart';
 
 export function CartItemComponent({
   item,

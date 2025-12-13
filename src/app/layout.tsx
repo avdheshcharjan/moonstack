@@ -1,7 +1,7 @@
 import './globals.css';
-import { CartProvider } from '@/src/contexts/CartContext';
-import { WalletProvider } from '@/src/contexts/WalletContext';
-import { Providers } from '@/src/providers/Providers';
+import { CartProvider } from '@/contexts/CartContext';
+import { WalletProvider } from '@/contexts/WalletContext';
+import { Providers } from '@/providers/Providers';
 import type { Metadata } from 'next';
 import React from 'react';
 

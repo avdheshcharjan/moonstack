@@ -13,8 +13,8 @@
  */
 
 import { Address } from 'viem';
-import type { BinaryPair } from '@/src/types/prediction';
-import type { CartItem } from '@/src/types/cart';
+import type { BinaryPair } from '@/types/prediction';
+import type { CartItem } from '@/types/cart';
 import { buildBuyOptionPayload, validateOrder } from './BuyOptionBuilder';
 import {
   executeDirectFillOrder,

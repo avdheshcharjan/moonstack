@@ -1,13 +1,13 @@
-import MyBets from '@/src/components/bets/MyBets';
-import FAQ from '@/src/components/faq/FAQ';
-import BottomNav from '@/src/components/layout/BottomNav';
-import TopBar from '@/src/components/layout/TopBar';
-import Leaderboard from '@/src/components/leaderboard/Leaderboard';
-import SwipeView from '@/src/components/market/SwipeView';
-import { OnboardingModal } from '@/src/components/onboarding';
-import BetSettings from '@/src/components/settings/BetSettings';
-import { useOnboarding } from '@/src/hooks/useOnboarding';
-import { useWallet } from '@/src/hooks/useWallet';
+import MyBets from '@/components/bets/MyBets';
+import FAQ from '@/components/faq/FAQ';
+import BottomNav from '@/components/layout/BottomNav';
+import TopBar from '@/components/layout/TopBar';
+import Leaderboard from '@/components/leaderboard/Leaderboard';
+import SwipeView from '@/components/market/SwipeView';
+import { OnboardingModal } from '@/components/onboarding';
+import BetSettings from '@/components/settings/BetSettings';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { useWallet } from '@/hooks/useWallet';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect, useState } from 'react';
 import {

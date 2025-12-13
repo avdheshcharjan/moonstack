@@ -20,14 +20,14 @@ import {
   executeBatchTransactions,
   validateBatchReadiness,
   type StatusUpdateCallback,
-} from '@/src/services/BatchExecutor';
-import { calculateTotalUsdcRequired } from '@/src/services/BuyOptionBuilder';
+} from '@/services/BatchExecutor';
+import { calculateTotalUsdcRequired } from '@/services/BuyOptionBuilder';
 import type {
   BatchExecutionResult,
   CartContextType,
   CartItem,
   CartState,
-} from '@/src/types/cart';
+} from '@/types/cart';
 import {
   createContext,
   useCallback,

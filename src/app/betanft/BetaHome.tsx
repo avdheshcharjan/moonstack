@@ -1,7 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from '../beta-home.module.css';
+import { useWallet } from '@/contexts/WalletContext';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther } from 'viem';
+import { MOON_NFT_ADDRESS } from '@/utils/contracts';
+import MoonNFTABI from '@/contracts/MoonNFT.json';
+import { hasUserMintedNFT } from '@/utils/nft-contract';
+import { useFarcasterMiniApp } from '@/hooks/use-farcaster-miniapp';
+import {
+  Wallet,
+  ConnectWallet,
+  WalletDropdown,
+  WalletDropdownDisconnect,
+} from '@coinbase/onchainkit/wallet';
+import {
+  Address,
+  Avatar,
+  Name,
+  Identity,
+  EthBalance,
+} from '@coinbase/onchainkit/identity';
 
 const PLATFORM_ACTIONS = ['Follow', 'Like', 'Comment', 'Recast'] as const;
 
@@ -15,9 +36,43 @@ const MAIN_REWARD = 6100;
 
 const maxStars = 10000;
 
+type MintStep = 'idle' | 'checking' | 'generating' | 'uploading' | 'minting' | 'awarding' | 'success' | 'error';
+
 export default function BetaHome() {
+  const router = useRouter();
   const [stars, setStars] = useState(0);
   const [mounted, setMounted] = useState(false);
+
+  // Farcaster MiniKit integration
+  const {
+    farcasterFid: miniAppFid,
+    isInFarcaster,
+    displayName,
+    username,
+    context: miniAppContext,
+  } = useFarcasterMiniApp();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 MiniApp Status:', {
+      isInFarcaster,
+      miniAppFid,
+      hasContext: !!miniAppContext,
+      walletAddress,
+    });
+  }, [isInFarcaster, miniAppFid, miniAppContext, walletAddress]);
+
+  // Wallet and minting state
+  const { walletAddress, connectWallet } = useWallet();
+  const [isMinting, setIsMinting] = useState(false);
+  const [mintStep, setMintStep] = useState<MintStep>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [nftImageUrl, setNftImageUrl] = useState<string>('');
+  const [txHash, setTxHash] = useState<string>('');
+  const [farcasterFid, setFarcasterFid] = useState<number | null>(null);
+
+  const { writeContract, data: hash } = useWriteContract();
+  const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
 
   useEffect(() => {
     setMounted(true);
@@ -50,6 +105,147 @@ export default function BetaHome() {
     playSound(800, 0.1);
     setTimeout(() => playSound(1000, 0.1), 100);
     setStars((prev) => Math.min(prev + reward, maxStars));
+  };
+
+  const handleMintClick = async () => {
+    try {
+      // Step 1: Check wallet connection
+      if (!walletAddress) {
+        setErrorMessage('Please connect your wallet using the button above to mint your Moon NFT.');
+        setMintStep('error');
+        return;
+      }
+
+      setIsMinting(true);
+      setMintStep('checking');
+
+      // Step 2: Check if already minted
+      const alreadyMinted = await hasUserMintedNFT(walletAddress);
+      if (alreadyMinted) {
+        setErrorMessage('You have already minted your Moon NFT!');
+        setMintStep('error');
+        setIsMinting(false);
+        return;
+      }
+
+      // Step 3: Get Farcaster FID (MiniKit first, then database fallback)
+      setMintStep('checking');
+
+      // Primary source: MiniKit (when in Farcaster)
+      let fidToUse = miniAppFid || farcasterFid;
+
+      // Fallback: Database lookup (for web users)
+      if (!fidToUse && walletAddress) {
+        const profileRes = await fetch(`/api/profiles/by-wallet/${walletAddress}`);
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          fidToUse = profile.farcasterFid;
+          setFarcasterFid(fidToUse);
+        }
+      }
+
+      if (!fidToUse) {
+        throw new Error(
+          isInFarcaster
+            ? 'Unable to retrieve your Farcaster account. Please try again.'
+            : 'Please link your Farcaster account first or open this page in the Farcaster app.'
+        );
+      }
+
+      // Step 4: Generate NFT via local API
+      setMintStep('generating');
+      const response = await fetch('/api/nft/self-mint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress, farcasterFid: fidToUse }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'NFT generation failed');
+      }
+
+      const nftData = await response.json();
+      setNftImageUrl(nftData.imageData);
+
+      // Step 5: Mint on-chain
+      setMintStep('minting');
+      writeContract({
+        address: MOON_NFT_ADDRESS,
+        abi: MoonNFTABI.abi,
+        functionName: 'mint',
+        args: [walletAddress, nftData.metadataUrl],
+        value: parseEther('0.00001'), // Testnet mint price
+      });
+
+      // Step 6 will be handled by useEffect watching isTxSuccess
+
+    } catch (error) {
+      console.error('Minting error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Minting failed');
+      setMintStep('error');
+      setIsMinting(false);
+    }
+  };
+
+  // Watch for transaction success
+  useEffect(() => {
+    if (isTxSuccess && hash) {
+      setTxHash(hash);
+      setMintStep('awarding');
+
+      // Award points via local API
+      fetch('/api/tasks/mint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farcasterFid,
+          walletAddress
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error('Points award failed');
+          return res.json();
+        })
+        .then(() => {
+          setMintStep('success');
+          setStars((prev) => Math.min(prev + MAIN_REWARD, maxStars));
+          playSound(1200, 0.2);
+          playSound(1400, 0.2);
+        })
+        .catch((error) => {
+          console.error('Points award failed:', error);
+          setMintStep('success'); // Still show success even if points fail
+        })
+        .finally(() => {
+          setIsMinting(false);
+        });
+    }
+  }, [isTxSuccess, hash, walletAddress]);
+
+  // Redirect to app after successful mint
+  useEffect(() => {
+    if (mintStep === 'success') {
+      const timer = setTimeout(() => {
+        router.push('/app');
+      }, 3000); // Redirect after 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [mintStep, router]);
+
+  const getMintStepText = (step: MintStep): string => {
+    const stepTexts = {
+      checking: 'Checking eligibility...',
+      generating: 'Generating your NFT...',
+      uploading: 'Uploading to IPFS...',
+      minting: 'Minting on-chain...',
+      awarding: 'Awarding points...',
+      success: 'Minted successfully!',
+      error: 'Mint failed',
+      idle: 'Mint Your Moon',
+    };
+    return stepTexts[step] || 'Minting...';
   };
 
   const progressPercentage = (stars / maxStars) * 100;
@@ -192,24 +388,46 @@ export default function BetaHome() {
                   Claim Your Moons
                 </h2>
                 <p className="text-cyan-400 text-sm font-semibold animate-pulse">Limited to 10,000 Moons</p>
+
+                {/* Wallet Connection */}
+                <div className="mt-4 flex justify-center">
+                  <Wallet>
+                    <ConnectWallet className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 hover:from-pink-600 hover:via-purple-600 hover:to-cyan-600 text-white py-2 px-6 rounded-lg shadow-lg transition-all text-xs font-bold uppercase tracking-wide">
+                      <Avatar className="h-5 w-5" />
+                      <Name />
+                    </ConnectWallet>
+                    <WalletDropdown>
+                      <Identity className="px-4 pt-3 pb-2 bg-black/90 backdrop-blur border border-cyan-400/30 rounded-lg">
+                        <Avatar />
+                        <Name className="text-cyan-400 font-bold" />
+                        <Address className="text-gray-400 text-xs font-mono" />
+                        <EthBalance className="text-white text-sm" />
+                      </Identity>
+                      <WalletDropdownDisconnect className="hover:bg-red-500/10" />
+                    </WalletDropdown>
+                  </Wallet>
+                </div>
               </div>
 
               <button
-                onClick={() => handleTaskClick(MAIN_REWARD)}
-                className="w-full mb-4 group relative overflow-hidden rounded-2xl border-4 border-pink-500 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 p-4 transition-all hover:scale-105 hover:border-cyan-500 active:scale-95 shadow-lg shadow-pink-500/50 hover:shadow-cyan-500/50 hover:shadow-xl"
+                onClick={handleMintClick}
+                disabled={isMinting}
+                className={`w-full mb-4 group relative overflow-hidden rounded-2xl border-4 border-pink-500 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 p-4 transition-all hover:scale-105 hover:border-cyan-500 active:scale-95 shadow-lg shadow-pink-500/50 hover:shadow-cyan-500/50 hover:shadow-xl ${isMinting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
                 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-left">
                     <div className="font-bold text-white text-lg sm:text-xl flex items-center gap-2 leading-tight">
                       <span className="text-2xl animate-bounce">🌕</span>
-                      <span className="drop-shadow-lg">Mint Your Moon</span>
+                      <span className="drop-shadow-lg">
+                        {isMinting ? getMintStepText(mintStep) : 'Mint Your Moon'}
+                      </span>
                     </div>
                     <p className="text-yellow-200 text-xs sm:text-sm font-semibold mt-1 leading-snug">
-                      Mint NFT + Beta Access
+                      {isMinting ? 'Processing...' : 'Mint NFT + Beta Access'}
                     </p>
                     <p className="text-yellow-100 text-[11px] sm:text-xs font-semibold mt-1 uppercase tracking-wide">
-                      Claim your spot now
+                      {isMinting ? 'Please wait' : 'Claim your spot now'}
                     </p>
                   </div>
                   <div className="px-4 py-2 bg-yellow-400/30 border-2 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/30 w-full sm:w-auto flex items-center justify-center gap-2">
@@ -311,6 +529,60 @@ export default function BetaHome() {
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {mintStep === 'success' && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-purple-900 to-blue-900 p-8 rounded-2xl border-4 border-cyan-500 max-w-md w-full animate-float">
+            <h2 className="text-2xl font-bold text-white mb-4 pixel-font text-center drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]">
+              🎉 Mint Successful!
+            </h2>
+            {nftImageUrl && (
+              <div className="mb-4 rounded-xl overflow-hidden border-4 border-purple-500">
+                <img src={nftImageUrl} alt="Your NFT" className="w-full" />
+              </div>
+            )}
+            <p className="text-cyan-300 mb-4 text-center text-lg font-bold">
+              You've earned {MAIN_REWARD} Moon points!
+            </p>
+            <a
+              href={`https://basescan.org/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-cyan-500 text-black font-bold py-3 rounded-xl text-center hover:bg-cyan-400 transition mb-3 pixel-font shadow-lg shadow-cyan-500/50"
+            >
+              View on BaseScan
+            </a>
+            <button
+              onClick={() => setMintStep('idle')}
+              className="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-500 transition pixel-font shadow-lg"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {mintStep === 'error' && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-red-900 to-purple-900 p-8 rounded-2xl border-4 border-red-500 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-white mb-4 pixel-font text-center drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">
+              ❌ Mint Failed
+            </h2>
+            <p className="text-red-300 mb-6 text-center">{errorMessage}</p>
+            <button
+              onClick={() => {
+                setMintStep('idle');
+                setIsMinting(false);
+              }}
+              className="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-500 transition pixel-font shadow-lg"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

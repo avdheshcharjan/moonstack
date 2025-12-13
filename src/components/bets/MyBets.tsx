@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { getBaseScanTxUrl, formatTxHash } from '@/src/utils/basescan';
+import { getBaseScanTxUrl, formatTxHash } from '@/utils/basescan';
 
 // Position type matching the transformed format from API
 interface Position {

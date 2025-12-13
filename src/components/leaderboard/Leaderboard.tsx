@@ -1,4 +1,4 @@
-import { LeaderboardEntry } from '@/src/types/orders';
+import { LeaderboardEntry } from '@/types/orders';
 import React, { useEffect, useState } from 'react';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { base } from 'viem/chains';
