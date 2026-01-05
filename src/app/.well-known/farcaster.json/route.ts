@@ -13,7 +13,7 @@ export async function GET() {
     miniapp: {
       version: '1',
       name: 'Moonstack',
-      homeUrl: URL || 'https://moonstack.fun',
+      homeUrl: ''
       iconUrl: `${URL}/logo.png`,
       splashImageUrl: `${URL}/logo_splash.png`,
       splashBackgroundColor: '#000d1d',
@@ -32,7 +32,7 @@ export async function GET() {
       ogTitle: 'Moonstack',
       ogDescription: 'Swipe to Predict',
       ogImageUrl: `${URL}/logo.png`,
-      noindex: false,
+      noindex: true,
     },
   });
 }
